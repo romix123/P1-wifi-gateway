@@ -28,17 +28,17 @@ Tussen metingen 'slaapt' de module (de modem wordt afgeschakeld waardoor het str
   datum:  8 July 2022
   auteur: Ronald Leenes
   
-   l: wifireconnect after wifi loss
-   k: fixed big BUG, softAP would not produce accessible webserver.
-   j: raw data on port 23
-       major code rewrite
-       implemented data reporting methods: 
-         parsed data: json, mqtt, p1wifi.local/P1
-         raw data: telnet on port 23, p1wifi.local/Data
+*   l: wifireconnect after wifi loss
+*   k: fixed big BUG, softAP would not produce accessible webserver.
+*   j: raw data on port 23
+*       major code rewrite
+*       implemented data reporting methods: 
+*         parsed data: json, mqtt, p1wifi.local/P1
+*         raw data: telnet on port 23, p1wifi.local/Data
          
-   i:  extended max line length for TD210-D meters, which have a really loong 1-0:99.97.0 line
-   h:  extended mqtt set with instant powers, voltages, actual tarif group. power outages, power drops
-   g: fixed mqtt
+*   i:  extended max line length for TD210-D meters, which have a really loong 1-0:99.97.0 line
+*   h:  extended mqtt set with instant powers, voltages, actual tarif group. power outages, power drops
+*   g: fixed mqtt
    
-   Generic ESP8285 module 
-   Flash Size: 2mb (FS: 64Kb, OTA: –992Kb) 
+*   Generic ESP8285 module 
+*   Flash Size: 2mb (FS: 64Kb, OTA: –992Kb) 
