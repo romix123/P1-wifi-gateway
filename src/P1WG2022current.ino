@@ -8,7 +8,7 @@
  * De data processing is gebaseerd op: http://domoticx.com/p1-poort-slimme-meter-data-naar-domoticz-esp8266/
  * De captive portal is gebaseerd op een van de ESP8266 voorbeelden, de OTA eenheid eveneens.
  * 
- * De module levert data aan een host via JSON messages, maar kan ook via de webinterface van de module worden afgelezen
+ * De module levert data aan een host via JSON of MQTT messages, maar kan ook via de webinterface van de module of via telnet worden uitgelezen
  * 
  * De module zal bij opstarten eerst de buffercondensator laden. 
  * Vervolgens knippert hij 2x en zal eerst proberen te koppelen aan je wifi netwerk. Gedurende dat proces zal de LED knipperen
@@ -34,11 +34,13 @@
  *  te doen:
  *    check mqtt whether connecction still exists before sending data
  *    
- *  versie: 1.0k 
- *  datum:  8 July 2022
+ *  versie: 1.0m 
+ *  datum:  18 July 2022
  *  auteur: Ronald Leenes
  *  
  *   *      mqtt reconnect after connection loss
+ *  m: setupsave fix, relocate to p1wifi.local na 60 sec 
+ *      mqtt - kw/W fix
  *  l: wifireconnect after wifi loss
  *  k: fixed big BUG, softAP would not produce accessible webserver.
  *  j: raw data on port 23
@@ -53,15 +55,25 @@
  *  
  *  Generic ESP8285 module 
 *   Flash Size: 2mb (FS: 64Kb, OTA: –992Kb) 
+*   
+*   1. Als ik allen gebruik wil maken van MQTT dan lukt dat wel.
+2. Maar het vinkje "rapporteer in Watt" werkt in ieder geval dan precies omgekeerd.
+Ofwel: Zonder het vinkje krijg ik in MQTT en op het interface zelf de meterstanden in Watts.
+3. En die eenheid moet ik in Domoticz ook hebben. Maar een vinkje bij Domoticz en geen vinkje bij "rapporteer in Watt" wordt niet geaccepteerd. Het vinkje om te rapporteren aan Domoticz is dan na een save gewoon weer weg.
+4. Tot slot een slordigheidje:
+De url die je krijgt bij het Saven blijft in beeld. Doe je dan, nadat de module weer opgestart is, zoiets als F5, dan start de module gewoon weer opnieuw op. 
+Dus je moet op de hand dat stukje SetupSave verwijderen.
+
+
  */
 
-String version = "1.0l";
+String version = "1.0m";
 const char* host = "P1wifi";
 #define HOSTNAME "p1meter"
 
 #define DEBUG 0 // 1 is on serial only, 2 is serial + telnet
 #define ESMR5 1
-#define BELGIQUE 1
+#define BELGIQUE 0
 
 #if ESMR5
 bool CRCcheckEnabled = true;      // by default enable CRC checking
@@ -163,7 +175,7 @@ struct settings {
   char interval[3] = "20";
   char domo[3] ="j";
   char mqtt[3] ="n";
-  char watt[3] = "";
+  char watt[3] = "n";
 } user_data = {};
 
 // energy management vars
@@ -325,7 +337,7 @@ void setup() {
     
       if (tries++ > 30) {
         debugln("");
-        debugln("Setting up Captive Portal by the name 'P1_setup' and password 'configP1'");
+        debugln("Setting up Captive Portal by the name 'P1_setup'");
         LEDon
         WiFi.mode(WIFI_AP);
         softAp = WiFi.softAP("P1_Setup", "");

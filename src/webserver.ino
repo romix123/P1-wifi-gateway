@@ -65,6 +65,7 @@ void addFoot(String& str){
 }
 
 void setupSaved(String& str){
+  str += F("<script>var countDownDate = new Date().getTime()+600000;var x = setInterval(function() {var now = new Date().getTime();var distance = countDownDate - now;var seconds = Math.floor((distance % (1000 * 60)) / 1000);document.getElementById(\"timer\").innerHTML = seconds + \" seconden tot module weer bereikbaar.\";if (seconds < 2) {location.replace(\"http://p1wifi.local\")}}, 1000);</script>");
   str += F("<fieldset>");
   str += F("<fieldset><legend><b>Wifi en module setup</b></legend>");
   str += F("<p><b>De instellingen zijn succesvol bewaard</b><br><br>");
@@ -73,6 +74,8 @@ void setupSaved(String& str){
   str += F("<p>De led zal langzaam knipperen tijdens koppelen aan uw WiFi netwerk.</p>");
   str += F("<p>Als de blauwe led blijft branden is de instelling mislukt en zult u <br>");
   str += F("opnieuw moeten koppelen met WIfi netwerk 'P1_Setup' .</p>");
+  str += F("<br>");
+  str += F("<p id=\"timer\"></p>");
   str += F("</fieldset></p>");
   str += F("<div style='text-align:right;font-size:11px;'><hr/><a href='http://eps8266thingies.nl' target='_blank' style='color:#aaa;'>eps8266thingies.nl</a></div></div></fieldset></body></html>");
 }
@@ -121,22 +124,15 @@ void handleRoot(){
 
 void handleSetup(){
     debugln("handleSetup");
-//    if (user_data.valid !="y") {
-//      strncpy(user_data.ssid, "ssid", ;
-//      user_data.password ="password";
-//      user_data.domoticzIP = "SeverIP";
-//      user_data.domoticzPort = "ServerPort";
-//      user_data.domoticzEnergyIdx ="1234";
-//      user_data.domoticzGasIdx = "5678";
-//      user_data.interval = "10";
-//    }
     
  String str = ""; 
+      debugln("handleSetupForm");
+
     addHead(str);
     addIntro(str);
       str += F("<fieldset>");
        str += F("<fieldset><legend><b>&nbsp;Wifi parameters&nbsp;</b></legend>");
-       str += F("<form action='/SetupSave' method='post'><p><b>SSId</b><br>");
+       str += F("<form action='/SetupSave' method='POST'><p><b>SSId</b><br>");
        str += F("<input type='text' class='form-control' name='ssid' value='");
        str+= user_data.ssid;
        str+=  F("'></p>");
@@ -190,11 +186,10 @@ void handleSetup(){
        if (user_data.watt[0] =='j') str += F(" checked></p>"); else str += F("></p>");
       str += F("</fieldset><div></div>");
       str += F("<p><button type='submit'>Save</button></form>");
-      str += F("<form action='/' method='POST'><button class='button bhome'>Menu</button></form></p>");
+      str += F("<form action='/SetupSave' method='POST'><button class='button bhome'>Menu</button></form></p>");
      addFoot(str);
     server.send(200, "text/html", str);
-   // server.send(200,   "text/html", "<!doctype html><html lang='en'><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'><title>Wifi Setup</title> <style>*,::after,::before{box-sizing:border-box;}body{margin:0;font-family:'Segoe UI',Roboto,'Helvetica Neue',Arial,'Noto Sans','Liberation Sans';font-size:1rem;font-weight:400;line-height:1.5;color:#212529;background-color:#f5f5f5;}.form-control{display:block;width:100%;height:calc(1.5em + .75rem + 2px);border:1px solid #ced4da;}button{cursor: pointer;border:1px solid transparent;color:#fff;background-color:#007bff;border-color:#007bff;padding:.5rem 1rem;font-size:1.25rem;line-height:1.5;border-radius:.3rem;width:100%}.form-signin{width:100%;max-width:400px;padding:15px;margin:auto;}h1{text-align: center}</style> </head> <body><main class='form-signin'> <form action='/Setup' method='post'><h1 class=''>Wifi Setup</h1><br/><div class='form-floating'><label>SSID</label><input type='text' class='form-control' name='ssid'></div><div class='form-floating'><br/><label>Password</label><input type='password' class='form-control' name='password'></div><br/><h1 class=''>Domoticz Setup</h1><br/><div class='form-floating'><label>Domoticz IP address</label><input type='text' class='form-control' name='domoticzIP'></div><div class='form-floating'><label>Domoticz Port</label><input type='text' class='form-control' name='domoticzPort'></div><div class='form-floating'><label>Domoticz Gas Idx</label><input type='text' class='form-control' name='domoticzGasIdx'></div><div class='form-floating'><label>Domoticz Energy Idx</label><input type='text' class='form-control' name='domoticzEnergyIdx'></div><div class='form-floating'><label>Meetinterval (sec)</label><input type='text' class='form-control' name='interval'></div><br/><br/><button type='submit'>Save</button></form></main></body></html><p style='text-align: right'><a href='https://esp8266thingies.nl' style='color: #32C5FF'>P1 wifi gateway</a></p></form></main> </body></html>" );
-  }
+}
 
 
 void handleSetupSave() {
@@ -235,9 +230,9 @@ void handleSetupSave() {
     user_data.mqttUser[server.arg("mqttUser").length()] = 
     user_data.mqttPass[server.arg("mqttPass").length()] = 
     user_data.mqttTopic[server.arg("mqttTopic").length()] = 
-    user_data.mqtt[server.arg("mqtt").length()] = 
-    user_data.domo[server.arg("domo").length()] = 
-    user_data.domo[server.arg("watt").length()] = 
+    user_data.mqtt[1] = //server.arg("mqtt").length()] = 
+    user_data.domo[1] = //server.arg("domo").length()] = 
+    user_data.watt[1] = //server.arg("watt").length()] = 
     '\0';
     
     EEPROM.put(0, user_data);
