@@ -186,7 +186,7 @@ void handleSetup(){
        if (user_data.watt[0] =='j') str += F(" checked></p>"); else str += F("></p>");
       str += F("</fieldset><div></div>");
       str += F("<p><button type='submit'>Save</button></form>");
-      str += F("<form action='/SetupSave' method='POST'><button class='button bhome'>Menu</button></form></p>");
+      str += F("<form action='/' method='POST'><button class='button bhome'>Menu</button></form></p>");
      addFoot(str);
     server.send(200, "text/html", str);
 }
