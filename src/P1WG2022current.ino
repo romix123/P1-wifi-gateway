@@ -34,11 +34,12 @@
  *  te doen:
  *    check mqtt whether connecction still exists before sending data
  *    
- *  versie: 1.0m 
- *  datum:  18 July 2022
+ *  versie: 1.0n 
+ *  datum:  03 Aug 2022
  *  auteur: Ronald Leenes
  *  
- *   *      mqtt reconnect after connection loss
+ *  n: empty call to SetupSave redirects to main menu
+ *      fixed kWh/Wh inversion
  *  m: setupsave fix, relocate to p1wifi.local na 60 sec 
  *      mqtt - kw/W fix
  *  l: wifireconnect after wifi loss
@@ -67,7 +68,7 @@ Dus je moet op de hand dat stukje SetupSave verwijderen.
 
  */
 
-String version = "1.0m";
+String version = "1.0n";
 const char* host = "P1wifi";
 #define HOSTNAME "p1meter"
 
@@ -321,7 +322,7 @@ void setup() {
   debugln("EEprom read: done");
   PrintConfigData();  
 
-  if (user_data.watt[0] =='j') reportInDecimals = true; else reportInDecimals = false;
+  if (user_data.watt[0] =='j') reportInDecimals = false; else reportInDecimals = true;
   
   interval = atoi( user_data.interval) * 1000; 
   modemSleepTime = interval - 2000;

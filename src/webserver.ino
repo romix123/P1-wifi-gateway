@@ -194,6 +194,16 @@ void handleSetup(){
 
 void handleSetupSave() {
   debugln("handleSetupSave");
+  debug("Server args: ");
+  debugln(server.args());
+  debugln(server.arg("plain"));
+
+  if (server.args() == 0) {
+    debugln("lege submit, dus redirect naar handleRoot");
+    handleRoot();
+    debugln("En terug naar mainloop");
+    return;
+  }
   
   String str = ""; 
   if (server.method() == HTTP_POST) {
@@ -257,22 +267,22 @@ void handleP1(){
   str += F("<p><b>Totaal verbruik laag tarief</b><input type='text' class='form-control' style='text-align:right' value='");
   // dtostrf (float_value, min _width, num_digits_after_decimal, where_to_store_string)
   str += electricityUsedTariff1;
-  if (reportInDecimals) str += F(" kWh'></p>"); str += F(" Wh'></p>"); 
+  if (reportInDecimals) str += F(" kWh'></p>"); else str += F(" Wh'></p>"); 
   str += F("<p><b>Totaal verbruik hoog tarief</b><input type='text' class='form-control' style='text-align:right' value='");
   str += electricityUsedTariff2;
-  if (reportInDecimals) str += F(" kWh'></p>"); str += F(" Wh'></p>"); 
+  if (reportInDecimals) str += F(" kWh'></p>"); else str += F(" Wh'></p>"); 
   str += F("<p><b>Teruggeleverd laag tarief</b><input type='text' class='form-control' style='text-align:right' value='");
   str += electricityReturnedTariff1;
-  if (reportInDecimals) str += F(" kWh'></p>"); str += F(" Wh'></p>"); 
+  if (reportInDecimals) str += F(" kWh'></p>"); else str += F(" Wh'></p>"); 
   str += F("<p><b>Teruggeleverd hoog tarief</b><input type='text' class='form-control' style='text-align:right' value='");
   str += electricityReturnedTariff2;
-  if (reportInDecimals) str += F(" kWh'></p>"); str += F(" Wh'></p>"); 
+  if (reportInDecimals) str += F(" kWh'></p>"); else str += F(" Wh'></p>"); 
   str += F("<p><b>Actueel verbruik</b><input type='text' class='form-control' style='text-align:right' value='");
   str += actualElectricityPowerDelivered;
-  if (reportInDecimals) str += F(" kW'></p>"); str += F(" W'></p>"); 
+  if (reportInDecimals) str += F(" kW'></p>"); else str += F(" W'></p>"); 
   str += F("<p><b>Actuele teruglevering</b><input type='text' class='form-control' style='text-align:right' value='");
   str += actualElectricityPowerReturned;
-  if (reportInDecimals) str += F(" kW'></p>"); str += F(" W'></p>"); 
+  if (reportInDecimals) str += F(" kW'></p>"); else str += F(" W'></p>"); 
   str += F("<p><b>Gas</b><input type='text' class='form-control' style='text-align:right' value='");
   str += gasReceived5min;
   str += F(" m3'></p>");

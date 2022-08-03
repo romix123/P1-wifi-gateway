@@ -4,7 +4,7 @@ bool decodeTelegram(int len) {
   int endChar = FindCharInArrayRev(telegram, '!', len);
   bool validCRCFound = false;
 
- if (state == WAITING) {      // we're waiting for a valid start sequence, if this line ios not it, just return
+ if (state == WAITING) {      // we're waiting for a valid start sequence, if this line is not it, just return
   if(startChar>=0)
   {
     //start found. Reset CRC calculation
@@ -38,13 +38,14 @@ bool decodeTelegram(int len) {
     char messageCRC[4];
     strncpy(messageCRC, telegram + endChar + 1, 4);
       for(int cnt=0; cnt<len;cnt++) {
-        debug(telegram[cnt]);
         datagram += telegram[cnt];
       }
       datagram += "\r";
       datagram += "\n";
           
     validCRCFound = (strtol(messageCRC, NULL, 16) == currentCRC);
+    debug("   calculated CRC:");
+        debugln(currentCRC);
     if(validCRCFound) {
       debugln("\nVALID CRC FOUND!"); 
       datagramValid = true;
