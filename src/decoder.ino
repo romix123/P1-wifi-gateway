@@ -1,3 +1,171 @@
+bool isNumber(char* res, int len) {
+  for (int i = 0; i < len; i++) {
+    if (((res[i] < '0') || (res[i] > '9'))  && (res[i] != '.' && res[i] != 0)) {
+      return false;
+    }
+  }
+  return true;
+}
+
+int FindCharInArrayRev(char array[], char c, int len) {
+  for (int i = len - 1; i >= 0; i--) {
+    if (array[i] == c) {
+      return i;
+    }
+  }
+  return -1;
+}
+
+long getValidVal(long valNew, long valOld, long maxDiffer)
+{
+  //check if the incoming value is valid
+      if(valOld > 0 && ((valNew - valOld > maxDiffer) && (valOld - valNew > maxDiffer)))
+        return valOld;
+      return valNew;
+}
+
+void getValue(char *theValue, char *buffer, int maxlen, char startchar, char endchar){
+    String cleanres="";
+    int s = FindCharInArrayRev(buffer, startchar, maxlen - 2);
+    int l = FindCharInArrayRev(buffer, endchar, maxlen - 2) - s - 1;
+
+    char res[16];
+    memset(res, 0, sizeof(res));
+    
+
+   if (strncpy(res, buffer + s + 1, l)) {
+        if (endchar == '*')
+        {
+            if (isNumber(res, l)){
+              int flag = 1;
+              for(int i=0; i < l + 1; i++)     
+              {
+                if (flag == 1 && res[i] != '0') flag = 0;
+                if (res[i] == '0' && res[i+1] == '.') flag = 0;
+                if(flag != 1){
+                  if (!reportInDecimals)    {       // BELGIQUE // report in Watts instead of KW
+                      if (res[i] != '.') cleanres += res[i];
+                    }
+                    else cleanres += res[i];
+                  }
+              }
+            }
+          cleanres.toCharArray(theValue, cleanres.length());
+          theValue[cleanres.length()+1]=0;
+              } else if (endchar == ')') 
+        {
+            if (isNumber(res, l))  strncpy(theValue, res, l);
+            theValue[cleanres.length()+1]=0;
+        }
+    }
+ }
+
+ void getGasValue(char *theValue, char *buffer, int maxlen, char startchar, char endchar){ 
+  String cleanres="";
+  bool nodecimals = false;
+
+  if (!reportInDecimals) nodecimals = true;
+ // if (domoticzJson) nodecimals = true;
+    
+  int s = 0;
+  if  (FindCharInArrayRev(buffer, ')(', maxlen - 2) != -1)  // some meters report the meterID in () before the section with actual gas value
+      s = FindCharInArrayRev(buffer, ')(', maxlen - 2);
+  else
+    s = FindCharInArrayRev(buffer, '(', maxlen - 2);
+    
+  if (s < 8) return;
+  if (s > 32) s = 32;
+  int l = FindCharInArrayRev(buffer, '*', maxlen - 2) - s - 1;
+  if (l < 4) return;
+  if (l > 12) return;
+  char res[16];
+  memset(res, 0, sizeof(res));
+  if (strncpy(res, buffer + s + 1, l)) {
+    //    if (endchar == '*')
+     //   {
+            if (isNumber(res, l)){
+              int flag = 1;
+              for(int i=0; i < l + 1; i++)     
+              {
+                if (flag == 1 && res[i] != '0') flag = 0;
+                if (res[i] == '0' && res[i+1] == '.') flag = 0;
+                if(flag != 1){
+                  if (nodecimals )    {       
+                      if (res[i] != '.') cleanres += res[i];
+                    } else cleanres += res[i];
+                  }
+              }
+            }
+          cleanres.toCharArray(theValue, cleanres.length());
+          theValue[cleanres.length()+1]=0;
+      //  } else if (endchar == ')')  if (isNumber(res, l))  strncpy(theValue, res, l);
+    }
+}
+
+
+void getGas22Value(char *theValue, char *buffer, int maxlen, char startchar, char endchar){
+    int s = FindCharInArrayRev(buffer, startchar, maxlen - 2);
+    int l = FindCharInArrayRev(buffer, endchar, maxlen - 2) - s - 1;
+    char res[16];
+    memset(res, 0, sizeof(res));
+    
+   if (strncpy(res, buffer + s + 1, l)) {
+     if (isNumber(res, l))  strncpy(theValue, res, l);
+     theValue[l+1]=0;
+   }
+}
+
+ void getDomoticzGasValue(char *theValue, char *buffer, int maxlen, char startchar, char endchar){ 
+  String cleanres="";
+  bool nodecimals = false;
+
+  if (!reportInDecimals) nodecimals = true;
+    
+  int s = 0;
+  if  (FindCharInArrayRev(buffer, ')(', maxlen - 2) != -1)  // some meters report the meterID in () before the section with actual gas value
+      s = FindCharInArrayRev(buffer, ')(', maxlen - 2);
+  else
+    s = FindCharInArrayRev(buffer, '(', maxlen - 2);
+    
+  if (s < 8) return;
+  if (s > 32) s = 32;
+  int l = FindCharInArrayRev(buffer, '*', maxlen - 2) - s - 1;
+  if (l < 4) return;
+  if (l > 12) return;
+  char res[16];
+  memset(res, 0, sizeof(res));
+  if (strncpy(res, buffer + s + 1, l)) {
+    //    if (endchar == '*')
+     //   {
+            if (isNumber(res, l)){
+              int flag = 1;
+              for(int i=0; i < l + 1; i++)     
+              {
+                if (flag == 1 && res[i] != '0') flag = 0;
+                if (res[i] == '0' && res[i+1] == '.') flag = 0;
+                if(flag != 1){
+                      if (res[i] != '.') cleanres += res[i];
+                   }
+              }
+            }
+          cleanres.toCharArray(theValue, cleanres.length());
+          theValue[cleanres.length()+1]=0;
+      //  } else if (endchar == ')')  if (isNumber(res, l))  strncpy(theValue, res, l);
+    }
+}
+ 
+void getEquipmentID(char *theValue, char *buffer, int maxlen, char startchar, char endchar){
+    int s = FindCharInArrayRev(buffer, startchar, maxlen - 2);
+    int l = FindCharInArrayRev(buffer, endchar, maxlen - 2) - s - 1;
+    char res[102];
+    memset(res, 0, sizeof(res));
+    
+   if (strncpy(res, buffer + s + 1, l)) {
+     if (isNumber(res, l))  strncpy(theValue, res, l);
+     theValue[l+1]=0;
+   }
+}
+
 bool decodeTelegram(int len) {
   //need to check for start
   int startChar = FindCharInArrayRev(telegram, '/', len);
@@ -15,7 +183,7 @@ bool decodeTelegram(int len) {
     dataEnd = false;
 
       for(int cnt=startChar; cnt<len-startChar;cnt++){
-        debug(telegram[cnt]);
+       // debug(telegram[cnt]);
         datagram += telegram[cnt];
       }    
     debugln("Start found!");
@@ -70,6 +238,16 @@ bool decodeTelegram(int len) {
   long val  = 0;
   long val2 = 0;
 
+if (equipmentId[0] == '\0'){
+  // 0-0:96.1.1 equipmentId                         (xxxxxxxxxxxx) 
+ if (strncmp(telegram, "0-1:96.1.1", strlen("0-1:96.1.1")) == 0) 
+    getEquipmentID(equipmentId,telegram, len, '(', ')');
+
+if (strncmp(telegram, "0-1:96.1.0", strlen("0-1:96.1.0")) == 0) 
+    getEquipmentID(equipmentId,telegram, len, '(', ')');
+}
+  
+    
   // 1-0:1.8.1(000992.992*kWh)
   // 1-0:1.8.1 = Elektra verbruik laag tarief (DSMR v4.0)
   if (strncmp(telegram, "1-0:1.8.1", strlen("1-0:1.8.1")) == 0) 
@@ -182,6 +360,12 @@ bool decodeTelegram(int len) {
   if (strncmp(telegram, "0-1:24.2.1", strlen("0-1:24.2.1")) == 0) 
                       getGasValue(gasReceived5min, telegram, len, '(', ')');
 
+   // 0-1:24.2.1(150531200000S)(00811.923*m3)
+  // 0-1:24.2.1 = Gas (DSMR v4.0) on Kaifa MA105 meter, other meters do (number)(gas value)
+  if (strncmp(telegram, "0-1:24.2.1", strlen("0-1:24.2.1")) == 0) 
+                      getDomoticzGasValue(gasDomoticz, telegram, len, '(', ')');
+
+                      
   // (0-1:24.2.1)(m3) is gas designator for dsmr 2.2. The actual gasvalue is on next line, so first we place a flag, then we can test the next line on the next iteration of line parsing.
   if (strncmp(telegram, "0-1:24.3.0", strlen("0-1:24.3.0")) == 0) gas22Flag = true;
   if (gas22Flag && strncmp(telegram, "(", strlen(")")) == 0)
@@ -191,6 +375,15 @@ bool decodeTelegram(int len) {
   // if (strncmp(telegram, "0-1:24.4.0", strlen("0-1:24.4.0")) == 0)  dataEnd = true;
 
   }
+//  int i = 0;
+//    debug("equipmentID: ");
+//      while (equipmentId[i] !=  '\0'){
+//        debug(equipmentId[i]); 
+//        i++;
+//      } 
+//    debugln();
+    
   return validCRCFound;       // true if valid CRC found
+  
   } //state = reading
 }

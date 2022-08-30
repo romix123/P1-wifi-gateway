@@ -34,11 +34,13 @@
  *  te doen:
  *    check mqtt whether connecction still exists before sending data
  *    
- *  versie: 1.0n 
+ *  versie: 1.0p 
  *  datum:  03 Aug 2022
  *  auteur: Ronald Leenes
  *  
- *  n: empty call to SetupSave redirects to main menu
+ *  p: incorporated equipmentID in mqtt set
+ *  o: fixed gas output, fixed mqtt reconnect
+ *  n: empty call to SetupSave now redirects to main menu instead of resetting settings ;-)
  *      fixed kWh/Wh inversion
  *  m: setupsave fix, relocate to p1wifi.local na 60 sec 
  *      mqtt - kw/W fix
@@ -68,7 +70,7 @@ Dus je moet op de hand dat stukje SetupSave verwijderen.
 
  */
 
-String version = "1.0n";
+String version = "1.0p";
 const char* host = "P1wifi";
 #define HOSTNAME "p1meter"
 
@@ -174,9 +176,9 @@ struct settings {
   char mqttUser[16] = "";
   char mqttPass[16] = "";
   char interval[3] = "20";
-  char domo[3] ="j";
-  char mqtt[3] ="n";
-  char watt[3] = "n";
+  char domo[4] ="j";
+  char mqtt[4] ="n";
+  char watt[4] = "n";
 } user_data = {};
 
 // energy management vars
@@ -247,7 +249,7 @@ gas, water, heat or cold
 String P1header;
 char P1version[3];
 char P1timestamp[14];
-String equipmentId;
+char equipmentId[100] = "\0";
 char electricityUsedTariff1[12];
 char electricityUsedTariff2[12];
 char electricityReturnedTariff1[12];
@@ -280,6 +282,7 @@ char activePowerL3NP[9];
 char deviceType[5];
 String gasId;
 char gasReceived5min[12];
+char gasDomoticz[12];       //Domoticz wil gas niet in decimalen?
 
 char prevGAS[12];           // not an P1 protocol var, but holds gas value
 
@@ -296,6 +299,7 @@ int state = DISABLED;
 bool wifiSta = false;
 bool breaking = false;
 bool softAp = false;
+bool domoticzJson = false;
 
 void setup() {
   WiFi.forceSleepBegin(sleepTime * 1000000L); //In uS. Must be same length as your delay
@@ -323,6 +327,7 @@ void setup() {
   PrintConfigData();  
 
   if (user_data.watt[0] =='j') reportInDecimals = false; else reportInDecimals = true;
+  if (user_data.domo[0] =='j') domoticzJson = true;
   
   interval = atoi( user_data.interval) * 1000; 
   modemSleepTime = interval - 2000;
@@ -399,122 +404,6 @@ void wifiReconnect(){
   }
 }
 
-bool isNumber(char* res, int len) {
-  for (int i = 0; i < len; i++) {
-    if (((res[i] < '0') || (res[i] > '9'))  && (res[i] != '.' && res[i] != 0)) {
-      return false;
-    }
-  }
-  return true;
-}
-
-int FindCharInArrayRev(char array[], char c, int len) {
-  for (int i = len - 1; i >= 0; i--) {
-    if (array[i] == c) {
-      return i;
-    }
-  }
-  return -1;
-}
-
-long getValidVal(long valNew, long valOld, long maxDiffer)
-{
-  //check if the incoming value is valid
-      if(valOld > 0 && ((valNew - valOld > maxDiffer) && (valOld - valNew > maxDiffer)))
-        return valOld;
-      return valNew;
-}
-
-void getValue(char *theValue, char *buffer, int maxlen, char startchar, char endchar){
-    String cleanres="";
-    int s = FindCharInArrayRev(buffer, startchar, maxlen - 2);
-    int l = FindCharInArrayRev(buffer, endchar, maxlen - 2) - s - 1;
-
-    char res[16];
-    memset(res, 0, sizeof(res));
-    
-
-   if (strncpy(res, buffer + s + 1, l)) {
-        if (endchar == '*')
-        {
-            if (isNumber(res, l)){
-              int flag = 1;
-              for(int i=0; i < l + 1; i++)     // was <
-              {
-                if (flag == 1 && res[i] != '0') flag = 0;
-                if (res[i] == '0' && res[i+1] == '.') flag = 0;
-                if(flag != 1){
-                  if (!reportInDecimals)    {       // BELGIQUE // report in Watts instead of KW
-                      if (res[i] != '.') cleanres += res[i];
-                    }
-                    else cleanres += res[i];
-                  }
-              }
-            }
-          cleanres.toCharArray(theValue, cleanres.length());
-          theValue[cleanres.length()+1]=0;
-              } else if (endchar == ')') 
-        {
-            if (isNumber(res, l))  strncpy(theValue, res, l);
-            theValue[cleanres.length()+1]=0;
-        }
-    }
- }
-
- void getGasValue(char *theValue, char *buffer, int maxlen, char startchar, char endchar){ 
-  String cleanres="";
-  int s = 0;
-  if  (FindCharInArrayRev(buffer, ')(', maxlen - 2) != -1)  // some meters report the meterID in () before the section with actual gas value
-      s = FindCharInArrayRev(buffer, ')(', maxlen - 2);
-  else
-    s = FindCharInArrayRev(buffer, '(', maxlen - 2);
-    
-  if (s < 8) return;
-  if (s > 32) s = 32;
-  int l = FindCharInArrayRev(buffer, '*', maxlen - 2) - s - 1;
-  if (l < 4) return;
-  if (l > 12) return;
-  char res[16];
-  memset(res, 0, sizeof(res));
-  if (strncpy(res, buffer + s + 1, l)) {
-        if (endchar == '*')
-        {
-            if (isNumber(res, l)){
-              int flag = 1;
-              for(int i=0; i < l + 1; i++)     // was <
-              {
-                if (flag == 1 && res[i] != '0') flag = 0;
-                if (res[i] == '0' && res[i+1] == '.') flag = 0;
-                if(flag != 1){
-                  if (!reportInDecimals)    {       // BELGIQUE // report in Watts instead of KW
-                      if (res[i] != '.') cleanres += res[i];
-                    }
-                    else cleanres += res[i];
-                  }
-              }
-            }
-          cleanres.toCharArray(theValue, cleanres.length());
-          theValue[cleanres.length()+1]=0;
-              } else if (endchar == ')') 
-        {
-            if (isNumber(res, l))  strncpy(theValue, res, l);
-        }
-    }
-  
-}
-
-void getGas22Value(char *theValue, char *buffer, int maxlen, char startchar, char endchar){
-    int s = FindCharInArrayRev(buffer, startchar, maxlen - 2);
-    int l = FindCharInArrayRev(buffer, endchar, maxlen - 2) - s - 1;
-    char res[16];
-    memset(res, 0, sizeof(res));
-    
-   if (strncpy(res, buffer + s + 1, l)) {
-     if (isNumber(res, l))  strncpy(theValue, res, l);
-     theValue[l+1]=0;
-   }
-}
-
 void readTelegram() {
   if (Serial.available()) {
     memset(telegram, 0, sizeof(telegram));
@@ -542,8 +431,8 @@ void readTelegram() {
         if (dataEnd && !CRCcheckEnabled) { //this is used for dsmr 2.2 meters
           debugln("incorrect CRC or running on a DSMR2 meter");
              TelnetReporter();
-             if (user_data.mqtt[0] =='j') MQTT_reporter();
-              if (user_data.domo[0] =='j') {
+             if (user_data.mqtt[0] == 'j') MQTT_reporter();
+              if (user_data.domo[0] == 'j') {
                  UpdateElectricity();
                  UpdateGas();
           }            
@@ -569,28 +458,28 @@ void loop() {
   server.handleClient(); //handle web requests
   MDNS.update();
   
-  if (millis() > timeSinceLastUpdate + interval)
-  {
+  if (millis() > timeSinceLastUpdate + interval){
     readTelegram();  
     if (wifiSta) {
       telnet.loop();
       
-    if (user_data.mqtt[0] =='j' && ! MQTT_Server_Fail){
-      debugln("mqtt loop");
-        if (!mqtt_client.connected())
-        {
-          if (millis() - LAST_RECONNECT_ATTEMPT > 5000)
-          {
+    if (user_data.mqtt[0] =='j'){
+      if (mqtt_client.connected()) {
+        debugln("mqtt_client loop");
+        mqtt_client.loop();
+      }
+      if (!mqtt_client.connected() || MQTT_Server_Fail) {
+          if (millis() - LAST_RECONNECT_ATTEMPT > 5000){
+            debugln("mqtt reconnect loop");
             LAST_RECONNECT_ATTEMPT = millis();
             if (mqtt_reconnect())  LAST_RECONNECT_ATTEMPT = 0;
           }
-        }    else  mqtt_client.loop();
       }
     }
-  }
+  } 
  if (wifiSta && WiFi.status() != WL_CONNECTED) wifiReconnect();
+  }
 }
-
 
 
 void modemSleep(){

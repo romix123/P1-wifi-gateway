@@ -252,7 +252,7 @@ void handleSetupSave() {
     addIntro(str);
     setupSaved(str);
     server.send(200, "text/html", str);    
-    delay(5000);
+    delay(500);
     ESP.reset();
   } 
 }

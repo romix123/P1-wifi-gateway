@@ -57,6 +57,7 @@ bool mqtt_reconnect()
             mqtt_client.publish("hass/status", message);
 
            debugf("MQTT root topic: %s\n", user_data.mqttTopic);
+           MQTT_Server_Fail = false;
         }
         else
         {
@@ -196,7 +197,9 @@ bool DomoticzJson(char* idx, int nValue, char* sValue){
 
 void UpdateGas(){  //sends over the gas setting to server(s)
   if(strncmp(gasReceived5min, prevGAS, sizeof(gasReceived5min)) != 0){          // if we have a new value, report
-      DomoticzJson(user_data.domoticzGasIdx, 0, gasReceived5min);
+      DomoticzJson(user_data.domoticzGasIdx, 0, gasDomoticz);// gasReceived5min);
+      debug("gas: ");
+      debugln(gasDomoticz);
       strcpy(prevGAS, gasReceived5min);                              // retain current value for future reference
   }
 }
@@ -229,6 +232,8 @@ bool mqqtReconnected = false;
 //      } 
 //      debugln("and succeed. Sending data...");
 //    }  
+      mqtt_send_metric("equipmentID", equipmentId);
+
       mqtt_send_metric("consumption_low_tarif", electricityUsedTariff1);
       mqtt_send_metric("consumption_high_tarif", electricityUsedTariff2);
       mqtt_send_metric("returndelivery_low_tarif", electricityReturnedTariff1);
