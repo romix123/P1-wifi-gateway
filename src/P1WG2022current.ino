@@ -32,7 +32,7 @@
  *  informatie, vragen, suggesties ed richten aan romix@macuser.nl 
  *  
  *  te doen:
- *    check mqtt whether connecction still exists before sending data
+ *  
  *    
  *  versie: 1.0p 
  *  datum:  28 Aug 2022
@@ -58,17 +58,7 @@
  *  
  *  Generic ESP8285 module 
 *   Flash Size: 2mb (FS: 64Kb, OTA: –992Kb) 
-*   
-*   1. Als ik allen gebruik wil maken van MQTT dan lukt dat wel.
-2. Maar het vinkje "rapporteer in Watt" werkt in ieder geval dan precies omgekeerd.
-Ofwel: Zonder het vinkje krijg ik in MQTT en op het interface zelf de meterstanden in Watts.
-3. En die eenheid moet ik in Domoticz ook hebben. Maar een vinkje bij Domoticz en geen vinkje bij "rapporteer in Watt" wordt niet geaccepteerd. Het vinkje om te rapporteren aan Domoticz is dan na een save gewoon weer weg.
-4. Tot slot een slordigheidje:
-De url die je krijgt bij het Saven blijft in beeld. Doe je dan, nadat de module weer opgestart is, zoiets als F5, dan start de module gewoon weer opnieuw op. 
-Dus je moet op de hand dat stukje SetupSave verwijderen.
-
-
- */
+*/
 
 String version = "1.0p";
 const char* host = "P1wifi";

@@ -33,20 +33,24 @@ P1 wifi gateway 2022
   informatie, vragen, suggesties ed richten aan romix@macuser.nl 
   
   te doen:
-    check mqtt whether connecction still exists before sending data
     
-  versie: 1.0l 
-  datum:  8 July 2022
-  auteur: Ronald Leenes
-  
-        mqtt reconnect after connection loss
-  l: wifireconnect after wifi loss
-  k: fixed big BUG, softAP would not produce accessible webserver.
-  j: raw data on port 23
-      major code rewrite
-      implemented data reporting methods: 
-        parsed data: json, mqtt, p1wifi.local/P1
-        raw data: telnet on port 23, p1wifi.local/Data
+*  versie: 1.0p 
+ *  datum:  28 Aug 2022
+ *  auteur: Ronald Leenes
+ *  
+ *  p: incorporated equipmentID in mqtt set
+ *  o: fixed gas output, fixed mqtt reconnect
+ *  n: empty call to SetupSave now redirects to main menu instead of resetting settings ;-)
+ *      fixed kWh/Wh inversion
+ *  m: setupsave fix, relocate to p1wifi.local na 60 sec 
+ *      mqtt - kw/W fix
+ *  l: wifireconnect after wifi loss
+ *  k: fixed big BUG, softAP would not produce accessible webserver.
+ *  j: raw data on port 23
+ *      major code rewrite
+ *      implemented data reporting methods: 
+ *        parsed data: json, mqtt, p1wifi.local/P1
+ *        raw data: telnet on port 23, p1wifi.local/Data
         
   i:  extended max line length for TD210-D meters, which have a really loong 1-0:99.97.0 line
   h:  extended mqtt set with instant powers, voltages, actual tarif group. power outages, power drops
