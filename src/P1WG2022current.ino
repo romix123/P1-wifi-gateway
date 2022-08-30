@@ -35,7 +35,7 @@
  *    check mqtt whether connecction still exists before sending data
  *    
  *  versie: 1.0p 
- *  datum:  03 Aug 2022
+ *  datum:  28 Aug 2022
  *  auteur: Ronald Leenes
  *  
  *  p: incorporated equipmentID in mqtt set
