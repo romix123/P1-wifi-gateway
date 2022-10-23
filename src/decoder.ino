@@ -7,6 +7,7 @@ bool isNumber(char* res, int len) {
   return true;
 }
 
+
 int FindCharInArrayRev(char array[], char c, int len) {
   for (int i = len - 1; i >= 0; i--) {
     if (array[i] == c) {
@@ -43,7 +44,7 @@ void getValue(char *theValue, char *buffer, int maxlen, char startchar, char end
                 if (flag == 1 && res[i] != '0') flag = 0;
                 if (res[i] == '0' && res[i+1] == '.') flag = 0;
                 if(flag != 1){
-                  if (!reportInDecimals)    {       // BELGIQUE // report in Watts instead of KW
+                  if (!reportInDecimals)    {       
                       if (res[i] != '.') cleanres += res[i];
                     }
                     else cleanres += res[i];
@@ -65,7 +66,7 @@ void getValue(char *theValue, char *buffer, int maxlen, char startchar, char end
   bool nodecimals = false;
 
   if (!reportInDecimals) nodecimals = true;
- // if (domoticzJson) nodecimals = true;
+ // if (Json) nodecimals = true;
     
   int s = 0;
   if  (FindCharInArrayRev(buffer, ')(', maxlen - 2) != -1)  // some meters report the meterID in () before the section with actual gas value
@@ -154,7 +155,7 @@ void getGas22Value(char *theValue, char *buffer, int maxlen, char startchar, cha
     }
 }
  
-void getEquipmentID(char *theValue, char *buffer, int maxlen, char startchar, char endchar){
+void getStr(char *theValue, char *buffer, int maxlen, char startchar, char endchar){
     int s = FindCharInArrayRev(buffer, startchar, maxlen - 2);
     int l = FindCharInArrayRev(buffer, endchar, maxlen - 2) - s - 1;
     char res[102];
@@ -166,7 +167,22 @@ void getEquipmentID(char *theValue, char *buffer, int maxlen, char startchar, ch
    }
 }
 
+void getStr12(char *theValue, char *buffer, int maxlen, char startchar){
+    int s = FindCharInArrayRev(buffer, startchar, maxlen - 2);
+    int l = 12; //FindCharInArrayRev(buffer, endchar, maxlen - 2) - s - 1;
+    char res[102];
+    memset(res, 0, sizeof(res));
+    
+   if (strncpy(res, buffer + s + 1, l)) {
+     if (isNumber(res, l))  strncpy(theValue, res, l);
+     theValue[l+1]=0;
+   }
+}
+
 bool decodeTelegram(int len) {
+  long val  = 0;
+  long val2 = 0;
+  int pos4;
   //need to check for start
   int startChar = FindCharInArrayRev(telegram, '/', len);
   int endChar = FindCharInArrayRev(telegram, '!', len);
@@ -175,12 +191,14 @@ bool decodeTelegram(int len) {
  if (state == WAITING) {      // we're waiting for a valid start sequence, if this line is not it, just return
   if(startChar>=0)
   {
+
     //start found. Reset CRC calculation
     currentCRC=CRC16(0x0000,(unsigned char *) telegram+startChar, len-startChar);
     // and reset datagram 
     datagram ="";
     datagramValid = false;
     dataEnd = false;
+
 
       for(int cnt=startChar; cnt<len-startChar;cnt++){
        // debug(telegram[cnt]);
@@ -205,19 +223,30 @@ bool decodeTelegram(int len) {
     currentCRC=CRC16(currentCRC,(unsigned char*)telegram+endChar, 1);
     char messageCRC[4];
     strncpy(messageCRC, telegram + endChar + 1, 4);
+    if (datagram.length() < 2048){ 
       for(int cnt=0; cnt<len;cnt++) {
         datagram += telegram[cnt];
       }
       datagram += "\r";
       datagram += "\n";
-          
+    } else datagram=""; //prevent bufferoverflow
+
     validCRCFound = (strtol(messageCRC, NULL, 16) == currentCRC);
     debug("   calculated CRC:");
-        debugln(currentCRC);
+    debugln(currentCRC);
+    digitalWrite(DR, LOW);   // turn off Data Request 
+    digitalWrite(OE, HIGH);  // put buffer in Tristate mode
+    timeSinceLastUpdate = millis();
+    OEstate = false;
+    
     if(validCRCFound) {
       debugln("\nVALID CRC FOUND!"); 
       datagramValid = true;
       state = DONE;
+      if (devicestate == GOTMETER) {
+         resetDaycount();
+         devicestate = RUNNING;
+      }
       return true;
     }
     else {
@@ -235,154 +264,269 @@ bool decodeTelegram(int len) {
         datagram += telegram[cnt];
       }
   
-  long val  = 0;
-  long val2 = 0;
-
-if (equipmentId[0] == '\0'){
-  // 0-0:96.1.1 equipmentId                         (xxxxxxxxxxxx) 
- if (strncmp(telegram, "0-1:96.1.1", strlen("0-1:96.1.1")) == 0) 
-    getEquipmentID(equipmentId,telegram, len, '(', ')');
-
-if (strncmp(telegram, "0-1:96.1.0", strlen("0-1:96.1.0")) == 0) 
-    getEquipmentID(equipmentId,telegram, len, '(', ')');
-}
-  
+  if ((telegram[4] >= '0') && (telegram[4] <= '9'))
+    pos4 = (int)(telegram[4])-48;
+  else 
+    pos4 = 10;
     
-  // 1-0:1.8.1(000992.992*kWh)
-  // 1-0:1.8.1 = Elektra verbruik laag tarief (DSMR v4.0)
-  if (strncmp(telegram, "1-0:1.8.1", strlen("1-0:1.8.1")) == 0) 
-    getValue(electricityUsedTariff1, telegram, len, '(', '*');
-  
-  // 1-0:1.8.2(000560.157*kWh)
-  // 1-0:1.8.2 = Elektra verbruik hoog tarief (DSMR v4.0)
-  if (strncmp(telegram, "1-0:1.8.2", strlen("1-0:1.8.2")) == 0) 
-    getValue(electricityUsedTariff2, telegram, len, '(', '*');
+  if (devicestate == CONFIG) {
+    // 0-0:96.1.1 equipmentId                         (xxxxxxxxxxxx) 
+    if (strncmp(telegram, "0-1:96.1.0", strlen("0-1:96.1.0")) == 0) 
+    getStr(equipmentId,telegram, len, '(', ')');
 
-  // 1-0:2.8.1(000348.890*kWh)
-  // 1-0:2.8.1 = Elektra opbrengst laag tarief (DSMR v4.0)
-  if (strncmp(telegram, "1-0:2.8.1", strlen("1-0:2.8.1")) == 0) 
-    getValue(electricityReturnedTariff1, telegram, len, '(', '*');
-    
-  // 1-0:2.8.2(000859.885*kWh)
-  // 1-0:2.8.2 = Elektra opbrengst hoog tarief (DSMR v4.0)
-  if (strncmp(telegram, "1-0:2.8.2", strlen("1-0:2.8.2")) == 0) 
-    getValue(electricityReturnedTariff2, telegram, len, '(', '*');
-    
-  // 1-0:1.7.0(00.424*kW) Actueel verbruik
-  // 1-0:2.7.0(00.000*kW) Actuele teruglevering
-  // 1-0:1.7.x = Electricity consumption actual usage (DSMR v4.0)
-  if (strncmp(telegram, "1-0:1.7.0", strlen("1-0:1.7.0")) == 0) 
-    getValue(actualElectricityPowerDelivered, telegram, len, '(', '*');
+    // 1-3:0.2.8(42) or 1-3:0.2.8(50) // protocol version
+    if (strncmp(telegram, "1-3:0.2.8", strlen("1-3:0.2.8")) == 0) {
+        getStr(P1version,telegram, len, '(', ')');
+        if (P1version[0] =='4') P1prot = 4; else P1prot = 5;
+    }    
 
-  if (strncmp(telegram, "1-0:2.7.0", strlen("1-0:2.7.0")) == 0)
-    getValue(actualElectricityPowerReturned, telegram, len, '(', '*');
+    if (equipmentId[0] == '\0') devicestate = GOTMETER;
+  }
+debugln(pos4);
+debugln(telegram);
 
-   // 1-0:21.7.0(00.378*kW)
-    // 1-0:21.7.0 = Instantaan vermogen Elektriciteit levering L1
-    if (strncmp(telegram, "1-0:21.7.0", strlen("1-0:21.7.0")) == 0)
-        getValue(activePowerL1P, telegram, len, '(', '*');
+  switch (pos4){
+    case 1:
+          // 0-0:1.0.0.255 datestamp YYMMDDhhmmssX
+          if (strncmp(telegram, "0-0:1.0.0", strlen("0-0:1.0.0")) == 0) 
+              getStr12(P1timestamp, telegram, len, '(');
 
-    // 1-0:41.7.0(00.378*kW)
-    // 1-0:41.7.0 = Instantaan vermogen Elektriciteit levering L2
-    if (strncmp(telegram, "1-0:41.7.0", strlen("1-0:41.7.0")) == 0)
-           getValue(activePowerL2P, telegram, len, '(', '*');
+             
+ #ifdef SWEDISH  
+          // 1-0:1.7.0 Aktiv Effekt Uttag  Momentan trefaseffekt
+          if (strncmp(telegram, "1-0:1.7.0", strlen("1-0:1.7.0")) == 0) 
+              getValue(momentaryActiveImport, telegram, len, '(', '*');
 
-    // 1-0:61.7.0(00.378*kW)
-    // 1-0:61.7.0 = Instantaan vermogen Elektriciteit levering L3
-    if (strncmp(telegram, "1-0:61.7.0", strlen("1-0:61.7.0")) == 0)
-         getValue(activePowerL3P, telegram, len, '(', '*');
+          //1-0:1.8.0 Mätarställning Aktiv Energi Uttag.  (Svenska)
+          if (strncmp(telegram, "1-0:1.8.0", strlen("1-0:1.8.0")) == 0) 
+              getValue(cumulativeActiveImport, telegram, len, '(', '*');
+ #else
+          // 1-0:1.7.0(00.424*kW) Actueel verbruik 
+         // 1-0:1.7.x = Electricity consumption current usage
+          if (strncmp(telegram, "1-0:1.7.0", strlen("1-0:1.7.0")) == 0) 
+              getValue(actualElectricityPowerDelivered, telegram, len, '(', '*');
+ 
+ #endif 
 
-    // 1-0:31.7.0(002*A)
-    // 1-0:31.7.0 = Instantane stroom Elektriciteit L1
-    if (strncmp(telegram, "1-0:31.7.0", strlen("1-0:31.7.0")) == 0)
-             getValue(instantaneousCurrentL1, telegram, len, '(', '*');
+          // 1-0:1.8.1(000992.992*kWh) Elektra verbruik laag tarief
+          if (strncmp(telegram, "1-0:1.8.1", strlen("1-0:1.8.1")) == 0) 
+              getValue(electricityUsedTariff1, telegram, len, '(', '*');
 
-    // 1-0:51.7.0(002*A)
-    // 1-0:51.7.0 = Instantane stroom Elektriciteit L2
-    if (strncmp(telegram, "1-0:51.7.0", strlen("1-0:51.7.0")) == 0)
-                getValue(instantaneousCurrentL2, telegram, len, '(', '*');
+          // 1-0:1.8.2(000560.157*kWh) = Elektra verbruik hoog tarief
+          if (strncmp(telegram, "1-0:1.8.2", strlen("1-0:1.8.2")) == 0) 
+              getValue(electricityUsedTariff2, telegram, len, '(', '*');    
+          break;
+          
+    case 2:
+ #ifdef SWEDISH
+          // 1-0:2.7.0(0000.000*kW) (Svenska)
+          if (strncmp(telegram, "1-0:2.7.0", strlen("1-0:2.7.0")) == 0)
+              getValue(momentaryActiveExport, telegram, len, '(', '*');
 
-    // 1-0:71.7.0(002*A)
-    // 1-0:71.7.0 = Instantane stroom Elektriciteit L3
-    if (strncmp(telegram, "1-0:71.7.0", strlen("1-0:71.7.0")) == 0)
-                getValue(instantaneousCurrentL3, telegram, len, '(', '*');
+          //1-0:2.8.0  Mätarställning Aktiv Energi Inmatning (Svenska)
+          if (strncmp(telegram, "1-0:2.8.0", strlen("1-0:2.8.0")) == 0) 
+              getValue(cumulativeActiveExport, telegram, len, '(', '*');
 
+         // 1-0:21.7.0(00.378*kW) Instantaan vermogen Elektriciteit levering L1
+          if (strncmp(telegram, "1-0:21.7.0", strlen("1-0:21.7.0")) == 0)
+              getValue(activePowerL1P, telegram, len, '(', '*');
 
-    // 1-0:32.7.0(232.0*V)
-    // 1-0:32.7.0 = Voltage L1
-    if (strncmp(telegram, "1-0:32.7.0", strlen("1-0:32.7.0")) == 0)
-                getValue(instantaneousVoltageL1, telegram, len, '(', '*');
+          // 1-0:22.7.0(00.378*kW) Instantaan vermogen Elektriciteit levering L1
+          if (strncmp(telegram, "1-0:21.7.0", strlen("1-0:21.7.0")) == 0)
+              getValue(reactivePowerL1NP, telegram, len, '(', '*');
+              
+          // 1-0:23.7.0(0000.000*kvar) Instantaneous reactive power L1 (+P)
+          if (strncmp(telegram, "1-0:23.7.0", strlen("1-0:23.7.0")) == 0)
+              getValue(momentaryReactiveImportL1, telegram, len, '(', '*');
+              
+          // 1-0:24.7.0(0000.000*kvar) Instantaneous reactive power L1 (-P)
+          if (strncmp(telegram, "1-0:24.7.0", strlen("1-0:24.7.0")) == 0)
+              getValue(momentaryReactiveExportL1, telegram, len, '(', '*');
+#endif
 
-    // 1-0:52.7.0(232.0*V)
-    // 1-0:52.7.0 = Voltage L2
-    if (strncmp(telegram, "1-0:52.7.0", strlen("1-0:52.7.0")) == 0)
-                 getValue(instantaneousVoltageL2, telegram, len, '(', '*');
+          // 1-0:2.8.1(000348.890*kWh) Elektra opbrengst laag tarief
+          if (strncmp(telegram, "1-0:2.8.1", strlen("1-0:2.8.1")) == 0) 
+              getValue(electricityReturnedTariff1, telegram, len, '(', '*');
 
-    // 1-0:72.7.0(232.0*V)
-    // 1-0:72.7.0 = Voltage L3
-    if (strncmp(telegram, "1-0:72.7.0", strlen("1-0:72.7.0")) == 0)
-                getValue(instantaneousVoltageL3, telegram, len, '(', '*');
+          // 1-0:2.8.2(000859.885*kWh) Elektra opbrengst hoog tarief
+          if (strncmp(telegram, "1-0:2.8.2", strlen("1-0:2.8.2")) == 0) 
+              getValue(electricityReturnedTariff2, telegram, len, '(', '*');
 
+          // 1-0:21.7.0(00.378*kW) Instantaan vermogen Elektriciteit levering L1
+          if (strncmp(telegram, "1-0:21.7.0", strlen("1-0:21.7.0")) == 0)
+              getValue(activePowerL1P, telegram, len, '(', '*');
 
-      // 0-0:96.14.0(0001)
-    // 0-0:96.14.0 = Actual Tarif
-    if (strncmp(telegram, "0-0:96.14.0", strlen("0-0:96.14.0")) == 0)
-                getValue(tariffIndicatorElectricity, telegram, len, '(', ')');
+          // 1-0:22.7.0(00.378*kW) Instantaan vermogen Elektriciteit levering L1
+          if (strncmp(telegram, "1-0:21.7.0", strlen("1-0:21.7.0")) == 0)
+              getValue(activePowerL1NP, telegram, len, '(', '*');
 
+          // 0-1:24.2.1(150531200000S)(00811.923*m3)
+          // 0-1:24.2.1 = Gas (DSMR v4.0) on Kaifa MA105 meter, other meters do (number)(gas value)
+          if (strncmp(telegram, "0-1:24.2.1", strlen("0-1:24.2.1")) == 0) 
+             getGasValue(gasReceived5min, telegram, len, '(', ')');
 
-    // 0-0:96.7.21(00003)
-    // 0-0:96.7.21 = Aantal onderbrekingen Elektriciteit
-    if (strncmp(telegram, "0-0:96.7.21", strlen("0-0:96.7.21")) == 0)
-                  getValue(numberPowerFailuresAny, telegram, len, '(', ')');
-
-
-    // 0-0:96.7.9(00001)
-    // 0-0:96.7.9 = Aantal lange onderbrekingen Elektriciteit
-    if (strncmp(telegram, "0-0:96.7.9", strlen("0-0:96.7.9")) == 0)
-                  getValue(numberLongPowerFailuresAny, telegram, len, '(', ')');
-
-
-    // 1-0:32.32.0(00000)
-    // 1-0:32.32.0 = Aantal korte spanningsdalingen Elektriciteit in fase 1
-    if (strncmp(telegram, "1-0:32.32.0", strlen("1-0:32.32.0")) == 0)
-                    getValue(numberVoltageSagsL1, telegram, len, '(', ')');
-
-
-    // 1-0:32.36.0(00000)
-    // 1-0:32.36.0 = Aantal korte spanningsstijgingen Elektriciteit in fase 1
-    if (strncmp(telegram, "1-0:32.36.0", strlen("1-0:32.36.0")) == 0)
-                      getValue(numberVoltageSwellsL1, telegram, len, '(', ')');
-
-    
-    
-  // 0-1:24.2.1(150531200000S)(00811.923*m3)
-  // 0-1:24.2.1 = Gas (DSMR v4.0) on Kaifa MA105 meter, other meters do (number)(gas value)
-  if (strncmp(telegram, "0-1:24.2.1", strlen("0-1:24.2.1")) == 0) 
-                      getGasValue(gasReceived5min, telegram, len, '(', ')');
-
-   // 0-1:24.2.1(150531200000S)(00811.923*m3)
-  // 0-1:24.2.1 = Gas (DSMR v4.0) on Kaifa MA105 meter, other meters do (number)(gas value)
-  if (strncmp(telegram, "0-1:24.2.1", strlen("0-1:24.2.1")) == 0) 
-                      getDomoticzGasValue(gasDomoticz, telegram, len, '(', ')');
+         // 0-1:24.2.1(150531200000S)(00811.923*m3)
+        // 0-1:24.2.1 = Gas (DSMR v4.0) on Kaifa MA105 meter, other meters do (number)(gas value)
+         if (strncmp(telegram, "0-1:24.2.1", strlen("0-1:24.2.1")) == 0) 
+            getDomoticzGasValue(gasDomoticz, telegram, len, '(', ')');
 
                       
-  // (0-1:24.2.1)(m3) is gas designator for dsmr 2.2. The actual gasvalue is on next line, so first we place a flag, then we can test the next line on the next iteration of line parsing.
-  if (strncmp(telegram, "0-1:24.3.0", strlen("0-1:24.3.0")) == 0) gas22Flag = true;
-  if (gas22Flag && strncmp(telegram, "(", strlen(")")) == 0)
-          getGas22Value(gasReceived5min, telegram, len, '(', ')');
-          
-  // DSMR 2.2 does not seem to have a proper terminator. But on the test data I have, the final row is this one:
-  // if (strncmp(telegram, "0-1:24.4.0", strlen("0-1:24.4.0")) == 0)  dataEnd = true;
+        // (0-1:24.2.1)(m3) is gas designator for dsmr 2.2. The actual gasvalue is on next line, so first we place a flag, then we can test the next line on the next iteration of line parsing.
+        if (strncmp(telegram, "0-1:24.3.0", strlen("0-1:24.3.0")) == 0) gas22Flag = true;
+        if (gas22Flag && strncmp(telegram, "(", strlen(")")) == 0)
+            getGas22Value(gasReceived5min, telegram, len, '(', ')');
 
-  }
-//  int i = 0;
-//    debug("equipmentID: ");
-//      while (equipmentId[i] !=  '\0'){
-//        debug(equipmentId[i]); 
-//        i++;
-//      } 
-//    debugln();
-    
+          break;
+          
+    case 3:
+ 
+ #ifdef SWEDISH
+          // 1-0:3.7.0(0000.000*kvar) reactive power delivered to client
+          if (strncmp(telegram, "1-0:3.7.0", strlen("1-0:3.7.0")) == 0)
+             getValue(momentaryReactiveImport, telegram, len, '(', '*');       
+
+          // 1-0:3.8.0(0000.000*kvar) reactive power delivered to client
+          if (strncmp(telegram, "1-0:3.8.0", strlen("1-0:3.8.0")) == 0)
+             getValue(cumulativeReactiveImport, telegram, len, '(', '*');
+
+#endif 
+
+            
+          // 1-0:31.7.0(002*A) Instantane stroom Elektriciteit L1
+          if (strncmp(telegram, "1-0:31.7.0", strlen("1-0:31.7.0")) == 0)
+             getValue(instantaneousCurrentL1, telegram, len, '(', '*');
+             
+          // 1-0:32.7.0(232.0*V) Voltage L1
+         if (strncmp(telegram, "1-0:32.7.0", strlen("1-0:32.7.0")) == 0)
+             getStr(instantaneousVoltageL1, telegram, len, '(', '*');   
+
+        // 1-0:32.32.0(00000) Aantal korte spanningsdalingen Elektriciteit in fase 1
+        if (strncmp(telegram, "1-0:32.32.0", strlen("1-0:32.32.0")) == 0)
+             getValue(numberVoltageSagsL1, telegram, len, '(', ')');
+
+        // 1-0:32.36.0(00000) Aantal korte spanningsstijgingen Elektriciteit in fase 1
+        if (strncmp(telegram, "1-0:32.36.0", strlen("1-0:32.36.0")) == 0)
+              getValue(numberVoltageSwellsL1, telegram, len, '(', ')');
+
+        
+          break;
+          
+    case 4:
+
+#ifdef SWEDISH 
+         // 1-0:4.7.0(0000.000*kvar) Reaktiv Effekt Inmatning Momentan trefaseffekt (Svensk)
+          if (strncmp(telegram, "1-0:4.7.0", strlen("1-0:4.7.0")) == 0)
+             getValue(momentaryReactiveExport, telegram, len, '(', '*');
+ 
+         // 1-0:4.8.0(00000127.239*kvarh) Mätarställning Reaktiv Energi Inmatning  
+          if (strncmp(telegram, "1-0:4.8.0", strlen("1-0:4.8.0")) == 0)
+             getValue(cumulativeReactiveExport, telegram, len, '(', '*');
+
+        // 1-0:43.7.0(0000.000*kvar) L2 Reaktiv Effekt Uttag Momentan effekt
+        if (strncmp(telegram, "1-0:43.7.0", strlen("1-0:43.7.0")) == 0)
+           getValue(momentaryReactiveImportL2, telegram, len, '(', '*');
+           
+        // 1-0:44.7.0(0000.053*kvar) L2 Reaktiv Effekt Inmatning Momentan effekt
+        if (strncmp(telegram, "1-0:44.7.0", strlen("1-0:44.7.0")) == 0)
+           getValue(momentaryReactiveExportL2, telegram, len, '(', '*');
+       
+#endif
+
+
+        // 1-0:41.7.0(00.378*kW) Instantaan vermogen Elektriciteit levering L2
+        if (strncmp(telegram, "1-0:41.7.0", strlen("1-0:41.7.0")) == 0)
+           getValue(activePowerL2P, telegram, len, '(', '*');
+           
+        // 1-0:42.7.0(00.378*kW) Instantaan vermogen Elektriciteit levering L2
+        if (strncmp(telegram, "1-0:41.7.0", strlen("1-0:41.7.0")) == 0)
+           getValue(activePowerL2NP, telegram, len, '(', '*');
+
+        
+        break;
+          
+    case 5:
+        // 1-0:52.32.0(00000) voltage sags L1
+        if (strncmp(telegram, "1-0:52.32.0", strlen("1-0:52.32.0")) == 0)
+           getValue(numberVoltageSagsL1, telegram, len, '(', ')');
+           
+        // 1-0:52.36.0(00000) voltage swells L1
+        if (strncmp(telegram, "1-0:52.36.0", strlen("1-0:52.36.0")) == 0)
+           getValue(numberVoltageSwellsL1, telegram, len, '(', ')');
+               
+        // 1-0:51.7.0(002*A) Instantane stroom Elektriciteit L2
+        if (strncmp(telegram, "1-0:51.7.0", strlen("1-0:51.7.0")) == 0)
+           getValue(instantaneousCurrentL2, telegram, len, '(', '*');
+
+        // 1-0:52.7.0(232.0*V) Voltage L2
+        if (strncmp(telegram, "1-0:52.7.0", strlen("1-0:52.7.0")) == 0)
+           getStr(instantaneousVoltageL2, telegram, len, '(', '*');
+                 
+          break;
+          
+    case 6:
+#ifdef SWEDISH
+
+        // 1-0:63.7.0(00.378*kvar) L3 Reaktiv Effekt Uttag Momentan effekt
+        if (strncmp(telegram, "1-0:63.7.0", strlen("1-0:63.7.0")) == 0)
+            getValue(momentaryReactiveImportL3, telegram, len, '(', '*');
+
+        // 1-0:64.7.0(00.378*kvar) L3 Reaktiv Effekt Inmatning Momentan effekt
+        if (strncmp(telegram, "1-0:64.7.0", strlen("1-0:64.7.0")) == 0)
+            getValue(momentaryReactiveExportL3, telegram, len, '(', '*');
+#endif
+
+        // 1-0:61.7.0(00.378*kW) Instantaan vermogen Elektriciteit levering L3
+        if (strncmp(telegram, "1-0:61.7.0", strlen("1-0:61.7.0")) == 0)
+            getValue(activePowerL3P, telegram, len, '(', '*');
+
+        // 1-0:62.7.0(00.378*kW) Instantaan vermogen Elektriciteit levering L3
+        if (strncmp(telegram, "1-0:62.7.0", strlen("1-0:62.7.0")) == 0)
+            getValue(activePowerL3NP, telegram, len, '(', '*');
+
+          break;
+          
+    case 7:
+        // 1-0:71.7.0(002*A) Instantane stroom Elektriciteit L3
+        if (strncmp(telegram, "1-0:71.7.0", strlen("1-0:71.7.0")) == 0)
+           getValue(instantaneousCurrentL3, telegram, len, '(', '*');
+
+        // 1-0:72.7.0(232.0*V) Voltage L3
+        if (strncmp(telegram, "1-0:72.7.0", strlen("1-0:72.7.0")) == 0)
+           getStr(instantaneousVoltageL3, telegram, len, '(', '*');
+           
+       // 1-0:72.32.0(00000) voltage sags L3
+        if (strncmp(telegram, "1-0:72.32.0", strlen("1-0:72.32.0")) == 0)
+           getValue(numberVoltageSagsL3, telegram, len, '(', ')');
+           
+        // 1-0:72.36.0(00000) voltage swells L3
+        if (strncmp(telegram, "1-0:72.36.0", strlen("1-0:72.36.0")) == 0)
+           getValue(numberVoltageSwellsL3, telegram, len, '(', ')');
+  
+          break;
+          
+    case 9:
+         // 0-0:96.14.0(0001) Actual Tarif
+        if (strncmp(telegram, "0-0:96.14.0", strlen("0-0:96.14.0")) == 0)
+           getValue(tariffIndicatorElectricity, telegram, len, '(', ')');
+
+        // 0-0:96.7.21(00003) Aantal onderbrekingen Elektriciteit
+        if (strncmp(telegram, "0-0:96.7.21", strlen("0-0:96.7.21")) == 0)
+           getValue(numberPowerFailuresAny, telegram, len, '(', ')');
+
+
+        // 0-0:96.7.9(00001) Aantal lange onderbrekingen Elektriciteit
+        if (strncmp(telegram, "0-0:96.7.9", strlen("0-0:96.7.9")) == 0)
+           getValue(numberLongPowerFailuresAny, telegram, len, '(', ')');
+
+        if (strncmp(telegram, "0-1:96.1.1", strlen("0-1:96.1.1")) == 0) 
+            getStr(equipmentId,telegram, len, '(', ')');
+
+        break;
+          
+    default:
+          break;  
+    }
+  }   
   return validCRCFound;       // true if valid CRC found
   
   } //state = reading

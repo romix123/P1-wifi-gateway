@@ -222,6 +222,7 @@ void TelnetReporter(){
 
 void MQTT_reporter(){
 bool mqqtReconnected = false;  
+
   
 //    if (!mqtt_client.connected()) {
 //      mqqtReconnected = mqtt_reconnect();
@@ -232,6 +233,7 @@ bool mqqtReconnected = false;
 //      } 
 //      debugln("and succeed. Sending data...");
 //    }  
+#ifdef DUTCH
       mqtt_send_metric("equipmentID", equipmentId);
 
       mqtt_send_metric("consumption_low_tarif", electricityUsedTariff1);
@@ -258,5 +260,74 @@ bool mqqtReconnected = false;
       mqtt_send_metric("long_power_outages", numberLongPowerFailuresAny);
       mqtt_send_metric("short_power_drops", numberVoltageSagsL1);
       mqtt_send_metric("short_power_peaks", numberVoltageSwellsL1);
+
+#elifdef SWEDISH
+/*
+1-0:1.8.0 Mätarställning Aktiv Energi Uttag.  
+1-0:2.8.0 Mätarställning Aktiv Energi Inmatning 
+1-0:3.8.0 Mätarställning Reaktiv Energi Uttag 
+1-0:4.8.0 Mätarställning Reaktiv Energi Inmatning 
+
+
+1-0:1.7.0 Aktiv Effekt Uttag  Momentan trefaseffekt
+1-0:2.7.0 Aktiv Effekt Inmatning  Momentan trefaseffekt
+1-0:3.7.0 Reaktiv Effekt Uttag  Momentan trefaseffekt
+1-0:4.7.0 Reaktiv Effekt Inmatning  Momentan trefaseffekt
+1-0:21.7.0  L1 Aktiv Effekt Uttag Momentan effekt
+1-0:22.7.0  L1 Aktiv Effekt Inmatning Momentan effekt
+1-0:41.7.0  L2 Aktiv Effekt Uttag Momentan effekt
+1-0:42.7.0  L2 Aktiv Effekt Inmatning Momentan effekt
+1-0:61.7.0  L3 Aktiv Effekt Uttag Momentan effekt
+1-0:62.7.0  L3 Aktiv Effekt Inmatning Momentan effekt
+1-0:23.7.0  L1 Reaktiv Effekt Uttag Momentan effekt
+1-0:24.7.0  L1 Reaktiv Effekt Inmatning Momentan effekt
+1-0:43.7.0  L2 Reaktiv Effekt Uttag Momentan effekt
+1-0:44.7.0  L2 Reaktiv Effekt Inmatning Momentan effekt
+1-0:63.7.0  L3 Reaktiv Effekt Uttag Momentan effekt
+1-0:64.7.0  L3 Reaktiv Effekt Inmatning Momentan effekt
+1-0:32.7.0  L1 Fasspänning  Momentant RMS-värde
+1-0:52.7.0  L2 Fasspänning  Momentant RMS-värde
+1-0:72.7.0  L3 Fasspänning  Momentant RMS-värde
+1-0:31.7.0  L1 Fasström Momentant RMS-värde
+1-0:51.7.0  L2 Fasström Momentant RMS-värde
+1-0:71.7.0  L3 Fasström Momentant RMS-värde
+*/
+      mqtt_send_metric("cumulativeActiveImport", cumulativeActiveImport);       // 1.8.0
+      mqtt_send_metric("cumulativeActiveExport", cumulativeActiveExport);       // 2.8.0
+      mqtt_send_metric("cumulativeReactiveImport", cumulativeReactiveImport);   // 3.8.0
+      mqtt_send_metric("cumulativeReactiveExport", cumulativeReactiveExport);   // 4.8.0
+
+      mqtt_send_metric("momentaryActiveImport", momentaryActiveImport);         // 1.7.0
+      mqtt_send_metric("momentaryActiveExport", momentaryActiveExport);         // 2.7.0
+      mqtt_send_metric("momentaryReactiveImport", momentaryReactiveImport);     // 3.7.0
+      mqtt_send_metric("momentaryReactiveExport", momentaryReactiveExport);     // 4.7.0      
+
+      mqtt_send_metric("momentaryActiveImportL1", activePowerL1P);              // 21.7.0
+      mqtt_send_metric("momentaryActiveExportL1", reactivePowerL1NP);           // 22.7.0
+
+      mqtt_send_metric("momentaryActiveImportL2", activePowerL2P);              // 41.7.0
+      mqtt_send_metric("momentaryActiveExportL2", reactivePowerL2NP);           // 42.7.0
+
+      mqtt_send_metric("momentaryActiveImportL3", activePowerL3P);              // 61.7.0
+      mqtt_send_metric("momentaryActiveExportL3", reactivePowerL3NP);           // 62.7.0
+
+      mqtt_send_metric("momentaryReactiveImportL1", momentaryReactiveImportL1);   // 23.7.0
+      mqtt_send_metric("momentaryReactiveImportL1", momentaryReactiveExportL1);   // 24.7.0
+      
+      mqtt_send_metric("momentaryReactiveImportL2", momentaryReactiveImportL2);   // 43.7.0
+      mqtt_send_metric("momentaryReactiveExportL2", momentaryReactiveExportL2);   // 44.7.0
+      
+      mqtt_send_metric("momentaryReactiveImportL3", momentaryReactiveImportL3);   // 63.7.0
+      mqtt_send_metric("momentaryReactiveExportL1", momentaryReactiveExportL3);   // 64.7.0
+
+      mqtt_send_metric("voltageL1", instantaneousVoltageL1);  // 32.7.0
+      mqtt_send_metric("voltageL2", instantaneousVoltageL2);  // 52.7.0
+      mqtt_send_metric("voltageL3", instantaneousVoltageL3);  // 72.7.0
+
+      mqtt_send_metric("currentL1", instantaneousCurrentL1);  // 31.7.0
+      mqtt_send_metric("currentL2", instantaneousCurrentL2);  // 51.7.0
+      mqtt_send_metric("currentL3", instantaneousCurrentL3);  // 71.7.0
+#endif
+
       debugln("MQTT data sent.");
 }

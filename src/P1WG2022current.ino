@@ -3,7 +3,7 @@
  * 
  * Deze software brengt verschillende componenten bij elkaar in een handzaam pakket.
  * 
- * De software draait op een EPS8285 of ESP8266 en heeft een bescheiden voetafdruk.
+ * De software draait op een ESP8285 of ESP8266 en heeft een bescheiden voetafdruk.
  * 
  * De data processing is gebaseerd op: http://domoticx.com/p1-poort-slimme-meter-data-naar-domoticz-esp8266/
  * De captive portal is gebaseerd op een van de ESP8266 voorbeelden, de OTA eenheid eveneens.
@@ -34,10 +34,17 @@
  *  te doen:
  *  
  *    
- *  versie: 1.0p 
- *  datum:  28 Aug 2022
+ *  versie: 1.0s 
+ *  datum:  22 Oct 2022
  *  auteur: Ronald Leenes
  *  
+ *  s: added German localisation
+ *        Added mqtt output for Swedish specific OBIS codes
+ *        
+ *  r: speed improvements and streamlining of the parser
+ *      localisations for: NL, SE
+ *      
+ *  q: added daily values
  *  p: incorporated equipmentID in mqtt set
  *  o: fixed gas output, fixed mqtt reconnect
  *  n: empty call to SetupSave now redirects to main menu instead of resetting settings ;-)
@@ -60,29 +67,19 @@
 *   Flash Size: 2mb (FS: 64Kb, OTA: –992Kb) 
 */
 
-String version = "1.0p";
+String version = "1.0s – SE"; //r Svensk";
 const char* host = "P1wifi";
 #define HOSTNAME "p1meter"
 
+#define V2//3//3 //3 //3 //V2
+#define SWEDISH //   GERMAN// NEDERLANDS //
 #define DEBUG 0 // 1 is on serial only, 2 is serial + telnet
 #define ESMR5 1
-#define BELGIQUE 0
 
-#if ESMR5
-bool CRCcheckEnabled = true;      // by default enable CRC checking
-#else
-bool CRCcheckEnabled = false;      // by default enable CRC checking
-#endif
-
-#if BELGIQUE
-bool reportInDecimals = false;      // report in Watts
-#else
-bool reportInDecimals = true;
-#endif
 
 #if DEBUG == 1
 #define BLED LED_BUILTIN
-int sleepTime = 0;
+int sleepTime = 30;
 #define debug(x) Serial.print(x)
 #define debugf(x) Serial.printf(x)
 #define debugf(x,y) Serial.printf(x,y)
@@ -109,13 +106,25 @@ int sleepTime = 30;
 #define ToggleLED  digitalWrite(BLED, !digitalRead(BLED));
 #define LEDoff  digitalWrite(BLED, HIGH);
 #define LEDon   digitalWrite(BLED, LOW);
+#define OE  16 //IO16 OE on the 74AHCT1G125 
+#define DR  4  //IO4 is Data Request
 
-
+ 
 #include <TimeLib.h>
 #include <ESP8266WiFi.h>
 #include <ESP8266HTTPClient.h>
 #include <WiFiUdp.h>
 #include "CRC16.h"
+
+// van ESP8266WiFi/examples/WiFiShutdown/WiFiShutdown.ino
+#ifndef RTC_USER_DATA_SLOT_WIFI_STATE
+#define RTC_USER_DATA_SLOT_WIFI_STATE 33u
+#endif
+#include <include/WiFiState.h>  // WiFiState structure details
+
+WiFiState WiFistate;
+
+
 
 //van captive portal
 /*  ============================================================================================================
@@ -132,6 +141,7 @@ ESP8266WebServer    server(80);
 
 #include <WiFiClient.h>
 #include <ESP8266mDNS.h>
+
 #include "ESP8266HTTPUpdateServer.h"
 ESP8266HTTPUpdateServer httpUpdater(true);
 
@@ -172,7 +182,7 @@ struct settings {
 } user_data = {};
 
 // energy management vars
-int modemSleepTime = 8; // to be changed by interval setting
+int modemSleepTime = 30; // to be changed by interval setting
 int interval;
 uint32_t timeSinceLastUpdate = 0;
 boolean entitledToSleep = false;       // aangezien slaapinterval en meetinterval niet synchroon lopen, moeten we na ontwaken eerst een telegram inlezen en afleveren alvorens ModemSleep mag worden aangeroepen.
@@ -186,59 +196,15 @@ bool datagramValid = false;    //
 bool dataEnd = false;             // signals that we have found the end char in the data (!)
 unsigned int currentCRC=0;        // the CRC v alue of the datagram
 bool gas22Flag = false;        // flag for parsing second gas line on dsmr2.2 meters
-
-
+bool reportInDecimals = true;
+bool CRCcheckEnabled = true;      // by default enable CRC checking
 
 // Vars to store meter readings
-/* P1 telegram
-/Ene5\T210-D ESMR5.0            header
-
-1-3:0.2.8                       version     S2                      (50)
-0-0:1.0.0                       timestamp   YYMMDDhhmmssX           (220528175910S) 
-0-0:96.1.1                      equipmentId                         (xxxxxxxxxxxx) 
-1-0:1.8.1                       electricityUsedTariff1              (048320.784*kWh) 
-1-0:1.8.2                       electricityUsedTariff2              (066904.236*kWh) 
-1-0:2.8.1                       electricityReturnedTariff1          (000213.613*kWh) 
-1-0:2.8.2                       electricityReturnedTariff2          (000399.451*kWh) 
-0-0:96.14.0                     tariffIndicatorElectricity          (0001) 
-1-0:1.7.0                       actualElectricityPowerDelivere   (00.416*kW) 
-1-0:2.7.0                       actualElectricityPowerReturned   (00.710*kW) 
-0-0:96.7.21                     numberPowerFailuresAny              (01274) 
-0-0:96.7.9                      numberLongPowerFailuresAny          (00030) 
-1-0:99.97.0                     longPowerFailuresLog                (7)(0-0:96.7.19)(220325092704W)(0000001596*s)(211109092740W)(0000003500*s)(210317125706W)(0000000219*s)(191121111 231W)(0000002891*s)(180127175539W)(0000031065*s)(180127082729W)(0000002493*s)(180127074429W)(0000723567*s) 
-1-0:32.32.0                     numberVoltageSagsL1                 (00270) 
-1-0:52.32.0                     numberVoltageSagsL2                 (00016) 
-1-0:72.32.0                     numberVoltageSagsL3                 (00124) 
-1-0:32.36.0                     numberVoltageSwellsL1               (00003) 
-1-0:52.36.0                     numberVoltageSwellsL2               (00003) 
-1-0:72.36.0                     numberVoltageSwellsL3               (00003) 
-0-0:96.13.0                     textMessage               1024      () 
-1-0:32.7.0                      instantaneousVoltageL1              (228.0*V) 
-1-0:52.7.0                      instantaneousVoltageL2              (227.0*V) 
-1-0:72.7.0                      instantaneousVoltageL3              (231.0*V) 
-1-0:31.7.0                      instantaneousCurrentL1              (001*A) 
-1-0:51.7.0                      instantaneousCurrentL2              (000*A) 
-1-0:71.7.0                      instantaneousCurrentL3              (002*A) 
-1-0:21.7.0                      activePowerL1P                      (00.416*kW) 
-1-0:41.7.0                      activePowerL2P                      (00.000*kW) 
-1-0:61.7.0                      activePowerL3P                      (00.000*kW) 
-1-0:22.7.0                      activePowerL1NP                     (00.000*kW) 
-1-0:42.7.0                      activePowerL2NP                     (00.128*kW) 
-1-0:62.7.0                      activePowerL3NP                     (00.582*kW) 
-0-1:24.1.0                      deviceType(003) 
-0-1:96.1.0                      gasId                               (4730303533303033373531323235323138) 
-0-1:24.2.1                      gasReceived5min                     (220528175500S)(14330.108*m3) 
-!58EF
-
-Note: the block 0-n:24.1.0 (device type), 0-n.91.1.0 (deviceId), 0-1:24.2.1 (delivered in last 5 min) may be either:
-gas, water, heat or cold
-
-*/
 // we capture all data in char arrays or Strings for longer hard to delineate data
-
 String P1header;
-char P1version[3];
-char P1timestamp[14];
+char P1version[8];
+int P1prot;             // 4 or 5 based on P1version 1-3:0.2.8 
+char P1timestamp[30]  = "\0";
 char equipmentId[100] = "\0";
 char electricityUsedTariff1[12];
 char electricityUsedTariff2[12];
@@ -269,13 +235,43 @@ char activePowerL3P[9];
 char activePowerL1NP[9];
 char activePowerL2NP[9];
 char activePowerL3NP[9];
+
+// Swedish specific
+char cumulativeActiveImport[12];    // 1.8.0
+char cumulativeActiveExport[12];    // 2.8.0
+char cumulativeReactiveImport[12];  // 3.8.0
+char cumulativeReactiveExport[12];  // 4.8.0
+char momentaryActiveImport[12];     // 1.7.0
+char momentaryActiveExport[12];     // 2.7.0
+char momentaryReactiveImport[12];   // 3.7.0
+char momentaryReactiveExport[12];   // 4.7.0
+char momentaryReactiveImportL1[12]; // 23.7.0
+char momentaryReactiveImportL2[12]; // 43.7.0
+char momentaryReactiveImportL3[12]; // 63.7.0
+char momentaryReactiveExportL1[12]; // 24.7.0
+char momentaryReactiveExportL2[12]; // 44.7.0
+char momentaryReactiveExportL3[12]; // 64.7.0
+
+char reactivePowerL1P[9]; // Sweden uses these 6
+char reactivePowerL2P[9];
+char reactivePowerL3P[9];
+char reactivePowerL1NP[9];
+char reactivePowerL2NP[9];
+char reactivePowerL3NP[9];
+
+// end Swedish
 char deviceType[5];
-String gasId;
+char gasId[100] = "\0";;
 char gasReceived5min[12];
 char gasDomoticz[12];       //Domoticz wil gas niet in decimalen?
 
 char prevGAS[12];           // not an P1 protocol var, but holds gas value
 
+char dayStartGaz[12];
+char dayStartUsedT1[12];
+char dayStartUsedT2[12];
+char dayStartReturnedT1[12];
+char dayStartReturnedT2[12];
 
 // process stuff
 #define DISABLED 0
@@ -286,29 +282,45 @@ char prevGAS[12];           // not an P1 protocol var, but holds gas value
 #define FAILURE 5
 int state = DISABLED;
 
+#define CONFIG  0   // getting basic Meter data to select correct parse rules
+#define GOTMETER 1
+#define RUNNING 2
+int devicestate = CONFIG;
+
+
 bool wifiSta = false;
 bool breaking = false;
 bool softAp = false;
-bool domoticzJson = false;
+bool Json = false;
+bool Mqtt = false;
+bool daystart = true;
+bool OEstate = false;  // 74125 OE output enable is off by default (EO signal high) 
+bool coldboot = false;
 
 void setup() {
   WiFi.forceSleepBegin(sleepTime * 1000000L); //In uS. Must be same length as your delay
+  delay(10); // it doesn't always go to sleep unless you delay(10); yield() wasn't reliable
   delay(sleepTime * 1000); //Hang out at 15mA for 60 (sleeptime) seconds
   WiFi.forceSleepWake(); // Wifi on
 
   pinMode(BLED, OUTPUT);
-  #if ESMR5 == 1
-    Serial.begin(115200);
-    debugln("Serial.begin(115200);");
-  #else
+#if ESMR5 == 1
+      Serial.begin(115200);
+      debugln("Serial.begin(115200);");
+#else
     Serial.begin(9600,SERIAL_7E1);
     debugln("Serial.begin(9600,SERIAL_7E1);");
-  #endif
+#endif
+
+  pinMode(OE, OUTPUT);      //IO16 OE on the 74AHCT1G125
+  digitalWrite(OE, HIGH);   //  Put(Keep) OE in Tristate mode
+  pinMode(DR, OUTPUT);      //IO4 Data Request
+  digitalWrite(DR, LOW);    //  DR low (only goes high when we want to receive data)
 
   blink(2);
     debugln("");
     debugln("Booting");
-    debugln("back from my 60 sec Cap charging nap… ");
+    debugln("back from my Cap charging nap… ");
     debugln("Let's go…");
     
   EEPROM.begin(sizeof(struct settings) );
@@ -316,8 +328,9 @@ void setup() {
   debugln("EEprom read: done");
   PrintConfigData();  
 
-  if (user_data.watt[0] =='j') reportInDecimals = false; else reportInDecimals = true;
-  if (user_data.domo[0] =='j') domoticzJson = true;
+  if (user_data.watt[0] =='j')  reportInDecimals = false; else reportInDecimals = true;
+  if (user_data.domo[0] =='j')  Json = true;
+  if (user_data.mqtt[0] =='j')  Mqtt = true;
   
   interval = atoi( user_data.interval) * 1000; 
   modemSleepTime = interval - 2000;
@@ -354,9 +367,13 @@ void setup() {
     server.begin();
 
     if (WiFi.status() == WL_CONNECTED){ 
+      WiFi.setAutoReconnect(true);
+    //  WiFi.persistent(true);
+      WiFi.setSleepMode(WIFI_MODEM_SLEEP);// wifi_set_sleep_type(MODEM_SLEEP_T);
       debugln("HTTP server running.");
       debug("IP address: ");
       debugln(WiFi.localIP());
+      
       wifiSta = true;
       debugln("wifi running in Sta (normal) mode");
       LEDoff
@@ -370,10 +387,20 @@ void setup() {
         mqtt_client.setServer(user_data.mqttIP, atoi(user_data.mqttPort));
         debugln("MQTT server assigned.");
     }
- //  setupTelnet();
    debugln("All systems are go...");
   }
+
   state = WAITING;    // signal that we are waiting for a valid start char (aka /)
+  devicestate = CONFIG;
+  timeSinceLastUpdate = millis();
+#ifdef V3
+         // switch on Data Request
+      digitalWrite(OE, LOW);  // enable buffer
+      digitalWrite(DR, HIGH); // turn on Data Request
+      debugln("Data request on");
+      OEstate = true;
+#endif
+
 }
 
 void wifiReconnect(){
@@ -390,11 +417,15 @@ void wifiReconnect(){
           debugln("Something is terribly wrong, can't connect to wifi (anymore).");
           LEDon
           delay(60000);
+          ESP.reset();
     }
+    if (WiFi.status() == WL_CONNECTED) wifi_set_sleep_type(MODEM_SLEEP_T);
+
   }
 }
 
 void readTelegram() {
+  debugln("readTelegram");
   if (Serial.available()) {
     memset(telegram, 0, sizeof(telegram));
     while (Serial.available()) {
@@ -408,12 +439,11 @@ void readTelegram() {
       if(decodeTelegram(len+1))     // test for valid CRC
       {
           TelnetReporter();
-          if (user_data.mqtt[0] =='j') MQTT_reporter();
-          if (user_data.domo[0] =='j') {
+          if (Mqtt) MQTT_reporter();
+          if (Json) {
             UpdateElectricity();
             UpdateGas();
           }            
-          timeSinceLastUpdate = millis();
           entitledToSleep = true;
           state = WAITING;
       } 
@@ -421,15 +451,14 @@ void readTelegram() {
         if (dataEnd && !CRCcheckEnabled) { //this is used for dsmr 2.2 meters
           debugln("incorrect CRC or running on a DSMR2 meter");
              TelnetReporter();
-             if (user_data.mqtt[0] == 'j') MQTT_reporter();
-              if (user_data.domo[0] == 'j') {
+             if (Mqtt) MQTT_reporter();
+              if (Json) {
                  UpdateElectricity();
                  UpdateGas();
-          }            
-          state = WAITING;
+          }
+          state = WAITING; 
         }
       }
-      
     }
     LEDoff
   }
@@ -447,13 +476,34 @@ void loop() {
   
   server.handleClient(); //handle web requests
   MDNS.update();
+  resetDaycount();  
+
+#ifdef V3
+  if (OEstate) readTelegram();
+#endif
+//  if (digitalRead(DR)) readTelegram();
+
   
   if (millis() > timeSinceLastUpdate + interval){
-    readTelegram();  
+  
+    if (!OEstate) { // OE is disabled  == false
+         // switch on Data Request
+      digitalWrite(OE, LOW);  // enable buffer
+      digitalWrite(DR, HIGH); // turn on Data Request
+      debugln("Data request on");
+      OEstate = true;
+      // delay(100);  // give circuits time to stabilise
+    }   
+#ifdef V2
+      readTelegram();
+#endif
+  } // update window  
+
+    
     if (wifiSta) {
       telnet.loop();
       
-    if (user_data.mqtt[0] =='j'){
+    if (Mqtt){
       if (mqtt_client.connected()) {
         debugln("mqtt_client loop");
         mqtt_client.loop();
@@ -467,10 +517,9 @@ void loop() {
       }
     }
   } 
- if (wifiSta && WiFi.status() != WL_CONNECTED) wifiReconnect();
-  }
+// if (wifiSta && WiFi.status() != WL_CONNECTED) wifiReconnect();
+  
 }
-
 
 void modemSleep(){
   debugln("modemSleep");
@@ -478,4 +527,22 @@ void modemSleep(){
   delay(modemSleepTime * 1000); //Hang out at 15mA for sleeptime
   WiFi.forceSleepWake(); // Wifi on
   entitledToSleep = false;
+}
+
+void resetDaycount(){
+    if ( coldboot || (P1timestamp[6] == '0' && P1timestamp[7]== '0' && P1timestamp[8] == '0' && P1timestamp[9] == '0')) { // new day has arrived
+#ifdef SWEDISH  
+      strcpy(dayStartUsedT1, cumulativeActiveImport);
+      strcpy(dayStartUsedT2, cumulativeReactiveImport);
+      strcpy(dayStartReturnedT1, cumulativeActiveExport);
+      strcpy(dayStartReturnedT2, cumulativeReactiveExport);
+#else
+      strcpy(dayStartUsedT1, electricityUsedTariff1);
+      strcpy(dayStartUsedT2, electricityUsedTariff2);
+      strcpy(dayStartReturnedT1, electricityReturnedTariff1);
+      strcpy(dayStartReturnedT2, electricityReturnedTariff2);
+      strcpy(dayStartGaz, gasReceived5min);
+#endif
+     coldboot = false;
+    }
 }
