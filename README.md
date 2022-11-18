@@ -32,12 +32,20 @@ P1 wifi gateway 2022
 
   informatie, vragen, suggesties ed richten aan romix@macuser.nl 
   
-  te doen:
     
-*  versie: 1.0p 
- *  datum:  28 Aug 2022
+ *  versie: 1.0t 
+ *  datum:  16 Nov 2022
  *  auteur: Ronald Leenes
  *  
+ *  t: improvements on powermanagement, overall (minor) cleanup
+ *  
+ *  s: added German localisation
+ *        Added mqtt output for Swedish specific OBIS codes
+ *        
+ *  r: speed improvements and streamlining of the parser
+ *      localisations for: NL, SE
+ *      
+ *  q: added daily values
  *  p: incorporated equipmentID in mqtt set
  *  o: fixed gas output, fixed mqtt reconnect
  *  n: empty call to SetupSave now redirects to main menu instead of resetting settings ;-)
