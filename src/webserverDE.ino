@@ -31,12 +31,15 @@ void addUptime(String& str){
 void addFoot(String& str){
   str += F("<div style='text-align:right;font-size:11px;color:#aaa;'><hr/>version: ");
   str += version;
+  char sysmsg[100];
+  sprintf_P(sysmsg, PSTR(" – %1.2fV"), volts / 1000);
+  str += sysmsg;
   str += F("<br><a href='http://esp8266thingies.nl' target='_blank' style='color:#aaa;'>esp8266thingies.nl</a>");
   str += F("</div></div></body></html>");
 }
 
 void setupSaved(String& str){
-  str += F("<script>var countDownDate = new Date().getTime()+600000;var x = setInterval(function() {var now = new Date().getTime();var distance = countDownDate - now;var seconds = Math.floor((distance % (1000 * 60)) / 1000);document.getElementById(\"timer\").innerHTML = seconds + \" seconden tot module weer bereikbaar.\";if (seconds < 2) {location.replace(\"http://p1wifi.local\")}}, 1000);</script>");
+ // str += F("<script>var countDownDate = new Date().getTime()+50000;var x = setInterval(function() {var now = new Date().getTime();var distance = countDownDate - now;var seconds = Math.floor((distance % (1000 * 60)) / 1000);document.getElementById(\"timer\").innerHTML = seconds + \" seconden tot module weer bereikbaar.\";if (seconds < 2) {location.replace(\"http://p1wifi.local\")}}, 1000);</script>");
   str += F("<fieldset>");
   str += F("<fieldset><legend><b>WLAN- und Modul-Setup</b></legend>");
    str += F("<p><b>Die Einstellungen wurden erfolgreich gespeichert</b><br><br>");
@@ -45,12 +48,13 @@ void setupSaved(String& str){
    str += F("<p>Wenn die blaue LED an bleibt, ist die Einstellung fehlgeschlagen und Sie werden <br>");
    str += F("muss erneut mit dem WLAN-Netzwerk 'P1_Setup' verbunden werden .</p>");
    str += F("<br>");
-  str += F("<p id=\"timer\"></p>");
+ // str += F("<p id=\"timer\"></p>");
   str += F("</fieldset></p>");
   str += F("<div style='text-align:right;font-size:11px;'><hr/><a href='http://eps8266thingies.nl' target='_blank' style='color:#aaa;'>eps8266thingies.nl</a></div></div></fieldset></body></html>");
 }
 
 void uploadDiag(String& str){
+  monitoring = false; // stop monitoring data
   addHead(str);
   addIntro(str);
   str += F("<fieldset><fieldset><legend><b>Update firmware</b></legend>");
@@ -59,7 +63,8 @@ void uploadDiag(String& str){
   str += F("<button type='submit'>Update Firmware</button>");
   str += F("</form>");
   str += F("<form action='/' method='POST'><button class='button bhome'>Menu</button></form>");
-  addFoot(str); 
+  addFoot(str);
+  webstate = UPDATE;
 }
 
 void successResponse(String& str){
@@ -88,10 +93,12 @@ void handleRoot(){
   addUptime(str);
   addFoot(str);
   server.send(200, "text/html", str);
+  webstate = MAIN;
 }
 
 void handleSetup(){
     debugln("handleSetup");
+    monitoring = false; // stop monitoring data
     
  String str = ""; 
       debugln("handleSetupForm");
@@ -152,78 +159,19 @@ void handleSetup(){
        str += F("'></p><p>");
        str += F("<p><b>Angabe in Watt (statt in kWh) </b><input type='checkbox' class='form-control' name='watt' id='watt' ");
        if (user_data.watt[0] =='j') str += F(" checked></p>"); else str += F("></p>");
+              str += F("<p><b>Activeer Telnet (23) </b><input type='checkbox' class='form-control' name='telnet' id='telnet' ");
+       if (user_data.telnet[0] =='j') str += F(" checked></p>"); else str += F("></p>");
+       str += F("<p><b>Debug via MQTT </b><input type='checkbox' class='form-control' name='debug' id='debug' ");
+       if (user_data.debug[0] =='j') str += F(" checked></p>"); else str += F("></p>");
+
       str += F("</fieldset><div></div>");
       str += F("<p><button type='submit'>Speichern</button></form>");
       str += F("<form action='/' method='POST'><button class='button bhome'>Menu</button></form></p>");
      addFoot(str);
     server.send(200, "text/html", str);
+    webstate = CONFIG;
 }
 
-
-void handleSetupSave() {
-  debugln("handleSetupSave");
-  debug("Server args: ");
-  debugln(server.args());
-  debugln(server.arg("plain"));
-
-  if (server.args() == 0) {
-    debugln("lege submit, dus redirect naar handleRoot");
-    handleRoot();
-    debugln("En terug naar mainloop");
-    return;
-  }
-  
-  String str = ""; 
-  if (server.method() == HTTP_POST) {
-
-    if (server.arg("domo") == "on") user_data.domo[0] = 'j'; else user_data.domo[0] = 'n';
-    strncpy(user_data.ssid,     server.arg("ssid").c_str(),     sizeof(user_data.ssid) );
-    strncpy(user_data.password, server.arg("password").c_str(), sizeof(user_data.password) );
-    strncpy(user_data.domoticzIP, server.arg("domoticzIP").c_str(), sizeof(user_data.domoticzIP) );
-    strncpy(user_data.domoticzPort, server.arg("domoticzPort").c_str(), sizeof(user_data.domoticzPort) );
-    strncpy(user_data.domoticzEnergyIdx, server.arg("domoticzEnergyIdx").c_str(), sizeof(user_data.domoticzEnergyIdx) );
-    strncpy(user_data.domoticzGasIdx, server.arg("domoticzGasIdx").c_str(), sizeof(user_data.domoticzGasIdx) );
-
-    if (server.arg("mqtt") == "on") user_data.mqtt[0] = 'j'; else user_data.mqtt[0] = 'n';
-    strncpy(user_data.mqttIP, server.arg("mqttIP").c_str(), sizeof(user_data.mqttIP) );
-    strncpy(user_data.mqttPort, server.arg("mqttPort").c_str(), sizeof(user_data.mqttPort) );
-    strncpy(user_data.mqttUser, server.arg("mqttUser").c_str(), sizeof(user_data.mqttUser) );
-    strncpy(user_data.mqttPass, server.arg("mqttPass").c_str(), sizeof(user_data.mqttPass) );
-    strncpy(user_data.mqttTopic, server.arg("mqttTopic").c_str(), sizeof(user_data.mqttTopic) );
-                
-    strncpy(user_data.interval, server.arg("interval").c_str(), sizeof(user_data.interval) );
-
-    if (server.arg("watt") == "on") user_data.watt[0] = 'j'; else user_data.watt[0] = 'n';
-    
-
-    user_data.ssid[server.arg("ssid").length()] = 
-    user_data.password[server.arg("password").length()] = 
-    user_data.domoticzIP[server.arg("domoticzIP").length()] = 
-    user_data.domoticzPort[server.arg("domoticzPort").length()] = 
-    user_data.domoticzGasIdx[server.arg("domoticzGasIdx").length()] = 
-    user_data.domoticzEnergyIdx[server.arg("domoticzEnergyIdx").length()] = 
-    user_data.interval[server.arg("interval").length()] =
-    user_data.mqttIP[server.arg("mqttIP").length()] = 
-    user_data.mqttPort[server.arg("mqttPort").length()] = 
-    user_data.mqttUser[server.arg("mqttUser").length()] = 
-    user_data.mqttPass[server.arg("mqttPass").length()] = 
-    user_data.mqttTopic[server.arg("mqttTopic").length()] = 
-    user_data.mqtt[1] = //server.arg("mqtt").length()] = 
-    user_data.domo[1] = //server.arg("domo").length()] = 
-    user_data.watt[1] = //server.arg("watt").length()] = 
-    '\0';
-    
-    EEPROM.put(0, user_data);
-    EEPROM.commit();
-
-    addHead(str);
-    addIntro(str);
-    setupSaved(str);
-    server.send(200, "text/html", str);    
-    delay(500);
-    ESP.reset();
-  } 
-}
 
 void handleP1(){
   debugln("handleP1");
@@ -254,7 +202,7 @@ void handleP1(){
   str += eenheid;
   str += "</div></p>";
 
-  str += "<p><div class='row'><div class='column'><b>Verbrauchshöchstsatz:<br> total</b><input type='text' class='form-control c6' value='";
+  str += "<p><div class='row'><div class='column'><b>Verbrauch höchster Satz:<br> total</b><input type='text' class='form-control c6' value='";
   str += electricityUsedTariff2;
   str += eenheid;
   str += "<div class='column' style='text-align:right'><br><b>Heute</b><input type='text' class='form-control c7' value='";
@@ -329,6 +277,7 @@ void handleP1(){
   addUptime(str);
   addFoot(str);
   server.send(200, "text/html", str);
+  webstate = DATA;
 }
 
 void handleRawData(){

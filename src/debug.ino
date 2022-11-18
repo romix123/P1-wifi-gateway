@@ -4,8 +4,12 @@
  * 
  * 
  */
+void readVoltage() { // read internal VCC
+  volts = ESP.getVcc();
+  debugf("The internal VCC reads %1.2f volts\n", volts / 1000);
+}
 
- void PrintConfigData(){
+void PrintConfigData(){
   debug("SSID : ");
     debugln(user_data.ssid);
   debug("password : ");
@@ -38,5 +42,6 @@
     debugln(user_data.mqtt);
   debug("watt : ");
       debugln(user_data.watt);
-
+  debug("telnet : ");
+      debugln(user_data.telnet);
 }

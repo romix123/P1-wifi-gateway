@@ -44,7 +44,7 @@ void getValue(char *theValue, char *buffer, int maxlen, char startchar, char end
                 if (flag == 1 && res[i] != '0') flag = 0;
                 if (res[i] == '0' && res[i+1] == '.') flag = 0;
                 if(flag != 1){
-                  if (!reportInDecimals)    {       
+                  if (!reportInDecimals)    {       // BELGIQUE // report in Watts instead of KW
                       if (res[i] != '.') cleanres += res[i];
                     }
                     else cleanres += res[i];
@@ -61,12 +61,12 @@ void getValue(char *theValue, char *buffer, int maxlen, char startchar, char end
     }
  }
 
- void getGasValue(char *theValue, char *buffer, int maxlen, char startchar, char endchar){ 
+  void getGasValue(char *theValue, char *buffer, int maxlen, char startchar, char endchar){ 
   String cleanres="";
   bool nodecimals = false;
 
   if (!reportInDecimals) nodecimals = true;
- // if (Json) nodecimals = true;
+ // if (domoticzJson) nodecimals = true;
     
   int s = 0;
   if  (FindCharInArrayRev(buffer, ')(', maxlen - 2) != -1)  // some meters report the meterID in () before the section with actual gas value
@@ -180,14 +180,21 @@ void getStr12(char *theValue, char *buffer, int maxlen, char startchar){
 }
 
 bool decodeTelegram(int len) {
-  long val  = 0;
-  long val2 = 0;
-  int pos4;
+ long val  = 0;
+ long val2 = 0;
+ int pos4;
   //need to check for start
-  int startChar = FindCharInArrayRev(telegram, '/', len);
-  int endChar = FindCharInArrayRev(telegram, '!', len);
-  bool validCRCFound = false;
+ int startChar = FindCharInArrayRev(telegram, '/', len);
+ int endChar = FindCharInArrayRev(telegram, '!', len);
+ bool validCRCFound = false;
 
+// if (state == FAILURE){
+//      datagram ="";
+//    datagramValid = false;
+//    dataEnd = false;
+//    state = WAITING;
+// }
+  
  if (state == WAITING) {      // we're waiting for a valid start sequence, if this line is not it, just return
   if(startChar>=0)
   {
@@ -233,26 +240,25 @@ bool decodeTelegram(int len) {
 
     validCRCFound = (strtol(messageCRC, NULL, 16) == currentCRC);
     debug("   calculated CRC:");
-    debugln(currentCRC);
-    digitalWrite(DR, LOW);   // turn off Data Request 
-    digitalWrite(OE, HIGH);  // put buffer in Tristate mode
-    timeSinceLastUpdate = millis();
-    OEstate = false;
+    debugln(currentCRC); 
     
     if(validCRCFound) {
       debugln("\nVALID CRC FOUND!"); 
       datagramValid = true;
       state = DONE;
+      RTS_off();
       if (devicestate == GOTMETER) {
          resetDaycount();
          devicestate = RUNNING;
       }
+
       return true;
     }
     else {
       debugln("\n===INVALID CRC FOUND!===");
       state = FAILURE;
       currentCRC = 0;
+      RTS_off();
       return false;
     }
   } 
@@ -260,7 +266,6 @@ bool decodeTelegram(int len) {
   else  { // normal line, process
     currentCRC=CRC16(currentCRC, (unsigned char*)telegram, len);
       for(int cnt=0; cnt<len;cnt++){
-        debug(telegram[cnt]);
         datagram += telegram[cnt];
       }
   
@@ -271,16 +276,15 @@ bool decodeTelegram(int len) {
     
   if (devicestate == CONFIG) {
     // 0-0:96.1.1 equipmentId                         (xxxxxxxxxxxx) 
-    if (strncmp(telegram, "0-1:96.1.0", strlen("0-1:96.1.0")) == 0) 
+    if (strncmp(telegram, "96.1.0", strlen("96.1.0")) == 0) {
     getStr(equipmentId,telegram, len, '(', ')');
-
+      devicestate = GOTMETER;
+    }
     // 1-3:0.2.8(42) or 1-3:0.2.8(50) // protocol version
     if (strncmp(telegram, "1-3:0.2.8", strlen("1-3:0.2.8")) == 0) {
         getStr(P1version,telegram, len, '(', ')');
         if (P1version[0] =='4') P1prot = 4; else P1prot = 5;
     }    
-
-    if (equipmentId[0] == '\0') devicestate = GOTMETER;
   }
 debugln(pos4);
 debugln(telegram);
@@ -290,7 +294,7 @@ debugln(telegram);
           // 0-0:1.0.0.255 datestamp YYMMDDhhmmssX
           if (strncmp(telegram, "0-0:1.0.0", strlen("0-0:1.0.0")) == 0) 
               getStr12(P1timestamp, telegram, len, '(');
-
+              if (timeStatus() == timeNotSet) settime();
              
  #ifdef SWEDISH  
           // 1-0:1.7.0 Aktiv Effekt Uttag  Momentan trefaseffekt
@@ -344,6 +348,9 @@ debugln(telegram);
               getValue(momentaryReactiveExportL1, telegram, len, '(', '*');
 #endif
 
+        if (strncmp(telegram, "1-0:2.7.0", strlen("1-0:2.7.0")) == 0)
+        getValue(actualElectricityPowerReturned, telegram, len, '(', '*');
+              
           // 1-0:2.8.1(000348.890*kWh) Elektra opbrengst laag tarief
           if (strncmp(telegram, "1-0:2.8.1", strlen("1-0:2.8.1")) == 0) 
               getValue(electricityReturnedTariff1, telegram, len, '(', '*');
@@ -530,4 +537,21 @@ debugln(telegram);
   return validCRCFound;       // true if valid CRC found
   
   } //state = reading
+}
+
+void settime(){
+  //(hr,min,sec,day,mnth,yr);
+  //YYMMDDhhmmssX
+  setTime(10*(int)P1timestamp[6]-48 + (int)P1timestamp[7]-48, 
+          10*(int)P1timestamp[8]-48 + (int)P1timestamp[9]-48,
+          10*(int)P1timestamp[10]-48 + (int)P1timestamp[11]-48,
+          10*(int)P1timestamp[4]-48 + (int)P1timestamp[5]-48,
+          10*(int)P1timestamp[2]-48 + (int)P1timestamp[3]-48,
+          10*(int)P1timestamp[0]-48 + (int)P1timestamp[1]-48);
+   debug("time: ");
+   debug(hour());
+   debug(":");
+    debug(minute());
+   debug(":");  
+   debugln(second());
 }
