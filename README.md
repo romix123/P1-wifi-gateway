@@ -38,7 +38,8 @@ P1 wifi gateway 2022
  *  auteur: Ronald Leenes
  *  
  *  t: improvements on powermanagement, overall (minor) cleanup
- *  
+ *  ta: small Telnet fix
+ *
  *  s: added German localisation
  *        Added mqtt output for Swedish specific OBIS codes
  *        
