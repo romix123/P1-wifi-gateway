@@ -31,14 +31,14 @@
  *
  *  informatie, vragen, suggesties ed richten aan romix@macuser.nl 
  *  
- *  te doen:
  *  
  *    
- *  versie: 1.0t 
+ *  versie: 1.0ta 
  *  datum:  16 Nov 2022
  *  auteur: Ronald Leenes
  *  
  *  t: improvements on powermanagement, overall (minor) cleanup
+ *  ta: fix for Telnet reporting
  *  
  *  s: added German localisation
  *        Added mqtt output for Swedish specific OBIS codes
@@ -497,6 +497,7 @@ void loop() {
     readVoltage();
       if (Mqtt) doMQTT();
       if (Json) doJSON();
+      if (Telnet) TelnetReporter();
       datagramValid = false;
       state = WAITING;
        if ( coldboot || (P1timestamp[6] == '0' && P1timestamp[7]== '0' && P1timestamp[8] == '0' && P1timestamp[9] == '0')) resetDaycount();
