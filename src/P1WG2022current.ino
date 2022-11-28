@@ -25,7 +25,7 @@
  * Ik raad een interval van 15 sec of hoger aan. Het interval dat je hier invoert zal niet altijd synchroon lopen met
  * het data interval van de meter, ga er dus niet van uit dat je exact iedere x seconden een meetwaarde ziet in DOmoticz. 
  * Tussen metingen 'slaapt' de module (de modem wordt afgeschakeld waardoor het stroomverbruik van zo'n 70mA terugvalt naar 15 mA). 
- * Dit geeft de bufferelco tijd omm op te laden voor de stroompiekjes die de wifi zender van de module produceert 
+ * Dit geeft de bufferelco tijd om op te laden voor de stroompiekjes die de wifi zender van de module produceert 
  * (en het bespaart hoe dan ook wat stroom (die weliswaar door je energieleverancier wordt betaald, maar toch). Alle kleine 
  * beetjes helpen..
  *
@@ -39,6 +39,7 @@
  *  
  *  t: improvements on powermanagement, overall (minor) cleanup
  *  ta: fix for Telnet reporting
+ *		added French localisation
  *  
  *  s: added German localisation
  *        Added mqtt output for Swedish specific OBIS codes
@@ -69,12 +70,14 @@
 *   Flash Size: 2mb (FS: 64Kb, OTA: –992Kb) 
 */
 
-String version = "1.0t – DE"; //r Svensk";
+String version = "1.0ta – NL";
+#define   NEDERLANDS //  GERMAN//  SWEDISH //  FRENCH //
+
 const char* host = "P1wifi";
 #define HOSTNAME "p1meter"
 
+
 #define V3//3//3 //3 //3 //V2
-#define   GERMAN//  SWEDISH //NEDERLANDS //  
 #define DEBUG 0// 1 // 1 is on serial only, 2 is serial + telnet, 
 //#define MDEBUG  1 // debug on MQTT
 #define ESMR5 1

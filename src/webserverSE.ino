@@ -45,9 +45,8 @@ void setupSaved(String& str){
   str += F("<p><b>Inställningarna har sparats.</b><br><br>");
   str += F("<p>Modulen kommer nu att starta om. Det tar ungefär en minut.</p><br>");
   str += F("<p>Den blå lysdioden tänds 2x när modulen har startat klart.</p>");
-  str += F("<p>Lysdioden blinkar långsamt när du ansluter till ditt WiFi-nätverk.</p>");
-  str += F("<p>Om den blå lysdioden fortsätter att lysa har inställningen misslyckats och du kommer att göra det <br>");
-  str += F("måste återansluta till WiFi-nätverket 'P1_Setup' .</p>");
+  str += F("<p>Lysdioden blinkar långsamt när den ansluter till ditt WiFi-nätverk.</p>");
+  str += F("<p>Om den blå lysdioden fortsätter att lysa har inställningen misslyckats och du måste återansluta till WiFi-nätverket 'P1_Setup' .</p>");
   str += F("<br>");
  // str += F("<p id=\"timer\"></p>");
   str += F("</fieldset></p>");
@@ -198,33 +197,33 @@ void handleP1(){
  // str += F("<form action='/' method='post'>");
 
   str += "<p><div class='row'><div class='column'><b>Aktiv energi uttag</b><input type='text' class='form-control c6' value='";
-  str += electricityUsedTariff1;
+  str += cumulativeActiveImport;
   str += eenheid;
-  str += "<div class='column' style='text-align:right'><b>idag</b><input type='text' class='form-control c7' value='";
+  str += "<div class='column' style='text-align:right'><br><b>idag</b><input type='text' class='form-control c7' value='";
   str += atof(cumulativeActiveImport) - atof(dayStartUsedT1);
   str += eenheid;
   str += "</div></p>";
 
   str += "<p><div class='row'><div class='column'><b>Reaktiv energi uttag</b><input type='text' class='form-control c6' value='";
-  str += electricityUsedTariff2;
+  str += cumulativeReactiveImport;
   str += eenheid;
-  str += "<div class='column' style='text-align:right'><b>idag</b><input type='text' class='form-control c7' value='";
+  str += "<div class='column' style='text-align:right'><br><b>idag</b><input type='text' class='form-control c7' value='";
   str += atof(cumulativeReactiveImport) - atof(dayStartUsedT2);
   str += eenheid;
   str += "</div></p>";
 
   str += "<p><div class='row'><div class='column'><b>Aktiv energi inmatning</b><input type='text' class='form-control c6' value='";
-  str += electricityReturnedTariff1;
+  str += cumulativeActiveExport;
   str += eenheid;
-  str += "<div class='column' style='text-align:right'><b>idag</b><input type='text' class='form-control c7' value='";
+  str += "<div class='column' style='text-align:right'><br><b>idag</b><input type='text' class='form-control c7' value='";
   str += atof(cumulativeActiveExport) - atof(dayStartReturnedT1);
   str += eenheid;
   str += "</div></p>";
   
   str += "<p><div class='row'><div class='column'><b>Reaktiv energi inmatning</b><input type='text' class='form-control c6' value='";
-  str += electricityReturnedTariff2;
+  str += cumulativeReactiveExport;
   str += eenheid;
-  str += "<div class='column' style='text-align:right'><b>idag</b><input type='text' class='form-control c7' value='";
+  str += "<div class='column' style='text-align:right'><br><b>idag</b><input type='text' class='form-control c7' value='";
   str += atof(cumulativeReactiveExport) - atof(dayStartReturnedT2);
   str += eenheid;
   str += "</div></p>";
