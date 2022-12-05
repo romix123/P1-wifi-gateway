@@ -176,7 +176,7 @@ bool telnetConnected = false;
 
 struct settings {
   char ssid[30];
-  char password[30];
+  char password[64];
   char domoticzIP[30] = "IPaddress";
   char domoticzPort[10] = "Port";
   char domoticzEnergyIdx[10] = "EnergyIdx";
