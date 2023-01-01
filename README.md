@@ -37,6 +37,15 @@
    datum:  16 Nov 2022
    auteur: Ronald Leenes
    
+   u: - added password protection for Setup and Update Firmware menus. On first boot of version 1.0u, go to Setup menu 
+        within 60 seconds to bypass password protection.
+      - added out of the box support for Home Assistant "DSMR Reader" integration. Use 'dsmr' as MQTT prefix and data will
+        automatically be delivered in "DSMR Reader" format to the MQTT broker.
+      - fixed MQTT reconnect, it is now non-blocking.
+      - fixed hardboot daycounters reset
+      - fixed sending empty MQTT messages
+      - overall improved stability
+      
    t: improvements on powermanagement, overall (minor) cleanup
    ta: fix for Telnet reporting
  		added French localisation
