@@ -1,4 +1,33 @@
 /*
+ * Copyright (c) 2022 Ronald Leenes
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ */
+
+/**
+ * @file P1WG2022current.ino
+ * @author Ronald Leenes
+ * @date 28.12.2022
+ * @version 1.0u 
+ *
+ * @brief This file contains the main file for the P1 wifi gatewway
+ *
+ * @see http://esp8266thingies.nl
+ */
+ 
+/*
  * P1 wifi gateway 2022
  * 
  * Deze software brengt verschillende componenten bij elkaar in een handzaam pakket.
@@ -25,7 +54,7 @@
  * Ik raad een interval van 15 sec of hoger aan. Het interval dat je hier invoert zal niet altijd synchroon lopen met
  * het data interval van de meter, ga er dus niet van uit dat je exact iedere x seconden een meetwaarde ziet in DOmoticz. 
  * Tussen metingen 'slaapt' de module (de modem wordt afgeschakeld waardoor het stroomverbruik van zo'n 70mA terugvalt naar 15 mA). 
- * Dit geeft de bufferelco tijd om op te laden voor de stroompiekjes die de wifi zender van de module produceert 
+ * Dit geeft de bufferelco tijd omm op te laden voor de stroompiekjes die de wifi zender van de module produceert 
  * (en het bespaart hoe dan ook wat stroom (die weliswaar door je energieleverancier wordt betaald, maar toch). Alle kleine 
  * beetjes helpen..
  *
@@ -33,13 +62,19 @@
  *  
  *  
  *    
- *  versie: 1.0ta 
- *  datum:  16 Nov 2022
+ *  versie: 1.0u 
+ *  datum:  31 Dec 2022
  *  auteur: Ronald Leenes
+ *  
+ *  u: 
+ *    password on Setup and Firmware Update
+ *    made mqtt re-connect non-blocking
+ *    incorporated "DSMR Reader" mqtt topics 
+ *    fixed hardboot daycounters reset
+ *    fixed sending empty MQTT messages
  *  
  *  t: improvements on powermanagement, overall (minor) cleanup
  *  ta: fix for Telnet reporting
- *		added French localisation
  *  
  *  s: added German localisation
  *        Added mqtt output for Swedish specific OBIS codes
@@ -70,28 +105,24 @@
 *   Flash Size: 2mb (FS: 64Kb, OTA: –992Kb) 
 */
 
-String version = "1.0ta – NL";
+String version = "1.0u – NL";
 #define   NEDERLANDS //  GERMAN//  SWEDISH //  FRENCH //
 
-const char* host = "P1wifi";
+
 #define HOSTNAME "p1meter"
 
 
 #define V3//3//3 //3 //3 //V2
-#define DEBUG 0// 1 // 1 is on serial only, 2 is serial + telnet, 
-//#define MDEBUG  1 // debug on MQTT
+#define DEBUG 0// 1//0// 1 // 1 is on serial only, 2 is serial + telnet, 
 #define ESMR5 1
 //#define SLEEP_ENABLED 
-float RFpower = 0; //20.5; // (For OdBm of output power, lowest. Supply current~70mA) 
-                        //20.5dBm (For 20.5dBm of output, highest. Supply current~85mA)
 
-ADC_MODE(ADC_VCC);  // allows you to monitor the internal VCC level;
-  float volts;
 
 const uint32_t  wakeTime = 90000; // stay awake wakeTime millisecs 
 const uint32_t  sleepTime = 5000; //sleep sleepTime millisecs
 
 #if DEBUG == 1
+const char* host = "P1wifi"; //_test";
 #define BLED LED_BUILTIN
 #define debug(x) Serial.print(x)
 #define debugf(x) Serial.printf(x)
@@ -106,6 +137,7 @@ const uint32_t  sleepTime = 5000; //sleep sleepTime millisecs
 #define debugff(x,y,z) Serial.printf(x,y,z)
 #define debugln(x) Serial.println(x);if(telnetConnected)telnet.println(x)
 #else
+const char* host = "P1wifi";
 #define BLED LED_BUILTIN
 #define debug(x)
 #define debugln(x)
@@ -113,6 +145,8 @@ const uint32_t  sleepTime = 5000; //sleep sleepTime millisecs
 #define debugf(x,y)
 #define debugff(x,y,z)
 #endif
+
+#define NUM(off, mult) ((P1timestamp[(off)] - '0') * (mult) )   // macro for getting time out of timestamp, see decoder
 
 #define ToggleLED  digitalWrite(BLED, !digitalRead(BLED));
 #define LEDoff  digitalWrite(BLED, HIGH);
@@ -154,15 +188,17 @@ ESP8266WebServer    server(80);
 #include <ESP8266mDNS.h>
 
 #include "ESP8266HTTPUpdateServer.h"
-ESP8266HTTPUpdateServer httpUpdater(true);
+const char* update_username = "admin";
+
+ESP8266HTTPUpdateServer httpUpdater;
 
 // mqtt stuff . https://github.com/ict-one-nl/P1-Meter-ESP8266-MQTT/blob/master/P1Meter/P1Meter.ino
 #include <PubSubClient.h>
 WiFiClient espClient;                   // * Initiate WIFI client
 PubSubClient mqtt_client(espClient);    // * Initiate MQTT client
 long LAST_RECONNECT_ATTEMPT = 0;        // * MQTT Last reconnection counter
-#define MQTT_MAX_RECONNECT_TRIES 10     // * MQTT network settings
 bool MQTT_Server_Fail = false;
+long nextMQTTreconnectAttempt; 
 // end mqtt stuff
 
 //// Raw data server
@@ -175,6 +211,7 @@ bool telnetConnected = false;
 
 
 struct settings {
+  char dataSet[4];
   char ssid[30];
   char password[30];
   char domoticzIP[30] = "IPaddress";
@@ -192,17 +229,25 @@ struct settings {
   char watt[4] = "n";
   char telnet[4] = "n";
   char debug[4] = "n";
+  char adminPassword[30];
 } user_data = {};
 
+float RFpower = 0;      //20.5; // (For OdBm of output power, lowest. Supply current~70mA) 
+                        //20.5dBm (For 20.5dBm of output, highest. Supply current~85mA)
+
+ADC_MODE(ADC_VCC);  // allows you to monitor the internal VCC level;
+  float volts;
+  
 // energy management vars
 int interval;
-unsigned long timeSinceLastUpdate = 0;
+unsigned long nextUpdateTime = 0;
 unsigned long time_to_wake = 0; // calculated wakeup time
 unsigned long time_to_sleep = 0;    // calculated sleep time
 unsigned long lastSleeptime = 0;
 boolean entitledToSleep = false;       // aangezien slaapinterval en meetinterval niet synchroon lopen, moeten we na ontwaken eerst een telegram inlezen en afleveren alvorens ModemSleep mag worden aangeroepen.
 bool monitoring = false;          // are we permitted to collect P1 data? Not if in setup or firmware update
 bool atsleep = true;
+bool bootSetup = false;           // flag for adminpassword bypass 
 
 // datagram stuff
 #define MAXLINELENGTH 1040        // 0-0:96.13.0 has a maximum lenght of 1024 chars + 11 of its identifier
@@ -290,6 +335,12 @@ char dayStartUsedT2[12];
 char dayStartReturnedT1[12];
 char dayStartReturnedT2[12];
 
+char monthStartGaz[12];
+char monthStartUsedT1[12];
+char monthStartUsedT2[12];
+char monthStartReturnedT1[12];
+char monthStartReturnedT2[12];
+
 // process stuff
 #define DISABLED 0
 #define WAITING 1
@@ -316,12 +367,24 @@ bool wifiSta = false;
 bool breaking = false;
 bool softAp = false;
 bool Json = false;
-bool Mqtt = false;
 bool Telnet = false;
-bool Debug = false;
+
+bool Mqtt = false;
+bool MqttConnected = false;
+bool MqttDelivered = false;
+String LastReport = ""; //timestamp of last telegram reported
+bool mqtt_dsmr = false; // deliver mqtt data in 'dsmr reader" format
+bool MQTT_debug = false;
+
 bool daystart = true;
 bool OEstate = false;  // 74125 OE output enable is off by default (EO signal high) 
-bool coldboot = false;
+// a bit of a kludge to get the first readings at coldboot to reset the daycounter. the coldboot flags will be reset once the daycounters are reset with valid values. The availability of valid values is signalled by
+// the two gotXReadings 
+bool coldbootE = true;
+bool coldbootG = true;
+bool gotPowerReading = false;
+bool gotGasReading = false;
+char setupToken[18];
 
 void setup() {
   WiFi.forceSleepBegin(sleepTime * 1000000L); //In uS. Must be same length as your delay
@@ -330,13 +393,8 @@ void setup() {
   WiFi.forceSleepWake(); // Wifi on
 
   pinMode(BLED, OUTPUT);
-//#if ESMR5 == 1
-      Serial.begin(115200);
-      debugln("Serial.begin(115200);");
-//#else
-//    Serial.begin(9600,SERIAL_7E1);
-//    debugln("Serial.begin(9600,SERIAL_7E1);");
-//#endif
+  Serial.begin(115200);
+    debugln("Serial.begin(115200);");
 
   pinMode(OE, OUTPUT);      //IO16 OE on the 74AHCT1G125
   digitalWrite(OE, HIGH);   //  Put(Keep) OE in Tristate mode
@@ -346,27 +404,35 @@ void setup() {
   blink(2);
     debugln("Booting");
     debugln("Done with Cap charging … ");
-    debugln("Let's go…");
+    debugln("Let's go …");
     
   EEPROM.begin(sizeof(struct settings) );
   EEPROM.get( 0, user_data );
-  debugln("EEprom read: done");
-  PrintConfigData();  
+  if (user_data.dataSet[0] !='j') {
+      user_data = (settings) {"n", "","","192.168.1.12","8080","1234","1235","sensors/power/p1meter","192.168.1.12","1883", "mqtt_user", "mqtt_passwd", "30", "n","n","n","n","n","adminpwd"};
+  }
+    debugln("EEprom read: done");
+    PrintConfigData();  
 
   (user_data.watt[0] =='j') ? reportInDecimals = false : reportInDecimals = true;
   (user_data.domo[0] =='j') ? Json = true :Json = false;
   (user_data.mqtt[0] =='j') ? Mqtt = true : Mqtt = false;
   (user_data.telnet[0] =='j') ? Telnet = true : Telnet = false;
-  (user_data.debug[0] =='j') ? Debug = true : Debug = false;
+  (user_data.debug[0] =='j') ? MQTT_debug = true : MQTT_debug = false;
+  if (strcmp(user_data.mqttTopic, "dsmr") == 0) { // auto detext need to report in 'dsmr reader' mqtt format
+    mqtt_dsmr = true;
+   // reportInDecimals = true;
+  } else {
+    mqtt_dsmr = false; 
+   // reportInDecimals = false;
+  }
 
   interval = atoi( user_data.interval) * 1000; 
   
-  debugln("Trying to connect to your wifi network:");
-     WiFi.mode(WIFI_STA);
-     WiFi.begin(user_data.ssid, user_data.password);
-     
-     
-     byte tries = 0;
+   debugln("Trying to connect to your wifi network:");
+  WiFi.mode(WIFI_STA);
+  WiFi.begin(user_data.ssid, user_data.password);    
+    byte tries = 0;
     while (WiFi.status() != WL_CONNECTED) {
       ToggleLED
         delay(300);
@@ -380,27 +446,22 @@ void setup() {
         breaking = true;
         break;
       }
-    } 
-
-   // start_services();
-    
-    debugln("");
-    debugln("Set up wifi, either in STA or AP mode");
+     }    
+      debugln("");
+      debugln("Set up wifi, either in STA or AP mode");
     if (softAp){
-      debugln("running in AP mode, all handles will be initiated");
+        debugln("running in AP mode, all handles will be initiated");
       start_webservices();
     }
 
-    if (WiFi.status() == WL_CONNECTED){ 
+  if (WiFi.status() == WL_CONNECTED){ 
      WiFi.setAutoReconnect(true);
-      debugln("HTTP server running.");
+       debugln("HTTP server running.");
       debug("IP address: ");
-      debugln(WiFi.localIP());
-
+       debugln(WiFi.localIP());
       setRFPower();
-     
       wifiSta = true;
-      debugln("wifi running in Sta (normal) mode");
+        debugln("wifi running in Sta (normal) mode");
       LEDoff
       ESP.rtcUserMemoryWrite(RTC_USER_DATA_SLOT_WIFI_STATE, reinterpret_cast<uint32_t *>(&WiFistate), sizeof(WiFistate));
 #ifdef SLEEP_ENABLED
@@ -410,18 +471,15 @@ void setup() {
       start_services();
 #endif
       debugln("All systems are go...");
-    }
+  }
 
   state = WAITING;    // signal that we are waiting for a valid start char (aka /)
   devicestate = CONFIG;
-  timeSinceLastUpdate = millis();
-  readVoltage();  // read internal VCC
+  nextUpdateTime = nextMQTTreconnectAttempt = millis();
 
   monitoring = true; // start monitoring data
   time_to_sleep = millis() + wakeTime;  // we go to sleep wakeTime seconds from now
 }
-
-
 
 void readTelegram() {
   if (Serial.available()) {
@@ -434,7 +492,6 @@ void readTelegram() {
       ToggleLED      
       if(decodeTelegram(len+1)){     // test for valid CRC
           break;
-          // yield();     
       } else { // we don't have valid data, but still may need to report to Domo
         if (dataEnd && !CRCcheckEnabled) { //this is used for dsmr 2.2 meters
          // yield(); //state = WAITING; 
@@ -453,34 +510,27 @@ void blink(int t){
   }
 }
 
-void RTS_on(){
-      // switch on Data Request
+void RTS_on(){            // switch on Data Request
   digitalWrite(OE, LOW);  // enable buffer
   digitalWrite(DR, HIGH); // turn on Data Request
   OEstate = true;
-  debugln("Data request on");
+   debugln("Data request on");
 }
 
-void RTS_off(){       // switch off Data Request
-  digitalWrite(DR, LOW);   // turn off Data Request 
-  digitalWrite(OE, HIGH);  // put buffer in Tristate mode
+void RTS_off(){           // switch off Data Request
+  digitalWrite(DR, LOW);  // turn off Data Request 
+  digitalWrite(OE, HIGH); // put buffer in Tristate mode
   OEstate = false;
-  debugln("Data request off");
+   debugln("Data request off");
 }
 
 
 void loop() {  
-  if ((millis() > timeSinceLastUpdate + interval) && monitoring){
+  if ((millis() > nextUpdateTime) && monitoring){
     if (!OEstate) { // OE is disabled  == false
        RTS_on();
        Serial.flush();
-#if DEBUG == 3
-      datagramValid = true;
-      state = DONE;
-      ltoa(millis(), electricityUsedTariff1, 8);
-#endif
     }
-
   } // update window  
   if (OEstate) readTelegram();
 
@@ -496,15 +546,29 @@ void loop() {
 #endif
   }
   
-  if (datagramValid && (state == DONE) && (WiFi.status() == WL_CONNECTED)){
-    readVoltage();
-      if (Mqtt) doMQTT();
-      if (Json) doJSON();
-      if (Telnet) TelnetReporter();
-      datagramValid = false;
-      state = WAITING;
-       if ( coldboot || (P1timestamp[6] == '0' && P1timestamp[7]== '0' && P1timestamp[8] == '0' && P1timestamp[9] == '0')) resetDaycount();
-      timeSinceLastUpdate = millis(); 
+  if (datagramValid && (state == DONE) && (WiFi.status() == WL_CONNECTED)){ 
+    checkNeedtoResetCounters();
+      if (Mqtt) {
+        doMQTT();
+        if (MqttDelivered) {
+          datagramValid = false;
+          state = WAITING;
+          MqttDelivered = false;
+        }
+      }
+      if (Json) {
+        doJSON();
+        datagramValid = false;
+        state = WAITING;
+      }
+      if (Telnet) {
+        TelnetReporter();
+        datagramValid = false;
+        state = WAITING;
+      }
+      if (MQTT_debug) MQTT_Debug();
+
+      nextUpdateTime = millis() + interval; 
       if (ESP.getFreeHeap() < 2000) ESP.reset(); // watchdog, we do have a memery leak (still)
      }
      
@@ -516,9 +580,26 @@ void loop() {
   //yield();
 }   
 
-
-void resetDaycount(){
- //   if ( coldboot || (P1timestamp[6] == '0' && P1timestamp[7]== '0' && P1timestamp[8] == '0' && P1timestamp[9] == '0')) { // new day has arrived
+void checkNeedtoResetCounters(){
+       if (coldbootE && gotPowerReading) {
+          resetEnergyDaycount();
+          resetEnergyMonthcount();
+        }
+       if (coldbootG && gotGasReading) {
+          resetGasDaycount();
+          resetGasMonthcount();
+       }
+       if (hour() == 0 && minute() == 0) { 
+          resetEnergyDaycount();
+          resetGasDaycount();
+          if (day() == 1){
+            resetEnergyMonthcount();
+            resetGasMonthcount();
+          }
+       }
+}
+       
+void resetEnergyDaycount(){
 #ifdef SWEDISH  
       strcpy(dayStartUsedT1, cumulativeActiveImport);
       strcpy(dayStartUsedT2, cumulativeReactiveImport);
@@ -529,8 +610,29 @@ void resetDaycount(){
       strcpy(dayStartUsedT2, electricityUsedTariff2);
       strcpy(dayStartReturnedT1, electricityReturnedTariff1);
       strcpy(dayStartReturnedT2, electricityReturnedTariff2);
-      strcpy(dayStartGaz, gasReceived5min);
 #endif
-   //  coldboot = false;
-   // }
+   coldbootE = false;
+}
+
+void resetGasDaycount(){
+   strcpy(dayStartGaz, gasReceived5min);
+   coldbootG = false;
+}
+
+void resetEnergyMonthcount() {
+#ifdef SWEDISH  
+      strcpy(monthStartUsedT1, cumulativeActiveImport);
+      strcpy(monthStartUsedT2, cumulativeReactiveImport);
+      strcpy(monthStartReturnedT1, cumulativeActiveExport);
+      strcpy(monthStartReturnedT2, cumulativeReactiveExport);
+#else
+      strcpy(monthStartUsedT1, electricityUsedTariff1);
+      strcpy(monthStartUsedT2, electricityUsedTariff2);
+      strcpy(monthStartReturnedT1, electricityReturnedTariff1);
+      strcpy(monthStartReturnedT2, electricityReturnedTariff2);
+#endif
+}
+
+void resetGasMonthcount(){
+   strcpy(monthStartGaz, gasReceived5min);
 }

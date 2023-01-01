@@ -1,21 +1,31 @@
-bool isNumber(char* res, int len) {
-  for (int i = 0; i < len; i++) {
-    if (((res[i] < '0') || (res[i] > '9'))  && (res[i] != '.' && res[i] != 0)) {
-      return false;
-    }
-  }
-  return true;
-}
+/*
+ * Copyright (c) 2022 Ronald Leenes
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ */
 
-
-int FindCharInArrayRev(char array[], char c, int len) {
-  for (int i = len - 1; i >= 0; i--) {
-    if (array[i] == c) {
-      return i;
-    }
-  }
-  return -1;
-}
+/**
+ * @file decoder.ino
+ * @author Ronald Leenes
+ * @date 28.12.2022
+ * @version 1.0u 
+ *
+ * @brief This file contains the OBIS parser functions
+ *
+ * @see http://esp8266thingies.nl
+ */
 
 long getValidVal(long valNew, long valOld, long maxDiffer)
 {
@@ -245,10 +255,10 @@ bool decodeTelegram(int len) {
     if(validCRCFound) {
       debugln("\nVALID CRC FOUND!"); 
       datagramValid = true;
+      gotPowerReading = true; // we at least got electricty readings. Not all setups have a gas meter attached, so gotGasReading is handled when we actually get gasIds coming in
       state = DONE;
       RTS_off();
       if (devicestate == GOTMETER) {
-         resetDaycount();
          devicestate = RUNNING;
       }
 
@@ -286,8 +296,8 @@ bool decodeTelegram(int len) {
         if (P1version[0] =='4') P1prot = 4; else P1prot = 5;
     }    
   }
-debugln(pos4);
-debugln(telegram);
+//debugln(pos4);
+//debugln(telegram);
 
   switch (pos4){
     case 1:
@@ -374,14 +384,19 @@ debugln(telegram);
 
          // 0-1:24.2.1(150531200000S)(00811.923*m3)
         // 0-1:24.2.1 = Gas (DSMR v4.0) on Kaifa MA105 meter, other meters do (number)(gas value)
-         if (strncmp(telegram, "0-1:24.2.1", strlen("0-1:24.2.1")) == 0) 
+         if (strncmp(telegram, "0-1:24.2.1", strlen("0-1:24.2.1")) == 0) {
             getDomoticzGasValue(gasDomoticz, telegram, len, '(', ')');
+            gotGasReading = true;
+         }
 
                       
         // (0-1:24.2.1)(m3) is gas designator for dsmr 2.2. The actual gasvalue is on next line, so first we place a flag, then we can test the next line on the next iteration of line parsing.
         if (strncmp(telegram, "0-1:24.3.0", strlen("0-1:24.3.0")) == 0) gas22Flag = true;
         if (gas22Flag && strncmp(telegram, "(", strlen(")")) == 0)
-            getGas22Value(gasReceived5min, telegram, len, '(', ')');
+            { 
+              getGas22Value(gasReceived5min, telegram, len, '(', ')');
+              gotGasReading = true;
+            }
 
           break;
           
@@ -537,21 +552,4 @@ debugln(telegram);
   return validCRCFound;       // true if valid CRC found
   
   } //state = reading
-}
-
-void settime(){
-  //(hr,min,sec,day,mnth,yr);
-  //YYMMDDhhmmssX
-  setTime(10*(int)P1timestamp[6]-48 + (int)P1timestamp[7]-48, 
-          10*(int)P1timestamp[8]-48 + (int)P1timestamp[9]-48,
-          10*(int)P1timestamp[10]-48 + (int)P1timestamp[11]-48,
-          10*(int)P1timestamp[4]-48 + (int)P1timestamp[5]-48,
-          10*(int)P1timestamp[2]-48 + (int)P1timestamp[3]-48,
-          10*(int)P1timestamp[0]-48 + (int)P1timestamp[1]-48);
-   debug("time: ");
-   debug(hour());
-   debug(":");
-    debug(minute());
-   debug(":");  
-   debugln(second());
 }

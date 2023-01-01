@@ -23,17 +23,21 @@ void addUptime(String& str){
     minuten = minuten % 60;
     sprintf_P(strUpTime, PSTR("%d dagen %d uren %d minuten"), dagen, uren, minuten);
   str += strUpTime;
-  str += ("<p style='text-align:right;font-size:11px;color:#aaa'>");
+  str += ("</div><div style='text-align:right;font-size:11px;color:#aaa'>");
   str += ipstr;
   str += ("</div>");
 }
 
 void addFoot(String& str){
-  str += F("<div style='text-align:right;font-size:11px;color:#aaa;'><hr/>versie: ");
+  str += F("<div style='text-align:right;font-size:11px;color:#aaa;'><hr/>");
+  if (Mqtt && MqttConnected) str += F("MQTT link: √ "); else str += F("MQTT – ");
+  str += F(" laatste sample: ");
+  str += LastReport;
+  str += F(" firmware versie: ");
   str += version;
-  char sysmsg[100];
-  sprintf_P(sysmsg, PSTR(" – %1.2fV"), volts / 1000);
-  str += sysmsg;
+ // char sysmsg[100];
+ // sprintf_P(sysmsg, PSTR(" – %1.2fV"), volts / 1000);
+ // str += sysmsg;
   str += F("<br><a href='http://esp8266thingies.nl' target='_blank' style='color:#aaa;'>esp8266thingies.nl</a>");
   str += F("</div></div></body></html>");
 }
@@ -43,11 +47,10 @@ void setupSaved(String& str){
   str += F("<fieldset>");
   str += F("<fieldset><legend><b>Wifi en module setup</b></legend>");
   str += F("<p><b>De instellingen zijn succesvol bewaard</b><br><br>");
-  str += F("<p>De module zal nu herstarten. Dat duurt ongeveer een minuut</p><br>");
-  str += F("<p>De blauwe Led zal 2x oplichten wanneer de module klaar is met opstarten</p>");
+  str += F("<p>De module zal nu herstarten. Dat duurt ongeveer een minuut.</p><br>");
   str += F("<p>De led zal langzaam knipperen tijdens koppelen aan uw WiFi netwerk.</p>");
   str += F("<p>Als de blauwe led blijft branden is de instelling mislukt en zult u <br>");
-  str += F("opnieuw moeten koppelen met WIfi netwerk 'P1_Setup' .</p>");
+  str += F("opnieuw moeten koppelen met Wifi netwerk 'P1_Setup' .</p>");
   str += F("<br>");
   //str += F("<p id=\"timer\"></p>");
   str += F("</fieldset></p>");
@@ -55,6 +58,11 @@ void setupSaved(String& str){
 }
 
 void uploadDiag(String& str){
+   if (strcmp(server.arg("adminPassword").c_str(), user_data.adminPassword) != 0) {  // passwords don't match
+      debugln("Error: update entered with wrong password");
+      errorUpdateLogin();
+      return;
+    }
   monitoring = false; // stop monitoring data
   addHead(str);
   addIntro(str);
@@ -100,25 +108,86 @@ void handleRoot(){
   monitoring = true;
 }
 
+void handleLogin(){
+  createToken();
+    debugln("handleLogin");
+
+  if (millis() < 60000) {
+    debug(millis());
+    debugln(" – You made it within the timeframe, go to setup without login."); 
+    bootSetup = true; // our ticket to handleSetup
+    handleSetup();
+  }
+   String str = "";
+    addHead(str);
+    addIntro(str);
+      str += F("<form action='/Setup2' method='POST'><fieldset>");
+       str += F("<input type='hidden' name='setuptoken' value='");
+       str+= setupToken;
+       str+=  F("'>");
+      str += F("<fieldset><legend><b>&nbsp;Login&nbsp;</b></legend>");
+      str += F("<p><b>Admin password</b><br>");
+      str += F("<input type='text' class='form-control' name='adminPassword' value='' </p>");
+      str+=  F("</fieldset>");
+      str += F("<p><button type='submit'>Login</button></form>");
+  addFoot(str);
+  server.send(200, "text/html", str);
+}
+
+void errorLogin(){
+  debugln("errorLogin");
+    String str = "";
+    addHead(str);
+    addIntro(str);
+      str += F("<fieldset><legend><b>Fout</b></legend>");
+      str += F("<p><b>Admin password is incorrect.</b><br>");
+      str+=  F("</fieldset>");
+      str += F("<form action='/Setup' method='POST'><button class='button bhome'>Opnieuw</button></form></p>");
+    addFoot(str);
+    server.send(200, "text/html", str);
+    bootSetup = false;
+}
+
+
 void handleSetup(){
-    debugln("handleSetup");
-    monitoring = false; // stop monitoring data
+  if (millis() > 60000) {            // if we did not get here directly, check credentials
+     debugln("indirect call");
+    if (strcmp(server.arg("adminPassword").c_str(), user_data.adminPassword) != 0) {  // passwords don't match
+      debugln("Error: handlesetup entered with wrong password");
+      errorLogin();
+      return;
+    }
+  }      
+  debugln("direct call");
+//bootSetup = false; // reset flag
+  // we're all clear now.
+ 
+  monitoring = false; // stop monitoring data
 
  String str = ""; 
       debugln("handleSetupForm");
 
     addHead(str);
     addIntro(str);
-      str += F("<fieldset>");
+      str += F("<form action='/SetupSave' method='POST'><fieldset>");
+      str += F("<input type='hidden' name='setuptoken' value='");
+       str+= setupToken;
+       str+=  F("'>");
+      str += F("<fieldset><legend><b>&nbsp;Admin&nbsp;</b></legend>");
+      str += F("<p><b>admin password</b><br>");
+       str += F("<input type='text' class='form-control' name='adminPassword' value='");
+       str+= user_data.adminPassword;
+       str+=  F("'></p></fieldset>");
+       
        str += F("<fieldset><legend><b>&nbsp;Wifi parameters&nbsp;</b></legend>");
-       str += F("<form action='/SetupSave' method='POST'><p><b>SSId</b><br>");
+       str += F("<p><b>SSId</b><br>");
        str += F("<input type='text' class='form-control' name='ssid' value='");
        str+= user_data.ssid;
        str+=  F("'></p>");
        str += F("<p><label><b>Password</b></label><br><input type='password' class='form-control' name='password' value='");
        str += user_data.password;
-       str += F("'></p>");
-      str += F("</fieldset>");
+       str += F("'></p></fieldset>");
+      
       str += F("<fieldset><legend><b>&nbsp;Domoticz parameters&nbsp;</b></legend>");
       
       str += F("<p><b>Rapporteer aan Domoticz?</b><input type='checkbox' class='form-control' name='domo' id='domo' ");
@@ -190,11 +259,7 @@ void handleP1(){
   int temp;
     addHead(str);
     addIntro(str);
-  //  str += ("<p>");
-  //  str += P1timestamp;
-   // str += P1timestamp[7];
-   // str += P1timestamp[8];
-   // str += P1timestamp[9];
+
  // str += ("</p>");
   str += F("<form ><fieldset><legend><b>Meetwaarden</b></legend>");
  // str += F("<form action='/' method='post'>");

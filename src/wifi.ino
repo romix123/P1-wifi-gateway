@@ -82,7 +82,8 @@ void modemWake(){
 
 void start_webservices(){
     server.on("/",       handleRoot);
-    server.on("/Setup",  handleSetup);
+    server.on("/Setup",  handleLogin); // handleSetup
+    server.on("/Setup2", handleSetup);
     server.on("/SetupSave",  handleSetupSave);
     server.on("/P1",     handleP1);
     server.on("/Data",  handleRawData);
@@ -96,20 +97,20 @@ void start_services(){
     start_webservices();
     MDNS.begin(host);
     MDNS.addService("http", "tcp", 80);
-    debugln("   …MDNS");
+    debugln("   … MDNS");
     
-    httpUpdater.setup(&server);
-    debugln("   …HTTPupdater");
+    httpUpdater.setup(&server, "/update", update_username, user_data.adminPassword);
+    debugln("   … HTTPupdater");
  
     if (Mqtt){
         mqtt_client.setServer(user_data.mqttIP, atoi(user_data.mqttPort));
         debugln("MQTT server assigned.");
        // mqtt_reconnect();
-    debugln("   …MQTT");
+    debugln("   … MQTT");
     }
     if (Telnet){ 
       setupTelnet();
-      debugln("   …telnet");
+      debugln("   … telnet");
     }
 }
 

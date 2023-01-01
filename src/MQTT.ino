@@ -1,8 +1,30 @@
 /*
- * MQTT functions
- * 
+ * Copyright (c) 2022 Ronald Leenes
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
  */
 
+/**
+ * @file MQTT.ino
+ * @author Ronald Leenes
+ * @date 28.12.2022
+ *
+ * @brief This file contains the MQTT functions 
+ *
+ * @see http://esp8266thingies.nl
+ */
 
 /* MQTT part based on 
  https://github.com/daniel-jong/esp8266_p1meter/blob/master/esp8266_p1meter/esp8266_p1meter.ino
@@ -14,38 +36,41 @@
 // **********************************
 
 void doMQTT(){
-  debugln("Starting mqtt");
   mqtt_connect();
-  MQTT_reporter();
+  if (MqttConnected) MQTT_reporter();
 }
 
 void mqtt_connect(){
-        if (!mqtt_client.connected()) {
-        debugln("mqtt_client loop");
-        mqtt_reconnect();
-        }
+  if (!mqtt_client.connected()) {
+     MqttConnected = false;
+     debugln("Reconnecting to mqtt broker …");
+     mqtt_reconnect();
+  } else MqttConnected = true;
 }
 
 void mqtt_reconnect(){
-  // Loop until we're reconnected
-  while (!mqtt_client.connected()) {
+  
+  if (millis() > nextMQTTreconnectAttempt) {
     debugln("Attempting MQTT connection...");
     // Create a random client ID
     String clientId = "P1 Smart Meter – ";
     clientId += String(random(0xffff), HEX);
     // Attempt to connect
     if (mqtt_client.connect(HOSTNAME, user_data.mqttUser, user_data.mqttPass)){
-      debugln("connected");
+      debugln("   connected to broker");
       // Once connected, publish an announcement...
       mqtt_client.publish("outTopic", "p1 gateway running");
       // ... and resubscribe
       mqtt_client.subscribe("inTopic");
+      MqttConnected = true;
     } else {
       debug("failed, rc=");
       debug(mqtt_client.state());
       debugln(" try again later (non blocking)");
+      nextMQTTreconnectAttempt = millis() + 2000; // try again in 2 seconds
+      MqttConnected = false;
     }
-  }
+  } 
 }
 
 
@@ -57,43 +82,39 @@ void callback(char* topic, byte* payload, unsigned int length) {
     debug((char)payload[i]);
   }
   debugln();
-
-  // Switch on the LED if an 1 was received as first character
-  if ((char)payload[0] == '1') {
-    LEDon
-  } else {
-    LEDoff
-  }
 }
 
 // * Send a message to a broker topic
 void send_mqtt_message(const char *topic, char *payload)
 {
-    debug("MQTT Outgoing on ");
+    if (payload[0] == 0) return; //nothing to report
+    debug("MQTT Outgoing on > ");
     debug(topic);
+    debug(" > ");
     debugln(payload);
 
     bool result = mqtt_client.publish(topic, payload, false);
 
     if (!result)
     {
-        debug("MQTT publish to topic ");
+        debug("MQTT publish to topic: ");
         debug(topic);
         debugln(" failed.");
     }
 }
 
 
-void send_metric(String name, long metric)
+void send_metric(String name, float metric) // added *long
 {
- char output[100];
-    ltoa(metric, output, sizeof(output));
-
+ char value[20];
+ dtostrf(metric, 3, 3, value);
+  //  output ftoa(metric, output, 3);
+    
     mtopic = String(user_data.mqttTopic) + "/" + name;
-    send_mqtt_message(mtopic.c_str(), output);
+    send_mqtt_message(mtopic.c_str(), value); // output
 }
 
-void mqtt_send_metric(String name, char *metric)  //long metric)
+void mqtt_send_metric(String name, char *metric)  
 {
     char output[100];
     mtopic = String(user_data.mqttTopic) + "/" + name;
@@ -102,9 +123,57 @@ void mqtt_send_metric(String name, char *metric)  //long metric)
 
 
  void MQTT_reporter(){
-      char outstr[10];
-      dtostrf(volts/1000, 1,3, outstr);
 #ifdef NEDERLANDS
+  if (mqtt_dsmr){
+      mqtt_send_metric("equipmentID", equipmentId);
+
+      mqtt_send_metric("reading/electricity_delivered_1", electricityUsedTariff1);
+      mqtt_send_metric("reading/electricity_delivered_2", electricityUsedTariff2);
+      mqtt_send_metric("reading/electricity_returned_1", electricityReturnedTariff1);
+      mqtt_send_metric("reading/electricity_returned_2", electricityReturnedTariff2);
+      mqtt_send_metric("reading/electricity_currently_delivered", actualElectricityPowerDelivered);
+      mqtt_send_metric("reading/electricity_currently_returned", actualElectricityPowerReturned);
+
+      mqtt_send_metric("reading/phase_currently_delivered_l1", activePowerL1P);
+      mqtt_send_metric("reading/phase_currently_delivered_l2", activePowerL2P);
+      mqtt_send_metric("reading/phase_currently_delivered_l3", activePowerL3P);
+      mqtt_send_metric("reading/phase_currently_returned_l1", instantaneousCurrentL1);
+      mqtt_send_metric("reading/phase_currently_returned_l2", instantaneousCurrentL2);
+      mqtt_send_metric("reading/phase_currently_returned_l3", instantaneousCurrentL3);
+      mqtt_send_metric("reading/phase_voltage_l1", instantaneousVoltageL1);
+      mqtt_send_metric("reading/phase_voltage_l2", instantaneousVoltageL2);
+      mqtt_send_metric("reading/phase_voltage_l3", instantaneousVoltageL3);
+    
+      mqtt_send_metric("consumption/gas/delivered", gasReceived5min);
+
+      mqtt_send_metric("meter-stats/actual_tarif_group", tariffIndicatorElectricity);
+      mqtt_send_metric("meter-stats/power_failure_count", numberPowerFailuresAny);
+      mqtt_send_metric("meter-stats/long_power_failure_count", numberLongPowerFailuresAny);
+      mqtt_send_metric("meter-stats/short_power_drops", numberVoltageSagsL1);
+      mqtt_send_metric("meter-stats/short_power_peaks", numberVoltageSwellsL1);    
+
+      send_metric("day-consumption/electricity1", (atof(electricityUsedTariff1) - atof(dayStartUsedT1)));
+      send_metric("day-consumption/electricity2", (atof(electricityUsedTariff2) - atof(dayStartUsedT2)));
+      send_metric("day-consumption/electricity1_returned", (atof(electricityReturnedTariff1) - atof(dayStartReturnedT1)));
+      send_metric("day-consumption/electricity2_returned", (atof(electricityReturnedTariff2) - atof(dayStartReturnedT2)));
+
+      send_metric("day-consumption/electricity_merged", ((atof(electricityUsedTariff1) - atof(dayStartUsedT1)) + (atof(electricityUsedTariff2) - atof(dayStartUsedT2))));
+      send_metric("day-consumption/electricity_returned_merged", ((atof(electricityReturnedTariff1) - atof(dayStartReturnedT1)) + (atof(electricityReturnedTariff2) - atof(dayStartReturnedT2))));
+      send_metric("day-consumption/gas", (atof(gasReceived5min) - atof(dayStartGaz)));
+
+      send_metric("current-month/electricity1", (atof(electricityUsedTariff1) - atof(monthStartUsedT1)));
+      send_metric("current-month/electricity2", (atof(electricityUsedTariff2) - atof(monthStartUsedT2)));
+      send_metric("current-month/electricity1_returned", (atof(electricityReturnedTariff1) - atof(monthStartReturnedT1)));
+      send_metric("current-month/electricity2_returned", (atof(electricityReturnedTariff2) - atof(monthStartReturnedT2)));
+
+      send_metric("current-month/electricity_merged", ((atof(electricityUsedTariff1) - atof(monthStartUsedT1)) + (atof(electricityUsedTariff2) - atof(monthStartUsedT2))));
+      send_metric("current-month/electricity_returned_merged", ((atof(electricityReturnedTariff1) - atof(monthStartReturnedT1)) + (atof(electricityReturnedTariff2) - atof(monthStartReturnedT2))));
+      send_metric("current-month/gas", (atof(gasReceived5min) - atof(monthStartGaz)));
+      LastReport = timestamp();
+      MqttDelivered = true;
+    return;
+    
+  }
       mqtt_send_metric("equipmentID", equipmentId);
 
       mqtt_send_metric("consumption_low_tarif", electricityUsedTariff1);
@@ -130,7 +199,7 @@ void mqtt_send_metric(String name, char *metric)  //long metric)
       mqtt_send_metric("short_power_outages", numberPowerFailuresAny);
       mqtt_send_metric("long_power_outages", numberLongPowerFailuresAny);
       mqtt_send_metric("short_power_drops", numberVoltageSagsL1);
-      mqtt_send_metric("short_power_peaks", numberVoltageSwellsL1);      
+      mqtt_send_metric("short_power_peaks", numberVoltageSwellsL1);   
 #endif
 #ifdef GERMAN
       mqtt_send_metric("equipmentID", equipmentId);
@@ -231,32 +300,34 @@ void mqtt_send_metric(String name, char *metric)  //long metric)
       mqtt_send_metric("currentL2", instantaneousCurrentL2);  // 51.7.0
       mqtt_send_metric("currentL3", instantaneousCurrentL3);  // 71.7.0
       mqtt_send_metric("P1module_voltage", outstr);
-#endif
-    if (Debug){ //#if MDEBUG == 1      
-      mqtt_send_metric("P1module_voltage", outstr);
+#endif      
+      LastReport = timestamp();
+      MqttDelivered = true;
+}
+
+void MQTT_Debug(){
+      char outstr[10];
+      dtostrf(volts/1000, 1,3, outstr);
+      send_mqtt_message("p1wifi/P1module_voltage", outstr);
 
       dtostrf(millis(), 10,0, outstr);
-      mqtt_send_metric("P1now", outstr);
+      send_mqtt_message("p1wifi/P1now", outstr);
 
       dtostrf(time_to_sleep, 10,0, outstr);
-      mqtt_send_metric("P1time_toSleep", outstr);
+      send_mqtt_message("p1wifi/P1time_toSleep", outstr);
       
       dtostrf(time_to_wake, 10,0, outstr);
-      mqtt_send_metric("P1time_toWake", outstr);
+      send_mqtt_message("p1wifi/P1time_toWake", outstr);
 
      dtostrf(ESP.getFreeHeap(), 10,0, outstr);
-      mqtt_send_metric("P1Heap", outstr);
+      send_mqtt_message("p1wifi/P1Heap", outstr);
 
       dtostrf(ESP.getHeapFragmentation(), 10,0, outstr);
-      mqtt_send_metric("P1HeapFrag", outstr);
+      send_mqtt_message("p1wifi/P1HeapFrag", outstr);
 
       dtostrf(WiFi.RSSI(), 10,0, outstr);
-      mqtt_send_metric("RSSI", outstr);
+      send_mqtt_message("p1wifi/RSSI", outstr);
 
-      
       dtostrf(RFpower, 10,0, outstr);
-      mqtt_send_metric("RF power", outstr);
-    }
-// #endif // debug == 3
-      debugln("MQTT data sent.");
+      send_mqtt_message("p1wifi/RF power", outstr);
 }

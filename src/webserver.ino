@@ -48,7 +48,16 @@ void handleSetupSave() {
   }
   
   String str = ""; 
+  
   if (server.method() == HTTP_POST) {
+    if (strncmp(setupToken, server.arg("setuptoken").c_str(), 16) != 0) {
+      debug("Error: non matching tokens: ");
+      debug(setupToken);
+      debug(" -> returned: ");
+      debugln(server.arg("setuptoken"));
+      return;
+    }
+    strncpy(user_data.adminPassword,     server.arg("adminPassword").c_str(),     sizeof(user_data.adminPassword) );
     if (server.arg("domo") == "on") user_data.domo[0] = 'j'; else user_data.domo[0] = 'n';
     strncpy(user_data.ssid,     server.arg("ssid").c_str(),     sizeof(user_data.ssid) );
     strncpy(user_data.password, server.arg("password").c_str(), sizeof(user_data.password) );
@@ -69,8 +78,10 @@ void handleSetupSave() {
     if (server.arg("watt") == "on") user_data.watt[0] = 'j'; else user_data.watt[0] = 'n';
     if (server.arg("telnet") == "on") user_data.telnet[0] = 'j'; else user_data.telnet[0] = 'n';
       if (server.arg("debug") == "on") user_data.debug[0] = 'j'; else user_data.debug[0] = 'n';
- 
 
+    user_data.dataSet[0] = 'j';
+    user_data.dataSet[1] =
+    user_data.ssid[server.arg("adminPassword").length()] =
     user_data.ssid[server.arg("ssid").length()] = 
     user_data.password[server.arg("password").length()] = 
     user_data.domoticzIP[server.arg("domoticzIP").length()] = 

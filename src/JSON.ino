@@ -1,16 +1,35 @@
 /*
- * 
- * JSON routines
- * 
+ * Copyright (c) 2022 Ronald Leenes
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
  */
 
+/**
+ * @file JSON.ino
+ * @author Ronald Leenes
+ * @date 28.12.2022
+ *
+ * @brief This file contains the JSON functions for communicating with Domoticz 
+ *
+ * @see http://esp8266thingies.nl
+ */
  
 void doJSON(){
   UpdateElectricity();
   UpdateGas();
 }
-
-
 
 bool DomoticzJson(char* idx, int nValue, char* sValue){
   WiFiClient client;
@@ -42,8 +61,6 @@ bool DomoticzJson(char* idx, int nValue, char* sValue){
   } // we just return if there is no IP to report to.
   return true;
 }
-
-
 
 void UpdateGas(){  //sends over the gas setting to server(s)
   if(strncmp(gasReceived5min, prevGAS, sizeof(gasReceived5min)) != 0){          // if we have a new value, report

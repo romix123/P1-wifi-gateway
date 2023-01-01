@@ -1,3 +1,4 @@
+
 #include <Arduino.h>
 #include <WiFiClient.h>
 #include <WiFiServer.h>
@@ -62,6 +63,7 @@ void ESP8266HTTPUpdateServerTemplate<ServerType>::setup(ESP8266WebServerTemplate
 
     // handler for the /update form page
     _server->on(path.c_str(), HTTP_GET, [&](){
+      debugln("// handler for the /update form page");
       if(_username != emptyString && _password != emptyString && !_server->authenticate(_username.c_str(), _password.c_str()))
         return _server->requestAuthentication();
       _server->send_P(200, PSTR("text/html"), serverIndex);
@@ -70,6 +72,7 @@ void ESP8266HTTPUpdateServerTemplate<ServerType>::setup(ESP8266WebServerTemplate
     // handler for the /update form POST (once file upload finishes)
     _server->on(path.c_str(), HTTP_POST, [&](){
       if(!_authenticated)
+        debugln("not authenticated");
         return _server->requestAuthentication();
       if (Update.hasError()) {
         _server->send(200, F("text/html"), String(F("Update error: ")) + _updaterError);
