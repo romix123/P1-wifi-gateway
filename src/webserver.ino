@@ -102,7 +102,7 @@ void handleSetupSave() {
 
     user_data.dataSet[0] = 'j';
     user_data.dataSet[1] =
-    user_data.ssid[server.arg("adminPassword").length()] =
+    user_data.adminPassword[server.arg("adminPassword").length()] =
     user_data.ssid[server.arg("ssid").length()] = 
     user_data.password[server.arg("password").length()] = 
     user_data.domoticzIP[server.arg("domoticzIP").length()] = 
