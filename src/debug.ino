@@ -34,6 +34,8 @@ void readVoltage() { // read internal VCC
 void PrintConfigData(){
   debug("dataSet : ");
     debugln(user_data.dataSet);
+  debug("Admin password : ");
+    debugln(user_data.adminPassword);
   debug("SSID : ");
     debugln(user_data.ssid);
   debug("password : ");
@@ -47,7 +49,7 @@ void PrintConfigData(){
   debug("domotixzEnergyIdx : ");
    debugln(user_data.domoticzEnergyIdx);
 
-  debug("mqttHost : ");
+  debug("mqttIP : ");
     debugln(user_data.mqttIP);
   debug("mqttPort : ");
     debugln(user_data.mqttPort);

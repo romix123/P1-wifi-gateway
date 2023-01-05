@@ -58,11 +58,11 @@ void setupSaved(String& str){
 }
 
 void uploadDiag(String& str){
-   if (strcmp(server.arg("adminPassword").c_str(), user_data.adminPassword) != 0) {  // passwords don't match
-      debugln("Error: update entered with wrong password");
-      errorUpdateLogin();
-      return;
-    }
+//   if (strcmp(server.arg("adminPassword").c_str(), user_data.adminPassword) != 0) {  // passwords don't match
+//      debugln("Error: update entered with wrong password");
+//      errorUpdateLogin();
+//      return;
+//    }
   monitoring = false; // stop monitoring data
   addHead(str);
   addIntro(str);

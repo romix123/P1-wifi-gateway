@@ -66,6 +66,8 @@
  *  datum:  31 Dec 2022
  *  auteur: Ronald Leenes
  *  
+ *  
+ *  ua: fixed setup field issue
  *  u: 
  *    password on Setup and Firmware Update
  *    made mqtt re-connect non-blocking
@@ -105,15 +107,15 @@
 *   Flash Size: 2mb (FS: 64Kb, OTA: –992Kb) 
 */
 
-String version = "1.0u – NL";
+String version = "1.0ua – NL";
 #define   NEDERLANDS //  GERMAN//  SWEDISH //  FRENCH //
 
 
 #define HOSTNAME "p1meter"
 
 
-#define V3//3//3 //3 //3 //V2
-#define DEBUG 0// 1//0// 1 // 1 is on serial only, 2 is serial + telnet, 
+#define V3
+#define DEBUG 0// 1 // 1 is on serial only, 2 is serial + telnet, 
 #define ESMR5 1
 //#define SLEEP_ENABLED 
 
@@ -122,7 +124,7 @@ const uint32_t  wakeTime = 90000; // stay awake wakeTime millisecs
 const uint32_t  sleepTime = 5000; //sleep sleepTime millisecs
 
 #if DEBUG == 1
-const char* host = "P1wifi"; //_test";
+const char* host = "P1wifi_test"; //_test";
 #define BLED LED_BUILTIN
 #define debug(x) Serial.print(x)
 #define debugf(x) Serial.printf(x)
@@ -212,8 +214,8 @@ bool telnetConnected = false;
 
 struct settings {
   char dataSet[4];
-  char ssid[30];
-  char password[30];
+  char ssid[32];
+  char password[32];
   char domoticzIP[30] = "IPaddress";
   char domoticzPort[10] = "Port";
   char domoticzEnergyIdx[10] = "EnergyIdx";
@@ -221,15 +223,15 @@ struct settings {
   char mqttTopic[50] = "sensors/power/p1meter";
   char mqttIP[30] = "";
   char mqttPort[10]  = "";
-  char mqttUser[16] = "";
-  char mqttPass[16] = "";
+  char mqttUser[32] = "";
+  char mqttPass[32] = "";
   char interval[3] = "20";
   char domo[4] ="j";
   char mqtt[4] ="n";
   char watt[4] = "n";
   char telnet[4] = "n";
   char debug[4] = "n";
-  char adminPassword[30];
+  char adminPassword[32];
 } user_data = {};
 
 float RFpower = 0;      //20.5; // (For OdBm of output power, lowest. Supply current~70mA) 

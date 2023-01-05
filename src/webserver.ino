@@ -57,23 +57,44 @@ void handleSetupSave() {
       debugln(server.arg("setuptoken"));
       return;
     }
-    strncpy(user_data.adminPassword,     server.arg("adminPassword").c_str(),     sizeof(user_data.adminPassword) );
+
+//  Serial.print("String length :");Serial.println(strlen(str));
+//  Serial.print("Array length :");Serial.println(sizeof(str));
+  
+    debug("user_data.password>");
+    debug(user_data.adminPassword);
+    debug("< – ");
+    debugln(strlen(user_data.adminPassword));
+
+     debug("server.arg(adminPassword).c_str()>");
+    debug(server.arg("adminPassword").c_str());
+    debug("< – ");
+    debugln(strlen(server.arg("adminPassword").c_str()));   
+
+    debug("server.arg(adminPassword)>");
+    debug(server.arg("adminPassword"));
+    debug("< – ");
+    debugln(server.arg("adminPassword").length());
+    
+    strncpy(user_data.adminPassword,     server.arg("adminPassword").c_str(),     server.arg("adminPassword").length() );
+
+  
     if (server.arg("domo") == "on") user_data.domo[0] = 'j'; else user_data.domo[0] = 'n';
-    strncpy(user_data.ssid,     server.arg("ssid").c_str(),     sizeof(user_data.ssid) );
-    strncpy(user_data.password, server.arg("password").c_str(), sizeof(user_data.password) );
-    strncpy(user_data.domoticzIP, server.arg("domoticzIP").c_str(), sizeof(user_data.domoticzIP) );
-    strncpy(user_data.domoticzPort, server.arg("domoticzPort").c_str(), sizeof(user_data.domoticzPort) );
-    strncpy(user_data.domoticzEnergyIdx, server.arg("domoticzEnergyIdx").c_str(), sizeof(user_data.domoticzEnergyIdx) );
-    strncpy(user_data.domoticzGasIdx, server.arg("domoticzGasIdx").c_str(), sizeof(user_data.domoticzGasIdx) );
+    strncpy(user_data.ssid,     server.arg("ssid").c_str(),     server.arg("ssid").length() );
+    strncpy(user_data.password, server.arg("password").c_str(), server.arg("password").length() );
+    strncpy(user_data.domoticzIP, server.arg("domoticzIP").c_str(), server.arg("domoticzIP").length() );
+    strncpy(user_data.domoticzPort, server.arg("domoticzPort").c_str(), server.arg("domoticzPort").length() );
+    strncpy(user_data.domoticzEnergyIdx, server.arg("domoticzEnergyIdx").c_str(), server.arg("domoticzEnergyIdx").length() );
+    strncpy(user_data.domoticzGasIdx, server.arg("domoticzGasIdx").c_str(), server.arg("domoticzGasIdx").length() );
 
     if (server.arg("mqtt") == "on") user_data.mqtt[0] = 'j'; else user_data.mqtt[0] = 'n';
-    strncpy(user_data.mqttIP, server.arg("mqttIP").c_str(), sizeof(user_data.mqttIP) );
-    strncpy(user_data.mqttPort, server.arg("mqttPort").c_str(), sizeof(user_data.mqttPort) );
-    strncpy(user_data.mqttUser, server.arg("mqttUser").c_str(), sizeof(user_data.mqttUser) );
-    strncpy(user_data.mqttPass, server.arg("mqttPass").c_str(), sizeof(user_data.mqttPass) );
-    strncpy(user_data.mqttTopic, server.arg("mqttTopic").c_str(), sizeof(user_data.mqttTopic) );
+    strncpy(user_data.mqttIP, server.arg("mqttIP").c_str(), server.arg("mqttIP").length() );
+    strncpy(user_data.mqttPort, server.arg("mqttPort").c_str(), server.arg("mqttPort").length() );
+    strncpy(user_data.mqttUser, server.arg("mqttUser").c_str(), server.arg("mqttUser").length() );
+    strncpy(user_data.mqttPass, server.arg("mqttPass").c_str(), server.arg("mqttPass").length() );
+    strncpy(user_data.mqttTopic, server.arg("mqttTopic").c_str(), server.arg("mqttTopic").length() );
                 
-    strncpy(user_data.interval, server.arg("interval").c_str(), sizeof(user_data.interval) );
+    strncpy(user_data.interval, server.arg("interval").c_str(), server.arg("interval").length() );
 
     if (server.arg("watt") == "on") user_data.watt[0] = 'j'; else user_data.watt[0] = 'n';
     if (server.arg("telnet") == "on") user_data.telnet[0] = 'j'; else user_data.telnet[0] = 'n';
