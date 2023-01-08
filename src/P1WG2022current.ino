@@ -107,7 +107,7 @@
 *   Flash Size: 2mb (FS: 64Kb, OTA: –992Kb) 
 */
 
-String version = "1.0ua – NL";
+String version = "1.0uc – NL";
 #define   NEDERLANDS //  GERMAN//  SWEDISH //  FRENCH //
 
 
@@ -115,7 +115,7 @@ String version = "1.0ua – NL";
 
 
 #define V3
-#define DEBUG 0// 1 // 1 is on serial only, 2 is serial + telnet, 
+#define DEBUG 1//0// 1 // 1 is on serial only, 2 is serial + telnet, 
 #define ESMR5 1
 //#define SLEEP_ENABLED 
 
@@ -124,7 +124,7 @@ const uint32_t  wakeTime = 90000; // stay awake wakeTime millisecs
 const uint32_t  sleepTime = 5000; //sleep sleepTime millisecs
 
 #if DEBUG == 1
-const char* host = "P1wifi_test"; //_test";
+const char* host = "P1wifi"; //_test";
 #define BLED LED_BUILTIN
 #define debug(x) Serial.print(x)
 #define debugf(x) Serial.printf(x)
@@ -189,10 +189,10 @@ ESP8266WebServer    server(80);
 #include <WiFiClient.h>
 #include <ESP8266mDNS.h>
 
-#include "ESP8266HTTPUpdateServer.h"
-const char* update_username = "admin";
+//#include "ESP8266HTTPUpdateServer.h"
+//const char* update_username = "admin";
 
-ESP8266HTTPUpdateServer httpUpdater;
+//ESP8266HTTPUpdateServer httpUpdater;
 
 // mqtt stuff . https://github.com/ict-one-nl/P1-Meter-ESP8266-MQTT/blob/master/P1Meter/P1Meter.ino
 #include <PubSubClient.h>
@@ -371,6 +371,7 @@ bool softAp = false;
 bool Json = false;
 bool Telnet = false;
 
+bool AdminAuthenticated = false;
 bool Mqtt = false;
 bool MqttConnected = false;
 bool MqttDelivered = false;
@@ -430,6 +431,8 @@ void setup() {
   }
 
   interval = atoi( user_data.interval) * 1000; 
+  debug("interval: ");
+  debugln(interval);
   
    debugln("Trying to connect to your wifi network:");
   WiFi.mode(WIFI_STA);
@@ -504,27 +507,7 @@ void readTelegram() {
   }
 }
 
-void blink(int t){
-  for (int i=0 ; i <=t; i++){
-    LEDon       // Signaal naar laag op ESP-M3
-    delay(200); // wacht 200 millisec
-    LEDoff;     // LEDoff, signaal naar hoog op de ESP-M3
-  }
-}
 
-void RTS_on(){            // switch on Data Request
-  digitalWrite(OE, LOW);  // enable buffer
-  digitalWrite(DR, HIGH); // turn on Data Request
-  OEstate = true;
-   debugln("Data request on");
-}
-
-void RTS_off(){           // switch off Data Request
-  digitalWrite(DR, LOW);  // turn off Data Request 
-  digitalWrite(OE, HIGH); // put buffer in Tristate mode
-  OEstate = false;
-   debugln("Data request off");
-}
 
 
 void loop() {  
@@ -570,8 +553,9 @@ void loop() {
       }
       if (MQTT_debug) MQTT_Debug();
 
-      nextUpdateTime = millis() + interval; 
+      nextUpdateTime = millis() + interval;
       if (ESP.getFreeHeap() < 2000) ESP.reset(); // watchdog, we do have a memery leak (still)
+      state = WAITING;
      }
      
   if (softAp || (WiFi.status() == WL_CONNECTED)) {

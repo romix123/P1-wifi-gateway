@@ -30,14 +30,20 @@ void addUptime(String& str){
 
 void addFoot(String& str){
   str += F("<div style='text-align:right;font-size:11px;color:#aaa;'><hr/>");
-  if (Mqtt && MqttConnected) str += F("MQTT link: √ "); else str += F("MQTT – ");
-  str += F(" laatste sample: ");
-  str += LastReport;
+  if (Mqtt) {
+    if (MqttConnected) str += F("MQTT link: √ "); else str += F("MQTT – ");
+    str += F(" laatste sample: ");
+    str += LastReport;
+  }
   str += F(" firmware versie: ");
   str += version;
- // char sysmsg[100];
- // sprintf_P(sysmsg, PSTR(" – %1.2fV"), volts / 1000);
- // str += sysmsg;
+  str += F("<br><a href='http://esp8266thingies.nl' target='_blank' style='color:#aaa;'>esp8266thingies.nl</a>");
+  str += F("</div></div></body></html>");
+}
+void addFootBare(String& str){
+  str += F("<div style='text-align:right;font-size:11px;color:#aaa;'><hr/>");
+  str += F(" firmware versie: ");
+  str += version;
   str += F("<br><a href='http://esp8266thingies.nl' target='_blank' style='color:#aaa;'>esp8266thingies.nl</a>");
   str += F("</div></div></body></html>");
 }
@@ -57,38 +63,43 @@ void setupSaved(String& str){
   str += F("<div style='text-align:right;font-size:11px;'><hr/><a href='http://eps8266thingies.nl' target='_blank' style='color:#aaa;'>eps8266thingies.nl</a></div></div></fieldset></body></html>");
 }
 
-void uploadDiag(String& str){
-//   if (strcmp(server.arg("adminPassword").c_str(), user_data.adminPassword) != 0) {  // passwords don't match
-//      debugln("Error: update entered with wrong password");
-//      errorUpdateLogin();
-//      return;
-//    }
+void handleUploadForm(){
+   if (strcmp(server.arg("adminPassword").c_str(), user_data.adminPassword) != 0) {  // passwords don't match
+      debugln("Error: update entered with wrong password");
+      errorLogin("Update");
+      return;
+    } else  AdminAuthenticated = true;
+  String str="";
   monitoring = false; // stop monitoring data
   addHead(str);
   addIntro(str);
   str += F("<fieldset><fieldset><legend><b>Update firmware</b></legend>");
-  str += F("<form action='' method='post'><form method='POST' action='' enctype='multipart/form-data'><p>");
+  str += F("<form method='POST' action='/update' enctype='multipart/form-data'><p>");
   str += F("<b>Firmware</b><input type='file' accept='.bin,.bin.gz' name='firmware'></p>");
   str += F("<button type='submit'>Update Firmware</button>");
   str += F("</form>");
   str += F("<form action='/' method='POST'><button class='button bhome'>Menu</button></form>");
-  addFoot(str); 
+  addFootBare(str); 
   webstate = UPDATE;
+  server.send(200, "text/html", str);
 }
 
-void successResponse(String& str){
-  addHead(str);
+void successResponse(){
+  String str = "";
+  addRefreshHead(str);
   addIntro(str);
   str += F("<fieldset>");
   str += F("<fieldset><legend><b>Firmware update</b></legend>");
   str += F("<p><b>De firmware is succesvol bijgewerkt</b><br><br>");
-  str += F("<p>De module zal nu herstarten. Dat duurt ongeveer een minuut</p><br>");
+  str += F("<p>De module zal nu herstarten. Dat duurt ongeveer een minuut</p>");
   str += F("<p>De blauwe Led zal 2x oplichten wanneer de module klaar is met opstarten</p>");
   str += F("<p>De led zal langzaam knipperen tijdens koppelen aan uw WiFi netwerk.</p>");
   str += F("<p>Als de blauwe led blijft branden is de instelling mislukt en zult u <br>");
   str += F("opnieuw moeten koppelen met WIfi netwerk 'P1_Setup' met wachtwoord 'configP1'.</p>");
   str += F("</fieldset></p>");
   str += F("<div style='text-align:right;font-size:11px;'><hr/><a href='http://eps8266thingies.nl' target='_blank' style='color:#aaa;'>eps8266thingies.nl</a></div></div></fieldset></body></html>");
+  server.send(200, "text/html", str);
+  delay(2000);
 }
 
 void handleRoot(){
@@ -100,12 +111,13 @@ void handleRoot(){
     str += F("<main class='form-signin'>");
     str += F("<form action='/P1' method='post'><button type='p1' class='button bhome'>Meterdata</button></form>");
     str += F("<form action='/Setup' method='post'><button type='Setup'>Setup</button></form>");
-    str += F("<form action='/update' method='GET'><button type='submit'>Update firmware</button></form>");
+    str += F("<form action='/Update' method='GET'><button type='submit'>Update firmware</button></form>");
   addUptime(str);
   addFoot(str);
   server.send(200, "text/html", str);
   webstate = MAIN;
   monitoring = true;
+  nextUpdateTime = millis() + 2000;
 }
 
 void handleLogin(){
@@ -134,7 +146,33 @@ void handleLogin(){
   server.send(200, "text/html", str);
 }
 
-void errorLogin(){
+void handleUpdateLogin(){
+  createToken();
+    debugln("handleUpdateLogin");
+//
+//  if (millis() < 60000) {
+//    debug(millis());
+//    debugln(" – You made it within the timeframe, go to setup without login."); 
+//    bootSetup = true; // our ticket to handleSetup
+//    handleSetup();
+//  }
+   String str = "";
+    addHead(str);
+    addIntro(str);
+      str += F("<form action='/uploadDialog' method='POST'><fieldset>");
+       str += F("<input type='hidden' name='setuptoken' value='");
+       str+= setupToken;
+       str+=  F("'>");
+      str += F("<fieldset><legend><b>&nbsp;Login&nbsp;</b></legend>");
+      str += F("<p><b>Admin password</b><br>");
+      str += F("<input type='text' class='form-control' name='adminPassword' value='' </p>");
+      str+=  F("</fieldset>");
+      str += F("<p><button type='submit'>Login</button></form>");
+  addFoot(str);
+  server.send(200, "text/html", str);
+}
+
+void errorLogin(String returnpage){
   debugln("errorLogin");
     String str = "";
     addHead(str);
@@ -142,26 +180,24 @@ void errorLogin(){
       str += F("<fieldset><legend><b>Fout</b></legend>");
       str += F("<p><b>Admin password is incorrect.</b><br>");
       str+=  F("</fieldset>");
-      str += F("<form action='/Setup' method='POST'><button class='button bhome'>Opnieuw</button></form></p>");
+      str += F("<form action='/");
+      str += returnpage;
+      str += F("' method='POST'><button class='button bhome'>Opnieuw</button></form></p>");
     addFoot(str);
     server.send(200, "text/html", str);
     bootSetup = false;
 }
-
 
 void handleSetup(){
   if (millis() > 60000) {            // if we did not get here directly, check credentials
      debugln("indirect call");
     if (strcmp(server.arg("adminPassword").c_str(), user_data.adminPassword) != 0) {  // passwords don't match
       debugln("Error: handlesetup entered with wrong password");
-      errorLogin();
+      errorLogin("Setup");
       return;
     }
   }      
   debugln("direct call");
-//bootSetup = false; // reset flag
-  // we're all clear now.
- 
   monitoring = false; // stop monitoring data
 
  String str = ""; 

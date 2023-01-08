@@ -169,7 +169,7 @@ void mqtt_send_metric(String name, char *metric)
       send_metric("current-month/electricity_merged", ((atof(electricityUsedTariff1) - atof(monthStartUsedT1)) + (atof(electricityUsedTariff2) - atof(monthStartUsedT2))));
       send_metric("current-month/electricity_returned_merged", ((atof(electricityReturnedTariff1) - atof(monthStartReturnedT1)) + (atof(electricityReturnedTariff2) - atof(monthStartReturnedT2))));
       send_metric("current-month/gas", (atof(gasReceived5min) - atof(monthStartGaz)));
-      LastReport = timestamp();
+      LastReport = timestampkaal();
       MqttDelivered = true;
     return;
     

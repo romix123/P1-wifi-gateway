@@ -25,7 +25,33 @@
  *
  * @see http://esp8266thingies.nl
  */
+void blink(int t){
+  for (int i=0 ; i <=t; i++){
+    LEDon       // Signaal naar laag op ESP-M3
+    delay(200); // wacht 200 millisec
+    LEDoff;     // LEDoff, signaal naar hoog op de ESP-M3
+  }
+}
 
+void RTS_on(){            // switch on Data Request
+  digitalWrite(OE, LOW);  // enable buffer
+  digitalWrite(DR, HIGH); // turn on Data Request
+  OEstate = true;
+   debug("Data request on at ");
+   debugln(millis());
+}
+
+void RTS_off(){           // switch off Data Request
+  digitalWrite(DR, LOW);  // turn off Data Request 
+  digitalWrite(OE, HIGH); // put buffer in Tristate mode
+  OEstate = false;
+  nextUpdateTime = millis() + interval;
+   debug("Data request off at ");
+   debug(millis());
+   debug(" nextUpdateTime: ");
+   debugln(nextUpdateTime);
+   
+}
 
 bool isNumber(char* res, int len) {
   for (int i = 0; i < len; i++) {
@@ -54,12 +80,11 @@ void settime(){
 }
 
 String timestamp(){
-//  String tm;
-//  tm = "time: ";
-//  tm += hour();
-//  tm += ":" + minute() + ":" + second();
   return (String) "time: " + hour() + ":" + minute() + ":" + second();
-  
+}
+
+String timestampkaal(){
+    return (String) hour() + ":" + minute() + ":" + second();
 }
 
 void createToken(){

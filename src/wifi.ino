@@ -80,27 +80,73 @@ void modemWake(){
   }
 }
 
+const char* serverIndex = "<form method='POST' action='/update' enctype='multipart/form-data'><input type='file' name='update'><input type='submit' value='Update'></form>";
+
 void start_webservices(){
+//  String str = ""; 
     server.on("/",       handleRoot);
     server.on("/Setup",  handleLogin); // handleSetup
     server.on("/Setup2", handleSetup);
     server.on("/SetupSave",  handleSetupSave);
+    server.on("/Update", handleUpdateLogin); // use our own authentication
+    server.on("/uploadDialog", handleUploadForm);
+    
     server.on("/P1",     handleP1);
     server.on("/Data",  handleRawData);
     server.on("/Help", handleHelp);
+
+    server.on("/update", HTTP_GET, []() {
+      debugln("Index");
+      handleUpdateLogin();
+    });
+    server.on("/update", HTTP_POST, []() {
+      if (AdminAuthenticated){
+        debugln("Connection close part");
+         // debugln("Error: handleUpdateLogin entered with wrong password"); 
+          server.sendHeader("Connection", "close");
+          server.send(200, "text/plain", (Update.hasError()) ? "FAIL" : "OK");
+      //  ESP.restart();
+      }
+    }, []() {
+      if (AdminAuthenticated){
+      HTTPUpload& upload = server.upload();
+      debugln("Upload part");
+      if (upload.status == UPLOAD_FILE_START) {
+        Serial.setDebugOutput(true);
+        WiFiUDP::stopAll();
+        debugf("Update: %s\n", upload.filename.c_str());
+        uint32_t maxSketchSpace = (ESP.getFreeSketchSpace() - 0x1000) & 0xFFFFF000;
+        if (!Update.begin(maxSketchSpace)) { //start with max available size
+          Update.printError(Serial);
+        }
+      } else if (upload.status == UPLOAD_FILE_WRITE) {
+        if (Update.write(upload.buf, upload.currentSize) != upload.currentSize) {
+          Update.printError(Serial);
+        }
+      } else if (upload.status == UPLOAD_FILE_END) {
+        if (Update.end(true)) { //true to set the size to the current progress
+          debugf("Update Success: %u\nRebooting...\n", upload.totalSize);
+          successResponse();
+          ESP.restart();
+        } else {
+          Update.printError(Serial);
+        }
+        Serial.setDebugOutput(false);
+      }
+      yield();
+     } // AdminAuthenticated
+    });
+    debugln("   … HTTPupdater");
     server.begin();
     debugln("   …webserver");
 }
 
 void start_services(){
-    debugln("Starting services…");
+    debugln("Starting services");
     start_webservices();
     MDNS.begin(host);
     MDNS.addService("http", "tcp", 80);
     debugln("   … MDNS");
-    
-    httpUpdater.setup(&server, "/update", update_username, user_data.adminPassword);
-    debugln("   … HTTPupdater");
  
     if (Mqtt){
         mqtt_client.setServer(user_data.mqttIP, atoi(user_data.mqttPort));
