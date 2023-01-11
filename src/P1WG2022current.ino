@@ -62,11 +62,11 @@
  *  
  *  
  *    
- *  versie: 1.0u 
- *  datum:  31 Dec 2022
+ *  versie: 1.0ud 
+ *  datum:  11 Jan 2023
  *  auteur: Ronald Leenes
  *  
- *  
+ *  ud: fixed refreshheader
  *  ua: fixed setup field issue
  *  u: 
  *    password on Setup and Firmware Update
@@ -107,7 +107,7 @@
 *   Flash Size: 2mb (FS: 64Kb, OTA: –992Kb) 
 */
 
-String version = "1.0uc – NL";
+String version = "1.0ud – NL";
 #define   NEDERLANDS //  GERMAN//  SWEDISH //  FRENCH //
 
 
@@ -115,7 +115,7 @@ String version = "1.0uc – NL";
 
 
 #define V3
-#define DEBUG 1//0// 1 // 1 is on serial only, 2 is serial + telnet, 
+#define DEBUG 0// 1 // 1 is on serial only, 2 is serial + telnet, 
 #define ESMR5 1
 //#define SLEEP_ENABLED 
 

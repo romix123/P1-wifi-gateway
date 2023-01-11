@@ -37,35 +37,15 @@ void addHead(String& str)
 void addRefreshHead(String& str)
 {
   str += F("<!DOCTYPE html><html lang='en' class=''>");
-  str += F("<META http-equiv=\"refresh\" content=\"30;URL=/http:/\">");
+  str += F("<META http-equiv=\"refresh\" content=\"30;URL=/\">");
   str += F("<meta charset='utf-8'><meta name=\"viewport\" content=\"width=device-width,initial-scale=1,user-scalable=no\"/>");
   str += F("<head><title>Slimme meter</title>");
   str += F("<style>");
   str += F("div, fieldset, input, select {padding: 5px; font-size: 1em;}");
   str += F("fieldset {background: #ECEAE4;}");
   str += F("p {margin: 0.5em 0;}");
-//  str += F("input {width: 100%; box-sizing: border-box; -webkit-box-sizing: border-box; -moz-box-sizing: border-box; background: #ffffff; color: #000000;}");
-//  str += F("input[type=range] {width: 90%;}");
-//  str += F("select {width: 100%; background: #ffffff; color: #000000;}");
-//  str += F("textarea {resize: vertical; width: 98%; height: 318px; padding: 5px; overflow: auto; background: #ffffff; color: #000000;}");
   str += F("body {text-align: center; font-family: verdana, sans-serif; background: #ffffff;}");
-//  str += F("td {padding: 0px;}");
-//  str += F("button {border: 0; border-radius: 0.3rem; background: #97C1A9; color: #ffffff; line-height: 2.4rem; font-size: 1.2rem; width: 100%; -webkit-transition-duration: 0.4s; transition-duration: 0.4s; cursor: pointer;}");
-//  str += F("button:hover {background: #0e70a4;}");
-//  str += F(".bred {background: #d43535;}");
-//  str += F(".bred:hover {background: #931f1f;}");
-//  str += F(".bhome {background: #55CBCD;}");
-//  str += F(".bhome:hover {background: #A2E1DB;}");
-//  str += F("a {color: #1fa3ec;text-decoration: none;}");
   str += F(".p {float: left; text-align: left;}");  
-//  str += F(".q {float: right;text-align: right;}");
-//  str += F(".r {border-radius: 0.3em; padding: 2px; margin: 6px 2px;}");
-//  str += F(".column {float: left;width: 48%;}");
-//  str += F(".column3 {float: left; width: 31%;}");
-//  str += F(".row:after {content: \"\";display: table; clear: both;}"); 
-//  str += F("input.c4 {text-align:left}");
-//  str += F("input.c6 {text-align:right}");
-//  str += F("input.c7 {text-align:right; color:#97C1A9}");
   str += F("</style></head>");
 }
 
@@ -144,7 +124,7 @@ void handleSetupSave() {
     EEPROM.put(0, user_data);
     EEPROM.commit();
 
-    addHead(str);
+    addRefreshHead(str);
     addIntro(str);
     setupSaved(str);
     server.send(200, "text/html", str);    
