@@ -112,60 +112,60 @@ void handleSetup(){
        str += F("<fieldset><legend><b>&nbsp;Wifi parametrar&nbsp;</b></legend>");
        str += F("<form action='/SetupSave' method='POST'><p><b>SSId</b><br>");
        str += F("<input type='text' class='form-control' name='ssid' value='");
-       str+= user_data.ssid;
+       str+= config_data.ssid;
        str+=  F("'></p>");
        str += F("<p><label><b>Password</b></label><br><input type='password' class='form-control' name='password' value='");
-       str += user_data.password;
+       str += config_data.password;
        str += F("'></p>");
       str += F("</fieldset>");
       str += F("<fieldset><legend><b>&nbsp;Domoticz parameters&nbsp;</b></legend>");
       
       str += F("<p><b>Rapportera till Domoticz?</b><input type='checkbox' class='form-control' name='domo' id='domo' ");
       
-       if (user_data.domo[0] =='j') str += F(" checked></p>"); else str += F("></p>");
+       if (config_data.domo[0] =='j') str += F(" checked></p>"); else str += F("></p>");
        str += F("<p><b>Domoticz IP address</b><input type='text' class='form-control' name='domoticzIP' value='");
-       str += user_data.domoticzIP;
+       str += config_data.domoticzIP;
        str += F("'></p><p>");
        str += F("<b>Domoticz Port</b><input type='text' class='form-control' name='domoticzPort' value='");
-       str += user_data.domoticzPort;
+       str += config_data.domoticzPort;
        str += F("'></p><p>");
        str += F("<b>Domoticz Gas Idx</b><input type='text' class='form-control' name='domoticzGasIdx' value='");
-       str += user_data.domoticzGasIdx;
+       str += config_data.domoticzGasIdx;
        str += F("'></p><p>");
        str += F("<b>Domoticz Energy Idx</b><input type='text' class='form-control' name='domoticzEnergyIdx' value='");
-       str += user_data.domoticzEnergyIdx;
+       str += config_data.domoticzEnergyIdx;
        str += F("'></p>");
       str += F("</fieldset>");
 
        str += F("<fieldset><legend><b>&nbsp;MQTT parametrar&nbsp;</b></legend>");
       str += F("<p><b>Rapportera till MQTT-mäklare?</b><input type='checkbox' class='form-control' name='mqtt' id='mqtt' ");
-       if (user_data.mqtt[0] =='j') str += F(" checked></p>"); else str += F("></p>");
+       if (config_data.mqtt[0] =='j') str += F(" checked></p>"); else str += F("></p>");
      str += F("<p><b>MQTT broker IP address</b><input type='text' class='form-control' name='mqttIP' value='");
-       str += user_data.mqttIP;
+       str += config_data.mqttIP;
        str += F("'></p><p>");
        str += F("<b>MQTT broker Port</b><input type='text' class='form-control' name='mqttPort' value='");
-       str += user_data.mqttPort;
+       str += config_data.mqttPort;
        str += F("'></p><p>");
        str += F("<b>MQTT user</b><input type='text' class='form-control' name='mqttUser' value='");
-       str += user_data.mqttUser;
+       str += config_data.mqttUser;
        str += F("'></p><p>");
        str += F("<b>MQTT password</b><input type='text' class='form-control' name='mqttPass' value='");
-       str += user_data.mqttPass;
+       str += config_data.mqttPass;
        str += F("'></p>");
        str += F("<b>MQTT root topic</b><input type='text' class='form-control' name='mqttTopic' value='");
-       str += user_data.mqttTopic;
+       str += config_data.mqttTopic;
        str += F("'></p>");
        str += F("</fieldset>");
        str += F("<fieldset>");
        str += F("<b>Mätintervall in sec (> 10 sec)</b><input type='text' class='form-control' name='interval' value='");
-       str += user_data.interval; 
+       str += config_data.interval; 
        str += F("'></p><p>");
        str += F("<p><b>Rapportera in watt (istället för in kWh) </b><input type='checkbox' class='form-control' name='watt' id='watt' ");
-       if (user_data.watt[0] =='j') str += F(" checked></p>"); else str += F("></p>");
+       if (config_data.watt[0] =='j') str += F(" checked></p>"); else str += F("></p>");
               str += F("<p><b>Activera Telnet (23) </b><input type='checkbox' class='form-control' name='telnet' id='telnet' ");
-       if (user_data.telnet[0] =='j') str += F(" checked></p>"); else str += F("></p>");
+       if (config_data.telnet[0] =='j') str += F(" checked></p>"); else str += F("></p>");
        str += F("<p><b>Debug po MQTT </b><input type='checkbox' class='form-control' name='debug' id='debug' ");
-       if (user_data.debug[0] =='j') str += F(" checked></p>"); else str += F("></p>");
+       if (config_data.debug[0] =='j') str += F(" checked></p>"); else str += F("></p>");
 
       str += F("</fieldset><div></div>");
       str += F("<p><button type='submit'>Spara</button></form>");
@@ -200,7 +200,7 @@ void handleP1(){
   str += cumulativeActiveImport;
   str += eenheid;
   str += "<div class='column' style='text-align:right'><br><b>idag</b><input type='text' class='form-control c7' value='";
-  str += atof(cumulativeActiveImport) - atof(dayStartUsedT1);
+  str += atof(cumulativeActiveImport) - atof(log_data.dayE1);
   str += eenheid;
   str += "</div></p>";
 
@@ -208,7 +208,7 @@ void handleP1(){
   str += cumulativeReactiveImport;
   str += eenheid;
   str += "<div class='column' style='text-align:right'><br><b>idag</b><input type='text' class='form-control c7' value='";
-  str += atof(cumulativeReactiveImport) - atof(dayStartUsedT2);
+  str += atof(cumulativeReactiveImport) - atof(log_data.dayE2);
   str += eenheid;
   str += "</div></p>";
 
@@ -216,7 +216,7 @@ void handleP1(){
   str += cumulativeActiveExport;
   str += eenheid;
   str += "<div class='column' style='text-align:right'><br><b>idag</b><input type='text' class='form-control c7' value='";
-  str += atof(cumulativeActiveExport) - atof(dayStartReturnedT1);
+  str += atof(cumulativeActiveExport) - atof(log_data.dayR1);
   str += eenheid;
   str += "</div></p>";
   
@@ -224,7 +224,7 @@ void handleP1(){
   str += cumulativeReactiveExport;
   str += eenheid;
   str += "<div class='column' style='text-align:right'><br><b>idag</b><input type='text' class='form-control c7' value='";
-  str += atof(cumulativeReactiveExport) - atof(dayStartReturnedT2);
+  str += atof(cumulativeReactiveExport) - atof(log_data.dayR2);
   str += eenheid;
   str += "</div></p>";
   
@@ -233,8 +233,7 @@ void handleP1(){
   str += momentaryActiveImport;
   str += eenheid2;
 
-
- str += "<p><div class='row'><b>Aktiv Effekt Inmatning</b><input type='text' class='form-control c6' value='";
+  str += "<p><div class='row'><b>Fasspänning</b><input type='text' class='form-control c6' value='";
   str += momentaryActiveExport;
   str += eenheid2;
 
@@ -245,10 +244,10 @@ void handleP1(){
   str += instantaneousVoltageL2;
   str += " V'></div>";
   str += "<div class='column3' style='text-align:right'><br><b>L3</b><input type='text' class='form-control c7' value='";
-   str += instantaneousVoltageL2;
+   str += instantaneousVoltageL3;
     str += " V'></div></div></p>";
 
-       str += "<p><div class='row'><div class='column3'><b>Aktiv Effekt Uttag:<br>L1</b><input type='text' class='form-control c6' value='";
+  str += "<p><div class='row'><div class='column3'><b>Fasström:<br>L1</b><input type='text' class='form-control c6' value='";
   str += instantaneousCurrentL1;
   str += " A'></div>";
   str += "<div class='column3' style='text-align:right'><br><b>L2</b><input type='text' class='form-control c7' value='";
@@ -274,7 +273,7 @@ void handleP1(){
   str += gasReceived5min;
   str += F(" m3'></div>");
   str += "<div class='column' style='text-align:right'><b>idag</b><input type='text' class='form-control c7' value='";
-  str += atof(gasReceived5min) - atof(dayStartGaz);
+  str += atof(gasReceived5min) - atof(log_data.dayG);
   str += " m3'></div></div></p>";
   }
   str += F("</fieldset></form>");

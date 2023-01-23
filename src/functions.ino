@@ -98,3 +98,247 @@ void createToken(){
   debugln();
   setupToken[16] = '\0';
 }
+
+void listDir(const char * dirname) {
+  debugf("Listing directory: %s\n", dirname);
+
+  Dir root = LittleFS.openDir(dirname);
+
+  while (root.next()) {
+    File file = root.openFile("r");
+    debug("  FILE: ");
+    debug(root.fileName());
+    debug("  SIZE: ");
+    debug(file.size());
+    time_t cr = file.getCreationTime();
+    time_t lw = file.getLastWrite();
+    file.close();
+    struct tm * tmstruct = localtime(&cr);
+   Serial.printf("    CREATION: %d-%02d-%02d %02d:%02d:%02d\n", (tmstruct->tm_year) + 1900, (tmstruct->tm_mon) + 1, tmstruct->tm_mday, tmstruct->tm_hour, tmstruct->tm_min, tmstruct->tm_sec);
+    tmstruct = localtime(&lw);
+   Serial.printf("  LAST WRITE: %d-%02d-%02d %02d:%02d:%02d\n", (tmstruct->tm_year) + 1900, (tmstruct->tm_mon) + 1, tmstruct->tm_mday, tmstruct->tm_hour, tmstruct->tm_min, tmstruct->tm_sec);
+  }
+}
+
+
+void readFile(const char * path) {
+  debugf("Reading file: %s\n", path);
+  debugln();
+  File file = LittleFS.open(path, "r");
+  if (!file) {
+    debugln("Failed to open file for reading");
+    return;
+  }
+
+  debugln("Read from file: ");
+  while (file.available()) {
+    debug(String((char)file.read()));
+  }
+  debugln();
+  file.close();
+}
+
+void writeFile(const char * path, const char * message) {
+  debugf("Writing file: %s\n", path);
+
+  File file = LittleFS.open(path, "w");
+  if (!file) {
+    debugln("Failed to open file for writing");
+    return;
+  }
+  if (file.print(message)) {
+    debugln("File written");
+  } else {
+    debugln("Write failed");
+  }
+  delay(2000); // Make sure the CREATE and LASTWRITE times are different
+  file.close();
+}
+
+void appendFile(const char * path, const char * message) {
+  debugf("Appending to file: %s\n", path);
+
+  File file = LittleFS.open(path, "a");
+  if (!file) {
+    debugln("Failed to open file for appending");
+    return;
+  }
+  if (file.print(message)) {
+    debug("Message appended: ");
+    debugln(message);
+  } else {
+    debugln("Append failed");
+  }
+  file.close();
+}
+
+void renameFile(const char * path1, const char * path2) {
+  debugf("Renaming file %s ", path1);
+  debugf("to %s\n", path2);
+  if (LittleFS.rename(path1, path2)) {
+    debugln("File renamed");
+  } else {
+    debugln("Rename failed");
+  }
+}
+
+void deleteFile(const char * path) {
+  debugf("Deleting file: %s\n", path);
+  if (LittleFS.remove(path)) {
+    debugln("File deleted");
+  } else {
+    debugln("Delete failed");
+  }
+}
+
+
+/*
+ * Read a file one field at a time.
+ *
+ * file - File to read.
+ *
+ * str - Character array for the field.
+ *
+ * size - Size of str array.
+ *
+ * delim - String containing field delimiters.
+ *
+ * return - length of field including terminating delimiter.
+ *
+ * Note, the last character of str will not be a delimiter if
+ * a read error occurs, the field is too long, or the file
+ * does not end with a delimiter.  Consider this an error
+ * if not at end-of-file.
+ *
+ */
+size_t readField(File* file, char* str, size_t size, char* delim) {
+  char ch;
+  size_t n = 0;
+
+  
+  while ((n + 1) < size){ // && filel.available()) {
+    ch = file->read(); 
+    debug(ch);
+      // Delete CR.
+      if (ch == '\r') {
+      continue;
+    }
+    str[n++] = ch;
+    if (strchr(delim, ch)) {
+        break;
+    }
+  }
+  str[n] = '\0';
+  return n;
+}
+
+
+
+int numLines(const char * path){
+  int numberOfLines = 0;
+  char ch;
+  
+  debugln("counting lines in file");
+    File file = LittleFS.open(path, "r");
+  if (!file) {
+    debugln("Failed to open file for reading");
+    return 0;
+  }
+
+  debugln("counting lines …");
+  while (file.available()) {
+    ch = file.read();
+    if (ch == '\n')  numberOfLines++;
+  }
+  debugln(numberOfLines);
+  file.close();
+  return numberOfLines;
+}
+
+
+boolean MountFS(){
+    debugln("Mount LittleFS");
+  if (!LittleFS.begin()) {
+    debugln("LittleFS mount failed");
+    return false;
+  }
+  return true;
+}
+
+
+static void handleNotFound() {
+  String path = server.uri();
+  if (!LittleFS.exists(path)) {
+    server.send(404, "text/plain", "Path " + path + " not found. Please double-check the URL");
+    return;
+  }
+  String contentType = "text/plain";
+  if (path.endsWith(".css")) {
+    contentType = "text/css";
+  }
+  else if (path.endsWith(".html")) {
+    contentType = "text/html";
+  }
+  else if (path.endsWith(".js")) {
+    contentType = "application/javascript";
+  } else if (path.endsWith(".log")) {
+    contentType = "text/plain";
+  }
+  File file = LittleFS.open(path, "r");
+  server.streamFile(file, contentType);
+  file.close();
+}
+
+
+void zapFiles(){
+  debug("Cleaning out logfiles ... ");
+
+  deleteFile("/HourE1.log");
+  deleteFile("/HourE2.log");
+  deleteFile("/HourR1.log");
+  deleteFile("/HourR2.log");
+  deleteFile("/HourTE.log");
+  deleteFile("/HourTR.log");
+  deleteFile("/HourG.log");
+  
+  deleteFile("/DayE1.log");
+  deleteFile("/DayE2.log");
+  deleteFile("/DayR1.log");
+  deleteFile("/DayR2.log");
+  deleteFile("/DayTE.log");
+  deleteFile("/DayTR.log");
+  deleteFile("/DayG.log");
+
+  deleteFile("/WeekE1.log");
+  deleteFile("/WeekE2.log");
+  deleteFile("/WeekR1.log");
+  deleteFile("/WeekR2.log");
+  deleteFile("/WeekTE.log");
+  deleteFile("/WeekTR.log");
+  deleteFile("/WeekG.log");
+
+  deleteFile("/MonthE1.log");
+  deleteFile("/MonthE2.log");
+  deleteFile("/MonthR1.log");
+  deleteFile("/MonthR2.log");
+  deleteFile("/MonthTE.log");
+  deleteFile("/MonthTR.log");
+  deleteFile("/MonthG.log");
+
+  deleteFile("/YearE1.log");
+  deleteFile("/YearE2.log");
+  deleteFile("/YearR1.log");
+  deleteFile("/YearR2.log");
+  deleteFile("/YearTE.log");
+  deleteFile("/YearTR.log");
+  deleteFile("/YearG.log");
+  deleteFile("/YearGc.log");
+debugln("done.");
+}
+
+void zapConfig(){
+  debug("Cleaning out logData files ... ");
+  deleteFile("/logData.txt");
+  deleteFile("/logData-1.txt");
+debugln("done.");
+}

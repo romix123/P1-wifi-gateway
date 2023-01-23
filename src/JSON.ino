@@ -37,8 +37,8 @@ bool DomoticzJson(char* idx, int nValue, char* sValue){
   bool retVal = false;
   char url[255];
  
-  if (user_data.domoticzIP[0] != '-') {
-    sprintf(url, "http://%s:%s/json.htm?type=command&param=udevice&idx=%s&nvalue=%d&svalue=%s", user_data.domoticzIP, user_data.domoticzPort, idx, nValue, sValue);
+  if (config_data.domoticzIP[0] != '-') {
+    sprintf(url, "http://%s:%s/json.htm?type=command&param=udevice&idx=%s&nvalue=%d&svalue=%s", config_data.domoticzIP, config_data.domoticzPort, idx, nValue, sValue);
     debugf("[HTTP] GET... URL: %s\n",url);
     http.begin(client, url); //HTTP
     int httpCode = http.GET();
@@ -64,7 +64,7 @@ bool DomoticzJson(char* idx, int nValue, char* sValue){
 
 void UpdateGas(){  //sends over the gas setting to server(s)
   if(strncmp(gasReceived5min, prevGAS, sizeof(gasReceived5min)) != 0){          // if we have a new value, report
-      DomoticzJson(user_data.domoticzGasIdx, 0, gasDomoticz);// gasReceived5min);
+      DomoticzJson(config_data.domoticzGasIdx, 0, gasDomoticz);// gasReceived5min);
       debug("gas: ");
       debugln(gasDomoticz);
       strcpy(prevGAS, gasReceived5min);                              // retain current value for future reference
@@ -76,5 +76,5 @@ void UpdateElectricity(){
     //  sprintf(sValue, "%d.3;%d.3;%d.3;%d.3;%d;%d", electricityUsedTariff1, electricityUsedTariff2, mEOLT, mEOHT, mEAV, mEAT);
       sprintf(sValue, "%s;%s;%s;%s;%s;%s", electricityUsedTariff1, electricityUsedTariff2, electricityReturnedTariff1, electricityReturnedTariff2, actualElectricityPowerDelivered, actualElectricityPowerReturned);
       debugln(sValue);
-      DomoticzJson(user_data.domoticzEnergyIdx, 0, sValue);
+      DomoticzJson(config_data.domoticzEnergyIdx, 0, sValue);
 }

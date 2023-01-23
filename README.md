@@ -33,10 +33,16 @@
    
    
      
-   versie: 1.0ta 
-   datum:  16 Nov 2022
+   versie: 1.1aa 
+   datum:  23 Jan 2023
    auteur: Ronald Leenes
    
+   1.1aa: bug fixes
+   1.1: implemented graphs
+   		fixed reporting tariffIndicatorElectricity
+   
+   ud: fixed refreshheaders
+   ua: fixed setup field issue  
    u: - added password protection for Setup and Update Firmware menus. On first boot of version 1.0u, go to Setup menu 
         within 60 seconds to bypass password protection.
       - added out of the box support for Home Assistant "DSMR Reader" integration. Use 'dsmr' as MQTT prefix and data will
@@ -76,4 +82,20 @@
    g: fixed mqtt
    
    Generic ESP8285 module 
-   Flash Size: 2mb (FS: 64Kb, OTA: –992Kb) 
+	Flash Size: 2mb (FS: 128Kb, OTA: –960Kb) 
+   
+   needed files: 
+   this one (obv), 
+   CRC16.h
+   JSON.ino
+   MQTT.ino
+   TELNET.ino
+   debug.ino
+   decoder.ino
+   functions.ino
+   graph.ino
+   webserver.ino
+   webserverDE.ino 
+   webserverSE.ino
+   webserverNL.ino
+   wifi.ino 

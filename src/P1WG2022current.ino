@@ -1,4 +1,4 @@
-/*
+ /*
  * Copyright (c) 2022 Ronald Leenes
  *
  * This program is free software: you can redistribute it and/or modify
@@ -62,9 +62,13 @@
  *  
  *  
  *    
- *  versie: 1.0ud 
- *  datum:  11 Jan 2023
+ *  versie: 1.1aa 
+ *  datum:  23 Jan 2023
  *  auteur: Ronald Leenes
+ *  
+ *  1.1aa: bug fixes
+ *  1.1: implemented graphs
+ *  
  *  
  *  ud: fixed refreshheader
  *  ua: fixed setup field issue
@@ -104,16 +108,32 @@
  *  g: fixed mqtt
  *  
  *  Generic ESP8285 module 
-*   Flash Size: 2mb (FS: 64Kb, OTA: –992Kb) 
+*   Flash Size: 2mb (FS: 128Kb, OTA: –992Kb) 
+*   
+*   needed files: 
+*   this one (obv), 
+*   CRC16.h
+*   JSON.ino
+*   MQTT.ino
+*   TELNET.ino
+*   debug.ino
+*   functions.ino
+*   graph.ino
+*   webserver.ino
+*   webserverDE.ino 
+*   webserverSE.ino
+*   webserverNL.ino
+*   wifi.ino
 */
+bool zapfiles = false; //true;
 
-String version = "1.0ud – NL";
+String version = "1.1aa – NL";
 #define   NEDERLANDS //  GERMAN//  SWEDISH //  FRENCH //
 
 
 #define HOSTNAME "p1meter"
 
-
+#define GRAPH 1
 #define V3
 #define DEBUG 0// 1 // 1 is on serial only, 2 is serial + telnet, 
 #define ESMR5 1
@@ -124,7 +144,7 @@ const uint32_t  wakeTime = 90000; // stay awake wakeTime millisecs
 const uint32_t  sleepTime = 5000; //sleep sleepTime millisecs
 
 #if DEBUG == 1
-const char* host = "P1wifi"; //_test";
+const char* host = "P1wifi";
 #define BLED LED_BUILTIN
 #define debug(x) Serial.print(x)
 #define debugf(x) Serial.printf(x)
@@ -148,6 +168,8 @@ const char* host = "P1wifi";
 #define debugff(x,y,z)
 #endif
 
+#define errorHalt(msg) {debugln(F(msg)); return;}
+
 #define NUM(off, mult) ((P1timestamp[(off)] - '0') * (mult) )   // macro for getting time out of timestamp, see decoder
 
 #define ToggleLED  digitalWrite(BLED, !digitalRead(BLED));
@@ -163,12 +185,18 @@ const char* host = "P1wifi";
 #include <WiFiUdp.h>
 #include "CRC16.h"
 
+#if GRAPH == 1
+#include "FS.h"
+#include <LittleFS.h>
+File file;
+#endif
+
+
 // van ESP8266WiFi/examples/WiFiShutdown/WiFiShutdown.ino
-#ifndef RTC_USER_DATA_SLOT_WIFI_STATE
-#define RTC_USER_DATA_SLOT_WIFI_STATE 33u
+#ifndef RTC_config_data_SLOT_WIFI_STATE
+#define RTC_config_data_SLOT_WIFI_STATE 33u
 #endif
 #include <include/WiFiState.h>  // WiFiState structure details
-
 WiFiState WiFistate;
 
 
@@ -211,6 +239,7 @@ IPAddress ip;
 bool telnetConnected = false;
 // end raw data stuff
 
+#include "vars.h"
 
 struct settings {
   char dataSet[4];
@@ -232,7 +261,9 @@ struct settings {
   char telnet[4] = "n";
   char debug[4] = "n";
   char adminPassword[32];
-} user_data = {};
+} config_data = {};
+
+
 
 float RFpower = 0;      //20.5; // (For OdBm of output power, lowest. Supply current~70mA) 
                         //20.5dBm (For 20.5dBm of output, highest. Supply current~85mA)
@@ -243,6 +274,7 @@ ADC_MODE(ADC_VCC);  // allows you to monitor the internal VCC level;
 // energy management vars
 int interval;
 unsigned long nextUpdateTime = 0;
+long last10 = 0;
 unsigned long time_to_wake = 0; // calculated wakeup time
 unsigned long time_to_sleep = 0;    // calculated sleep time
 unsigned long lastSleeptime = 0;
@@ -331,17 +363,18 @@ char gasDomoticz[12];       //Domoticz wil gas niet in decimalen?
 
 char prevGAS[12];           // not an P1 protocol var, but holds gas value
 
-char dayStartGaz[12];
-char dayStartUsedT1[12];
-char dayStartUsedT2[12];
-char dayStartReturnedT1[12];
-char dayStartReturnedT2[12];
 
-char monthStartGaz[12];
-char monthStartUsedT1[12];
-char monthStartUsedT2[12];
-char monthStartReturnedT1[12];
-char monthStartReturnedT2[12];
+// char dayStartGaz[12];
+// char dayStartUsedT1[12];
+// char dayStartUsedT2[12];
+// char dayStartReturnedT1[12];
+// char dayStartReturnedT2[12];
+
+// char monthStartGaz[12];
+// char monthStartUsedT1[12];
+// char monthStartUsedT2[12];
+// char monthStartReturnedT1[12];
+// char monthStartReturnedT2[12];
 
 // process stuff
 #define DISABLED 0
@@ -389,6 +422,9 @@ bool gotPowerReading = false;
 bool gotGasReading = false;
 char setupToken[18];
 
+bool needToInitLogVars = false;
+bool needToInitLogVarsGas = false;
+
 void setup() {
   WiFi.forceSleepBegin(sleepTime * 1000000L); //In uS. Must be same length as your delay
   delay(10); // it doesn't always go to sleep unless you delay(10); yield() wasn't reliable
@@ -397,8 +433,8 @@ void setup() {
 
   pinMode(BLED, OUTPUT);
   Serial.begin(115200);
-    debugln("Serial.begin(115200);");
-
+  debugln("Serial.begin(115200);");
+    
   pinMode(OE, OUTPUT);      //IO16 OE on the 74AHCT1G125
   digitalWrite(OE, HIGH);   //  Put(Keep) OE in Tristate mode
   pinMode(DR, OUTPUT);      //IO4 Data Request
@@ -410,33 +446,35 @@ void setup() {
     debugln("Let's go …");
     
   EEPROM.begin(sizeof(struct settings) );
-  EEPROM.get( 0, user_data );
-  if (user_data.dataSet[0] !='j') {
-      user_data = (settings) {"n", "","","192.168.1.12","8080","1234","1235","sensors/power/p1meter","192.168.1.12","1883", "mqtt_user", "mqtt_passwd", "30", "n","n","n","n","n","adminpwd"};
+  EEPROM.get( 0, config_data );
+  
+  if (config_data.dataSet[0] !='j') {
+      config_data = (settings) {"n", "","","192.168.1.12","8080","1234","1235","sensors/power/p1meter","192.168.1.12","1883", "mqtt_user", "mqtt_passwd", "30", "n","n","n","n","n","adminpwd"};
   }
-    debugln("EEprom read: done");
-    PrintConfigData();  
-
-  (user_data.watt[0] =='j') ? reportInDecimals = false : reportInDecimals = true;
-  (user_data.domo[0] =='j') ? Json = true :Json = false;
-  (user_data.mqtt[0] =='j') ? Mqtt = true : Mqtt = false;
-  (user_data.telnet[0] =='j') ? Telnet = true : Telnet = false;
-  (user_data.debug[0] =='j') ? MQTT_debug = true : MQTT_debug = false;
-  if (strcmp(user_data.mqttTopic, "dsmr") == 0) { // auto detext need to report in 'dsmr reader' mqtt format
+ 
+  (config_data.watt[0] =='j') ? reportInDecimals = false : reportInDecimals = true;
+  (config_data.domo[0] =='j') ? Json = true :Json = false;
+  (config_data.mqtt[0] =='j') ? Mqtt = true : Mqtt = false;
+  (config_data.telnet[0] =='j') ? Telnet = true : Telnet = false;
+  (config_data.debug[0] =='j') ? MQTT_debug = true : MQTT_debug = false;
+  if (strcmp(config_data.mqttTopic, "dsmr") == 0) { // auto detext need to report in 'dsmr reader' mqtt format
     mqtt_dsmr = true;
    // reportInDecimals = true;
   } else {
     mqtt_dsmr = false; 
    // reportInDecimals = false;
   }
+   
+  debugln("EEprom read: done");
+  PrintConfigData();  
 
-  interval = atoi( user_data.interval) * 1000; 
+  interval = atoi( config_data.interval) * 1000; 
   debug("interval: ");
   debugln(interval);
   
-   debugln("Trying to connect to your wifi network:");
+  debugln("Trying to connect to your wifi network:");
   WiFi.mode(WIFI_STA);
-  WiFi.begin(user_data.ssid, user_data.password);    
+  WiFi.begin(config_data.ssid, config_data.password);    
     byte tries = 0;
     while (WiFi.status() != WL_CONNECTED) {
       ToggleLED
@@ -468,7 +506,7 @@ void setup() {
       wifiSta = true;
         debugln("wifi running in Sta (normal) mode");
       LEDoff
-      ESP.rtcUserMemoryWrite(RTC_USER_DATA_SLOT_WIFI_STATE, reinterpret_cast<uint32_t *>(&WiFistate), sizeof(WiFistate));
+      ESP.rtcUserMemoryWrite(RTC_config_data_SLOT_WIFI_STATE, reinterpret_cast<uint32_t *>(&WiFistate), sizeof(WiFistate));
 #ifdef SLEEP_ENABLED
       modemSleep();
       modemWake();
@@ -476,14 +514,42 @@ void setup() {
       start_services();
 #endif
       debugln("All systems are go...");
-  }
-
+      
   state = WAITING;    // signal that we are waiting for a valid start char (aka /)
   devicestate = CONFIG;
   nextUpdateTime = nextMQTTreconnectAttempt = millis();
 
   monitoring = true; // start monitoring data
   time_to_sleep = millis() + wakeTime;  // we go to sleep wakeTime seconds from now
+
+ // handle Files
+ debug("Mounting file system ... ");
+      if (!LittleFS.begin()) {
+          debugln("LittleFS mount failed");
+          debug("Formatting file system ... "); 
+          LittleFS.format();
+          if (!LittleFS.begin()) {
+            debugln("LittleFS mount failed AGAIN");
+          } else 
+          { 
+            debugln("done.");
+            if (zapfiles) zapFiles();
+          }
+      }
+     
+      File logData = LittleFS.open("/logData.txt", "r");
+        if (!logData) {
+          debugln("Failed to open logData.txt for reading");
+          needToInitLogVars = true;
+          needToInitLogVarsGas = true;
+        } else {
+          logData.read((byte *)&log_data, sizeof(log_data));
+          logData.close();
+        }
+        if (zapfiles) zapFiles();
+      
+  } // WL connected
+ //debugln("Something is terribly wrong, no network connection");
 }
 
 void readTelegram() {
@@ -532,7 +598,7 @@ void loop() {
   }
   
   if (datagramValid && (state == DONE) && (WiFi.status() == WL_CONNECTED)){ 
-    checkNeedtoResetCounters();
+
       if (Mqtt) {
         doMQTT();
         if (MqttDelivered) {
@@ -556,8 +622,12 @@ void loop() {
       nextUpdateTime = millis() + interval;
       if (ESP.getFreeHeap() < 2000) ESP.reset(); // watchdog, we do have a memery leak (still)
       state = WAITING;
+
+      checkCounters();
+      resetFlags();
      }
-     
+
+
   if (softAp || (WiFi.status() == WL_CONNECTED)) {
         server.handleClient(); //handle web requests
         MDNS.update();
@@ -566,59 +636,40 @@ void loop() {
   //yield();
 }   
 
-void checkNeedtoResetCounters(){
+void checkCounters(){
+  // see logging.ino
+  
        if (coldbootE && gotPowerReading) {
+        if (needToInitLogVars){
+          doInitLogVars();
+        }
           resetEnergyDaycount();
           resetEnergyMonthcount();
         }
        if (coldbootG && gotGasReading) {
-          resetGasDaycount();
-          resetGasMonthcount();
-       }
-       if (hour() == 0 && minute() == 0) { 
-          resetEnergyDaycount();
-          resetGasDaycount();
-          if (day() == 1){
-            resetEnergyMonthcount();
-            resetGasMonthcount();
+          if (needToInitLogVarsGas){
+            doInitLogVarsGas();
           }
+          resetGasCount();
        }
-}
-       
-void resetEnergyDaycount(){
-#ifdef SWEDISH  
-      strcpy(dayStartUsedT1, cumulativeActiveImport);
-      strcpy(dayStartUsedT2, cumulativeReactiveImport);
-      strcpy(dayStartReturnedT1, cumulativeActiveExport);
-      strcpy(dayStartReturnedT2, cumulativeReactiveExport);
-#else
-      strcpy(dayStartUsedT1, electricityUsedTariff1);
-      strcpy(dayStartUsedT2, electricityUsedTariff2);
-      strcpy(dayStartReturnedT1, electricityReturnedTariff1);
-      strcpy(dayStartReturnedT2, electricityReturnedTariff2);
-#endif
-   coldbootE = false;
+   
+   if (!CHK_FLAG(logFlags, hourFlag) && minute() == 59) doHourlyLog();
+   if (!CHK_FLAG(logFlags,dayFlag) && (hour() == 23) && (minute() == 59)) doDailyLog();
+   if (!CHK_FLAG(logFlags, weekFlag) && weekday() == 1 && hour() == 23 && minute() == 59) doWeeklyLog(); // day of the week (1-7), Sunday is day 1
+   if (!CHK_FLAG(logFlags, monthFlag) && day() == 28 && month() == 2 && hour() == 23 && minute() == 59 && year() != 2024 && year() != 2028 ) doMonthlyLog();
+   if (!CHK_FLAG(logFlags, monthFlag) && day() == 29 && month() == 2 && hour() == 23 && minute() == 59 ) doMonthlyLog(); // schrikkeljaren
+   if (!CHK_FLAG(logFlags, monthFlag) && day() == 30 && (month() == 4 || month() == 6 || month()== 9 || month() == 11) && hour() == 23 && minute() == 59 ) doMonthlyLog();
+   if (!CHK_FLAG(logFlags, monthFlag) && day() == 31 && (month() == 1 || month() == 3 || month()== 5 || month() == 7 || month() == 8 || month() == 10 || month() == 12) && hour() == 23 && minute() == 59 ) doMonthlyLog();
+   if (!CHK_FLAG(logFlags, monthFlag) && day() == 31 && month() == 12 && hour() == 23 && minute() == 59 ) doYearlyLog();
 }
 
-void resetGasDaycount(){
-   strcpy(dayStartGaz, gasReceived5min);
-   coldbootG = false;
-}
+void resetFlags(){
+  if (CHK_FLAG(logFlags, hourFlag) &&  (minute() > 0) ) CLR_FLAG(logFlags, hourFlag);// if (hourFlag &&  (minute() > 24)) hourFlag = false; // CLR_FLAG(logFlags, hourFlag);
+   if (CHK_FLAG(logFlags, dayFlag) && (day() > 0)) CLR_FLAG(logFlags, dayFlag);
 
-void resetEnergyMonthcount() {
-#ifdef SWEDISH  
-      strcpy(monthStartUsedT1, cumulativeActiveImport);
-      strcpy(monthStartUsedT2, cumulativeReactiveImport);
-      strcpy(monthStartReturnedT1, cumulativeActiveExport);
-      strcpy(monthStartReturnedT2, cumulativeReactiveExport);
-#else
-      strcpy(monthStartUsedT1, electricityUsedTariff1);
-      strcpy(monthStartUsedT2, electricityUsedTariff2);
-      strcpy(monthStartReturnedT1, electricityReturnedTariff1);
-      strcpy(monthStartReturnedT2, electricityReturnedTariff2);
-#endif
-}
-
-void resetGasMonthcount(){
-   strcpy(monthStartGaz, gasReceived5min);
+  if (CHK_FLAG(logFlags, weekFlag) &&  (weekday() > 1)) CLR_FLAG(logFlags, weekFlag);
+  if (CHK_FLAG(logFlags, monthFlag) &&  (day() > 0)) CLR_FLAG(logFlags, monthFlag);
+  if (CHK_FLAG(logFlags, yearFlag) &&  (day() == 1) && month() == 1) CLR_FLAG(logFlags, yearFlag);
+  debug("logFlags : ");
+  Serial.println(logFlags, BIN);
 }

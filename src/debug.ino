@@ -33,41 +33,41 @@ void readVoltage() { // read internal VCC
 
 void PrintConfigData(){
   debug("dataSet : ");
-    debugln(user_data.dataSet);
+    debugln(config_data.dataSet);
   debug("Admin password : ");
-    debugln(user_data.adminPassword);
+    debugln(config_data.adminPassword);
   debug("SSID : ");
-    debugln(user_data.ssid);
+    debugln(config_data.ssid);
   debug("password : ");
-    debugln(user_data.password);
+    debugln(config_data.password);
   debug("DomoticxIP : ");
-    debugln(user_data.domoticzIP);
+    debugln(config_data.domoticzIP);
   debug("DomoticzPort : ");
-    debugln(user_data.domoticzPort);
+    debugln(config_data.domoticzPort);
   debug("domotixzGasIdx : ");
-   debugln(user_data.domoticzGasIdx);
+   debugln(config_data.domoticzGasIdx);
   debug("domotixzEnergyIdx : ");
-   debugln(user_data.domoticzEnergyIdx);
+   debugln(config_data.domoticzEnergyIdx);
 
   debug("mqttIP : ");
-    debugln(user_data.mqttIP);
+    debugln(config_data.mqttIP);
   debug("mqttPort : ");
-    debugln(user_data.mqttPort);
+    debugln(config_data.mqttPort);
   debug("mqttUser : ");
-    debugln(user_data.mqttUser);
+    debugln(config_data.mqttUser);
   debug("mqttPass : ");
-    debugln(user_data.mqttPass);
+    debugln(config_data.mqttPass);
   debug("mqttTopic : ");
-    debugln(user_data.mqttTopic);
+    debugln(config_data.mqttTopic);
 
   debug("interval : ");
-    debugln(user_data.interval);
+    debugln(config_data.interval);
   debug("json : ");
-    debugln(user_data.domo);
+    debugln(config_data.domo);
   debug("mqtt : ");
-    debugln(user_data.mqtt);
+    debugln(config_data.mqtt);
   debug("watt : ");
-      debugln(user_data.watt);
+      debugln(config_data.watt);
   debug("telnet : ");
-      debugln(user_data.telnet);
+      debugln(config_data.telnet);
 }

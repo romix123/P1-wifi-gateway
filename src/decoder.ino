@@ -302,9 +302,12 @@ bool decodeTelegram(int len) {
   switch (pos4){
     case 1:
           // 0-0:1.0.0.255 datestamp YYMMDDhhmmssX
-          if (strncmp(telegram, "0-0:1.0.0", strlen("0-0:1.0.0")) == 0) 
+          if (strncmp(telegram, "0-0:1.0.0", strlen("0-0:1.0.0")) == 0) {
               getStr12(P1timestamp, telegram, len, '(');
               if (timeStatus() == timeNotSet) settime();
+              if ((hour() == 0) && (minute() == 30 )) settime(); //resync every 24 hours
+              break;
+          }
              
  #ifdef SWEDISH  
           // 1-0:1.7.0 Aktiv Effekt Uttag  Momentan trefaseffekt
@@ -377,28 +380,19 @@ bool decodeTelegram(int len) {
           if (strncmp(telegram, "1-0:21.7.0", strlen("1-0:21.7.0")) == 0)
               getValue(activePowerL1NP, telegram, len, '(', '*');
 
-          // 0-1:24.2.1(150531200000S)(00811.923*m3)
-          // 0-1:24.2.1 = Gas (DSMR v4.0) on Kaifa MA105 meter, other meters do (number)(gas value)
+////          // 0-1:24.2.1(150531200000S)(00811.923*m3)
+////          // 0-1:24.2.1 = Gas (DSMR v4.0) on Kaifa MA105 meter, other meters do (number)(gas value)
           if (strncmp(telegram, "0-1:24.2.1", strlen("0-1:24.2.1")) == 0) 
              getGasValue(gasReceived5min, telegram, len, '(', ')');
-
-         // 0-1:24.2.1(150531200000S)(00811.923*m3)
-        // 0-1:24.2.1 = Gas (DSMR v4.0) on Kaifa MA105 meter, other meters do (number)(gas value)
+////
+////         // 0-1:24.2.1(150531200000S)(00811.923*m3)
+////        // 0-1:24.2.1 = Gas (DSMR v4.0) on Kaifa MA105 meter, other meters do (number)(gas value)
          if (strncmp(telegram, "0-1:24.2.1", strlen("0-1:24.2.1")) == 0) {
             getDomoticzGasValue(gasDomoticz, telegram, len, '(', ')');
             gotGasReading = true;
-         }
-
-                      
-        // (0-1:24.2.1)(m3) is gas designator for dsmr 2.2. The actual gasvalue is on next line, so first we place a flag, then we can test the next line on the next iteration of line parsing.
-        if (strncmp(telegram, "0-1:24.3.0", strlen("0-1:24.3.0")) == 0) gas22Flag = true;
-        if (gas22Flag && strncmp(telegram, "(", strlen(")")) == 0)
-            { 
-              getGas22Value(gasReceived5min, telegram, len, '(', ')');
-              gotGasReading = true;
-            }
-
-          break;
+         }          
+         
+         break;
           
     case 3:
  
@@ -529,16 +523,16 @@ bool decodeTelegram(int len) {
     case 9:
          // 0-0:96.14.0(0001) Actual Tarif
         if (strncmp(telegram, "0-0:96.14.0", strlen("0-0:96.14.0")) == 0)
-           getValue(tariffIndicatorElectricity, telegram, len, '(', ')');
+           getStr(tariffIndicatorElectricity, telegram, len, '(', ')');
 
         // 0-0:96.7.21(00003) Aantal onderbrekingen Elektriciteit
         if (strncmp(telegram, "0-0:96.7.21", strlen("0-0:96.7.21")) == 0)
-           getValue(numberPowerFailuresAny, telegram, len, '(', ')');
+           getStr(numberPowerFailuresAny, telegram, len, '(', ')');
 
 
         // 0-0:96.7.9(00001) Aantal lange onderbrekingen Elektriciteit
         if (strncmp(telegram, "0-0:96.7.9", strlen("0-0:96.7.9")) == 0)
-           getValue(numberLongPowerFailuresAny, telegram, len, '(', ')');
+           getStr(numberLongPowerFailuresAny, telegram, len, '(', ')');
 
         if (strncmp(telegram, "0-1:96.1.1", strlen("0-1:96.1.1")) == 0) 
             getStr(equipmentId,telegram, len, '(', ')');
@@ -552,4 +546,5 @@ bool decodeTelegram(int len) {
   return validCRCFound;       // true if valid CRC found
   
   } //state = reading
+  return false;
 }

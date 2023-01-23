@@ -33,7 +33,7 @@ void modemSleep(){
    debugln(millis()/1000);
  //  stop_services();
    WiFi.shutdown(WiFistate);
-   ESP.rtcUserMemoryWrite(RTC_USER_DATA_SLOT_WIFI_STATE, reinterpret_cast<uint32_t *>(&WiFistate), sizeof(WiFistate));
+   ESP.rtcUserMemoryWrite(RTC_config_data_SLOT_WIFI_STATE, reinterpret_cast<uint32_t *>(&WiFistate), sizeof(WiFistate));
   time_to_wake =  millis() + sleepTime; // set alarm for next wakeup
   atsleep = true;
  // blink(1);
@@ -44,7 +44,7 @@ void modemSleep(){
 void modemWake(){
    debug("modemWake: ");
    debugln(millis()/1000);
-   ESP.rtcUserMemoryRead(RTC_USER_DATA_SLOT_WIFI_STATE, reinterpret_cast<uint32_t *>(&WiFistate), sizeof(WiFistate));
+   ESP.rtcUserMemoryRead(RTC_config_data_SLOT_WIFI_STATE, reinterpret_cast<uint32_t *>(&WiFistate), sizeof(WiFistate));
   if (!WiFi.resumeFromShutdown(WiFistate)
       || (WiFi.waitForConnectResult(10000) != WL_CONNECTED)) {
     Serial.println("Cannot resume WiFi connection, connecting via begin...");
@@ -64,7 +64,7 @@ void modemWake(){
  void wifiReconnect(){
     debugln("Trying to connect to your wifi network:");
      WiFi.mode(WIFI_STA);
-     WiFi.begin(user_data.ssid, user_data.password);
+     WiFi.begin(config_data.ssid, config_data.password);
      byte tries = 0;
     while (WiFi.status() != WL_CONNECTED) {
         ToggleLED
@@ -94,6 +94,19 @@ void start_webservices(){
     server.on("/P1",     handleP1);
     server.on("/Data",  handleRawData);
     server.on("/Help", handleHelp);
+
+#if GRAPH == 1
+//  server.on("/Graph", handleGraph);
+  server.on("/Grafieken", handleGraphMenu);
+  server.on("/GasCalendar", calendarGas);
+  server.on("/SelectGraph", selectGraph);
+   
+  server.on("/zapFiles", zapFiles);
+  server.on("/zapConfig", zapConfig);
+  server.on("/Dir", DirListing);
+  
+  server.onNotFound(handleNotFound);
+#endif
 
     server.on("/update", HTTP_GET, []() {
       debugln("Index");
@@ -138,7 +151,7 @@ void start_webservices(){
     });
     debugln("   … HTTPupdater");
     server.begin();
-    debugln("   …webserver");
+    debugln("   … webserver");
 }
 
 void start_services(){
@@ -149,7 +162,7 @@ void start_services(){
     debugln("   … MDNS");
  
     if (Mqtt){
-        mqtt_client.setServer(user_data.mqttIP, atoi(user_data.mqttPort));
+        mqtt_client.setServer(config_data.mqttIP, atoi(config_data.mqttPort));
         debugln("MQTT server assigned.");
        // mqtt_reconnect();
     debugln("   … MQTT");

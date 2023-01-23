@@ -64,7 +64,7 @@ void setupSaved(String& str){
 }
 
 void handleUploadForm(){
-   if (strcmp(server.arg("adminPassword").c_str(), user_data.adminPassword) != 0) {  // passwords don't match
+   if (strcmp(server.arg("adminPassword").c_str(), config_data.adminPassword) != 0) {  // passwords don't match
       debugln("Error: update entered with wrong password");
       errorLogin("Update");
       return;
@@ -76,7 +76,7 @@ void handleUploadForm(){
   str += F("<fieldset><fieldset><legend><b>Update firmware</b></legend>");
   str += F("<form method='POST' action='/update' enctype='multipart/form-data'><p>");
   str += F("<b>Firmware</b><input type='file' accept='.bin,.bin.gz' name='firmware'></p>");
-  str += F("<button type='submit'>Update Firmware</button>");
+  str += F("<button type='submit'>Update</button>");
   str += F("</form>");
   str += F("<form action='/' method='POST'><button class='button bhome'>Menu</button></form>");
   addFootBare(str); 
@@ -109,9 +109,18 @@ void handleRoot(){
     addIntro(str);
 
     str += F("<main class='form-signin'>");
+     str += F("<fieldset><legend><b> Data </b></legend>");
     str += F("<form action='/P1' method='post'><button type='p1' class='button bhome'>Meterdata</button></form>");
+#if GRAPH == 1
+  str += F("<form action='/Grafieken' method='GET'><button type='submit'>Grafieken</button></form>");
+ // str += F("<form action='/Dir' method='GET'><button type='submit'>Directory</button></form>");
+#endif
+    str += F("</fieldset>");
+     str += F("<fieldset><legend><b> Setup </b></legend>");
     str += F("<form action='/Setup' method='post'><button type='Setup'>Setup</button></form>");
-    str += F("<form action='/Update' method='GET'><button type='submit'>Update firmware</button></form>");
+    str += F("<form action='/Update' method='GET'><button type='submit'>Update firmware</button></fieldset></form>");
+
+
   addUptime(str);
   addFoot(str);
   server.send(200, "text/html", str);
@@ -149,13 +158,7 @@ void handleLogin(){
 void handleUpdateLogin(){
   createToken();
     debugln("handleUpdateLogin");
-//
-//  if (millis() < 60000) {
-//    debug(millis());
-//    debugln(" – You made it within the timeframe, go to setup without login."); 
-//    bootSetup = true; // our ticket to handleSetup
-//    handleSetup();
-//  }
+
    String str = "";
     addHead(str);
     addIntro(str);
@@ -191,7 +194,7 @@ void errorLogin(String returnpage){
 void handleSetup(){
   if (millis() > 60000) {            // if we did not get here directly, check credentials
      debugln("indirect call");
-    if (strcmp(server.arg("adminPassword").c_str(), user_data.adminPassword) != 0) {  // passwords don't match
+    if (strcmp(server.arg("adminPassword").c_str(), config_data.adminPassword) != 0) {  // passwords don't match
       debugln("Error: handlesetup entered with wrong password");
       errorLogin("Setup");
       return;
@@ -212,66 +215,66 @@ void handleSetup(){
       str += F("<fieldset><legend><b>&nbsp;Admin&nbsp;</b></legend>");
       str += F("<p><b>admin password</b><br>");
        str += F("<input type='text' class='form-control' name='adminPassword' value='");
-       str+= user_data.adminPassword;
+       str+= config_data.adminPassword;
        str+=  F("'></p></fieldset>");
        
        str += F("<fieldset><legend><b>&nbsp;Wifi parameters&nbsp;</b></legend>");
        str += F("<p><b>SSId</b><br>");
        str += F("<input type='text' class='form-control' name='ssid' value='");
-       str+= user_data.ssid;
+       str+= config_data.ssid;
        str+=  F("'></p>");
        str += F("<p><label><b>Password</b></label><br><input type='password' class='form-control' name='password' value='");
-       str += user_data.password;
+       str += config_data.password;
        str += F("'></p></fieldset>");
       
       str += F("<fieldset><legend><b>&nbsp;Domoticz parameters&nbsp;</b></legend>");
       
       str += F("<p><b>Rapporteer aan Domoticz?</b><input type='checkbox' class='form-control' name='domo' id='domo' ");
       
-       if (user_data.domo[0] =='j') str += F(" checked></p>"); else str += F("></p>");
+       if (config_data.domo[0] =='j') str += F(" checked></p>"); else str += F("></p>");
        str += F("<p><b>Domoticz IP address</b><input type='text' class='form-control' name='domoticzIP' value='");
-       str += user_data.domoticzIP;
+       str += config_data.domoticzIP;
        str += F("'></p><p>");
        str += F("<b>Domoticz Port</b><input type='text' class='form-control' name='domoticzPort' value='");
-       str += user_data.domoticzPort;
+       str += config_data.domoticzPort;
        str += F("'></p><p>");
        str += F("<b>Domoticz Gas Idx</b><input type='text' class='form-control' name='domoticzGasIdx' value='");
-       str += user_data.domoticzGasIdx;
+       str += config_data.domoticzGasIdx;
        str += F("'></p><p>");
        str += F("<b>Domoticz Energy Idx</b><input type='text' class='form-control' name='domoticzEnergyIdx' value='");
-       str += user_data.domoticzEnergyIdx;
+       str += config_data.domoticzEnergyIdx;
        str += F("'></p>");
       str += F("</fieldset>");
 
        str += F("<fieldset><legend><b>&nbsp;MQTT parameters&nbsp;</b></legend>");
       str += F("<p><b>Rapporteer aan MQTT broker?</b><input type='checkbox' class='form-control' name='mqtt' id='mqtt' ");
-       if (user_data.mqtt[0] =='j') str += F(" checked></p>"); else str += F("></p>");
+       if (config_data.mqtt[0] =='j') str += F(" checked></p>"); else str += F("></p>");
      str += F("<p><b>MQTT broker IP address</b><input type='text' class='form-control' name='mqttIP' value='");
-       str += user_data.mqttIP;
+       str += config_data.mqttIP;
        str += F("'></p><p>");
        str += F("<b>MQTT broker Port</b><input type='text' class='form-control' name='mqttPort' value='");
-       str += user_data.mqttPort;
+       str += config_data.mqttPort;
        str += F("'></p><p>");
        str += F("<b>MQTT user</b><input type='text' class='form-control' name='mqttUser' value='");
-       str += user_data.mqttUser;
+       str += config_data.mqttUser;
        str += F("'></p><p>");
        str += F("<b>MQTT password</b><input type='text' class='form-control' name='mqttPass' value='");
-       str += user_data.mqttPass;
+       str += config_data.mqttPass;
        str += F("'></p>");
        str += F("<b>MQTT root topic</b><input type='text' class='form-control' name='mqttTopic' value='");
-       str += user_data.mqttTopic;
+       str += config_data.mqttTopic;
        str += F("'></p>");
        str += F("</fieldset>");
        str += F("<fieldset>");
        str += F("<b>Meetinterval in sec (> 10 sec)</b><input type='text' class='form-control' name='interval' value='");
-       str += user_data.interval; 
+       str += config_data.interval; 
        str += F("'></p><p>");
        str += F("<p><b>Rapporteer in watt (ipv van in kWh) </b><input type='checkbox' class='form-control' name='watt' id='watt' ");
-       if (user_data.watt[0] =='j') str += F(" checked></p>"); else str += F("></p>");
+       if (config_data.watt[0] =='j') str += F(" checked></p>"); else str += F("></p>");
        str += F("<p><b>Activeer Telnet poort (23) </b><input type='checkbox' class='form-control' name='telnet' id='telnet' ");
-       if (user_data.telnet[0] =='j') str += F(" checked></p>"); else str += F("></p>");
+       if (config_data.telnet[0] =='j') str += F(" checked></p>"); else str += F("></p>");
        str += F("<p><b>Debug via MQTT </b><input type='checkbox' class='form-control' name='debug' id='debug' ");
-       if (user_data.debug[0] =='j') str += F(" checked></p>"); else str += F("></p>");
+       if (config_data.debug[0] =='j') str += F(" checked></p>"); else str += F("></p>");
       str += F("</fieldset><div></div>");
       str += F("<p><button type='submit'>Save</button></form>");
       str += F("<form action='/' method='POST'><button class='button bhome'>Menu</button></form></p>");
@@ -304,7 +307,7 @@ void handleP1(){
   str += electricityUsedTariff1;
   str += eenheid;
   str += "<div class='column' style='text-align:right'><b>vandaag</b><input type='text' class='form-control c7' value='";
-  str += atof(electricityUsedTariff1) - atof(dayStartUsedT1);
+  str += atof(electricityUsedTariff1) - atof(log_data.dayE1);
   str += eenheid;
   str += "</div></p>";
 
@@ -312,7 +315,7 @@ void handleP1(){
   str += electricityUsedTariff2;
   str += eenheid;
   str += "<div class='column' style='text-align:right'><b>vandaag</b><input type='text' class='form-control c7' value='";
-  str += atof(electricityUsedTariff2) - atof(dayStartUsedT2);
+  str += atof(electricityUsedTariff2) - atof(log_data.dayE2);
   str += eenheid;
   str += "</div></p>";
 
@@ -320,7 +323,7 @@ void handleP1(){
   str += electricityReturnedTariff1;
   str += eenheid;
   str += "<div class='column' style='text-align:right'><b>vandaag</b><input type='text' class='form-control c7' value='";
-  str += atof(electricityReturnedTariff1) - atof(dayStartReturnedT1);
+  str += atof(electricityReturnedTariff1) - atof(log_data.dayR1);
   str += eenheid;
   str += "</div></p>";
   
@@ -328,7 +331,7 @@ void handleP1(){
   str += electricityReturnedTariff2;
   str += eenheid;
   str += "<div class='column' style='text-align:right'><b>vandaag</b><input type='text' class='form-control c7' value='";
-  str += atof(electricityReturnedTariff2) - atof(dayStartReturnedT2);
+  str += atof(electricityReturnedTariff2) - atof(log_data.dayR2);
   str += eenheid;
   str += "</div></p>";
   
@@ -342,6 +345,7 @@ void handleP1(){
   str += actualElectricityPowerReturned;
   str += eenheid2;
 
+if (P1prot == 5){
   str += "<p><div class='row'><div class='column3'><b>Voltage: L1</b><input type='text' class='form-control c6' value='";
   str += instantaneousVoltageL1;
   str += " V'></div>";
@@ -351,7 +355,7 @@ void handleP1(){
   str += "<div class='column3' style='text-align:right'><b>L3</b><input type='text' class='form-control c7' value='";
    str += instantaneousVoltageL2;
     str += " V'></div></div></p>";
-
+}
        str += "<p><div class='row'><div class='column3'><b>Amperage: L1</b><input type='text' class='form-control c6' value='";
   str += instantaneousCurrentL1;
   str += " A'></div>";
@@ -377,7 +381,7 @@ void handleP1(){
   str += gasReceived5min;
   str += F(" m3'></div>");
   str += "<div class='column' style='text-align:right'><b>vandaag</b><input type='text' class='form-control c7' value='";
-  str += atof(gasReceived5min) - atof(dayStartGaz);
+  str += atof(gasReceived5min) - atof(log_data.dayG);
   str += " m3'></div></div></p>";
   str += F("</fieldset></form>");
   str += F("<form action='/' method='POST'><button class='button bhome'>Menu</button></form>");

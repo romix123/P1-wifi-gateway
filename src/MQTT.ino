@@ -56,7 +56,7 @@ void mqtt_reconnect(){
     String clientId = "P1 Smart Meter – ";
     clientId += String(random(0xffff), HEX);
     // Attempt to connect
-    if (mqtt_client.connect(HOSTNAME, user_data.mqttUser, user_data.mqttPass)){
+    if (mqtt_client.connect(HOSTNAME, config_data.mqttUser, config_data.mqttPass)){
       debugln("   connected to broker");
       // Once connected, publish an announcement...
       mqtt_client.publish("outTopic", "p1 gateway running");
@@ -110,14 +110,14 @@ void send_metric(String name, float metric) // added *long
  dtostrf(metric, 3, 3, value);
   //  output ftoa(metric, output, 3);
     
-    mtopic = String(user_data.mqttTopic) + "/" + name;
+    mtopic = String(config_data.mqttTopic) + "/" + name;
     send_mqtt_message(mtopic.c_str(), value); // output
 }
 
 void mqtt_send_metric(String name, char *metric)  
 {
     char output[100];
-    mtopic = String(user_data.mqttTopic) + "/" + name;
+    mtopic = String(config_data.mqttTopic) + "/" + name;
     send_mqtt_message(mtopic.c_str(), metric);
 }
 
@@ -152,23 +152,23 @@ void mqtt_send_metric(String name, char *metric)
       mqtt_send_metric("meter-stats/short_power_drops", numberVoltageSagsL1);
       mqtt_send_metric("meter-stats/short_power_peaks", numberVoltageSwellsL1);    
 
-      send_metric("day-consumption/electricity1", (atof(electricityUsedTariff1) - atof(dayStartUsedT1)));
-      send_metric("day-consumption/electricity2", (atof(electricityUsedTariff2) - atof(dayStartUsedT2)));
-      send_metric("day-consumption/electricity1_returned", (atof(electricityReturnedTariff1) - atof(dayStartReturnedT1)));
-      send_metric("day-consumption/electricity2_returned", (atof(electricityReturnedTariff2) - atof(dayStartReturnedT2)));
+      send_metric("day-consumption/electricity1", (atof(electricityUsedTariff1) - atof(log_data.dayE1)));
+      send_metric("day-consumption/electricity2", (atof(electricityUsedTariff2) - atof(log_data.dayE2)));
+      send_metric("day-consumption/electricity1_returned", (atof(electricityReturnedTariff1) - atof(log_data.dayR1)));
+      send_metric("day-consumption/electricity2_returned", (atof(electricityReturnedTariff2) - atof(log_data.dayR2)));
 
-      send_metric("day-consumption/electricity_merged", ((atof(electricityUsedTariff1) - atof(dayStartUsedT1)) + (atof(electricityUsedTariff2) - atof(dayStartUsedT2))));
-      send_metric("day-consumption/electricity_returned_merged", ((atof(electricityReturnedTariff1) - atof(dayStartReturnedT1)) + (atof(electricityReturnedTariff2) - atof(dayStartReturnedT2))));
-      send_metric("day-consumption/gas", (atof(gasReceived5min) - atof(dayStartGaz)));
+      send_metric("day-consumption/electricity_merged", ((atof(electricityUsedTariff1) - atof(log_data.dayE1)) + (atof(electricityUsedTariff2) - atof(log_data.dayE2))));
+      send_metric("day-consumption/electricity_returned_merged", ((atof(electricityReturnedTariff1) - atof(log_data.dayR1)) + (atof(electricityReturnedTariff2) - atof(log_data.dayR2))));
+      send_metric("day-consumption/gas", (atof(gasReceived5min) - atof(log_data.dayG)));
 
-      send_metric("current-month/electricity1", (atof(electricityUsedTariff1) - atof(monthStartUsedT1)));
-      send_metric("current-month/electricity2", (atof(electricityUsedTariff2) - atof(monthStartUsedT2)));
-      send_metric("current-month/electricity1_returned", (atof(electricityReturnedTariff1) - atof(monthStartReturnedT1)));
-      send_metric("current-month/electricity2_returned", (atof(electricityReturnedTariff2) - atof(monthStartReturnedT2)));
+      send_metric("current-month/electricity1", (atof(electricityUsedTariff1) - atof(log_data.monthE1)));
+      send_metric("current-month/electricity2", (atof(electricityUsedTariff2) - atof(log_data.monthE2)));
+      send_metric("current-month/electricity1_returned", (atof(electricityReturnedTariff1) - atof(log_data.monthR1)));
+      send_metric("current-month/electricity2_returned", (atof(electricityReturnedTariff2) - atof(log_data.monthR2)));
 
-      send_metric("current-month/electricity_merged", ((atof(electricityUsedTariff1) - atof(monthStartUsedT1)) + (atof(electricityUsedTariff2) - atof(monthStartUsedT2))));
-      send_metric("current-month/electricity_returned_merged", ((atof(electricityReturnedTariff1) - atof(monthStartReturnedT1)) + (atof(electricityReturnedTariff2) - atof(monthStartReturnedT2))));
-      send_metric("current-month/gas", (atof(gasReceived5min) - atof(monthStartGaz)));
+      send_metric("current-month/electricity_merged", ((atof(electricityUsedTariff1) - atof(log_data.monthE1)) + (atof(electricityUsedTariff2) - atof(log_data.monthE2))));
+      send_metric("current-month/electricity_returned_merged", ((atof(electricityReturnedTariff1) - atof(log_data.monthR1)) + (atof(electricityReturnedTariff2) - atof(log_data.monthR2))));
+      send_metric("current-month/gas", (atof(gasReceived5min) - atof(log_data.monthG)));
       LastReport = timestampkaal();
       MqttDelivered = true;
     return;
