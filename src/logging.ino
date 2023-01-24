@@ -160,7 +160,6 @@ void doHourlyLog(){
   deleteFile("/logData1.txt");
   renameFile("/logData.txt", "/logData1.txt");
   File file = LittleFS.open("/logData.txt", "w");
-  //File file = LittleFS.open(path, "r");
   file.write((byte *)&log_data, sizeof(log_data));
   file.close();
 
@@ -179,10 +178,11 @@ void doDailyLog(){
    * day = cur
    * set flag
    */
+   monitoring = false;
    debug("Dayly log started ... ");
 
    String str ="";
-   char buffer[55];
+   char buffer[60];
    char value[12];
 
 if (month() < 10) str += "0";
@@ -193,16 +193,16 @@ if (month() < 10) str += "0";
   
   dtostrf((atof(electricityUsedTariff1) - atof(log_data.dayE1)), 6, 2, value);
   sprintf(buffer, "['%s', %s],\n", str, value);
-  appendFile("/DayE1.log", buffer);
-//  appendFile("/WeekE1.log", buffer);
+//  appendFile("/DayE1.log", buffer);
+  appendFile("/WeekE1.log", buffer);
   appendFile("/MonthE1.log", buffer);
   appendFile("/YearE1.log", buffer);
   strcpy(log_data.dayE1, electricityUsedTariff1);
 
   dtostrf((atof(electricityUsedTariff2) - atof(log_data.dayE2)), 6, 2, value);
   sprintf(buffer, "['%s', %s],\n", str, value);
-  appendFile("/DayE2.log", buffer);
-//  appendFile("/WeekE2.log", buffer);
+//  appendFile("/DayE2.log", buffer);
+  appendFile("/WeekE2.log", buffer);
   appendFile("/MonthE2.log", buffer);
   appendFile("/YearE2.log", buffer);
   strcpy(log_data.dayE2, electricityUsedTariff2);
@@ -212,7 +212,7 @@ if (month() < 10) str += "0";
 //  appendFile("/DayR1.log", buffer);
   appendFile("/WeekR1.log", buffer);
   appendFile("/MonthR1.log", buffer);
-  appendFile("/YearE2.log", buffer);
+  appendFile("/YearR1.log", buffer);
   strcpy(log_data.dayR1, electricityReturnedTariff1);
 
   dtostrf((atof(electricityReturnedTariff2) - atof(log_data.dayR2)), 6, 2, value);
@@ -220,7 +220,7 @@ if (month() < 10) str += "0";
 //  appendFile("/DayR2.log", buffer);
   appendFile("/WeekR2.log", buffer);
   appendFile("/MonthR2.log", buffer);
-  appendFile("/YearE2.log", buffer);
+  appendFile("/YearR2.log", buffer);
   strcpy(log_data.dayR2, electricityReturnedTariff2);
   
   dtostrf((atof(gasReceived5min) - atof(log_data.dayG)), 6, 2, value);
@@ -229,7 +229,8 @@ if (month() < 10) str += "0";
   appendFile("/WeekG.log", buffer);
   appendFile("/MonthG.log", buffer);
   appendFile("/YearG.log", buffer);  
-  sprintf(buffer, "(%s,%s,%s'), %s],\n", year(), month()-1, day(), value); // Google graph format uses month 0 for Jan!!
+  sprintf_P(buffer, PSTR("(%d,%d,%d), %s],\n"), year(), month()-1, day(), value);
+ // sprintf(buffer, "(%s , %s , %s), %s],\n", year(), 0, day(), value); // Google graph format uses month 0 for Jan!!
   appendFile("/YearGc.log", buffer);
   strcpy(log_data.dayG, gasReceived5min);
 
@@ -260,7 +261,7 @@ if (month() < 10) str += "0";
   
   SET_FLAG(logFlags, dayFlag);
   debugln("completed.");
-
+monitoring = true;
 }
 
 void doWeeklyLog(){

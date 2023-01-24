@@ -62,7 +62,7 @@
  *  
  *  
  *    
- *  versie: 1.1aa 
+ *  versie: 1.1ab 
  *  datum:  23 Jan 2023
  *  auteur: Ronald Leenes
  *  
@@ -108,7 +108,7 @@
  *  g: fixed mqtt
  *  
  *  Generic ESP8285 module 
-*   Flash Size: 2mb (FS: 128Kb, OTA: –992Kb) 
+*   Flash Size: 2mb (FS: 128Kb, OTA: –960Kb) 
 *   
 *   needed files: 
 *   this one (obv), 
@@ -117,6 +117,7 @@
 *   MQTT.ino
 *   TELNET.ino
 *   debug.ino
+*   decoder.ino
 *   functions.ino
 *   graph.ino
 *   webserver.ino
@@ -125,9 +126,9 @@
 *   webserverNL.ino
 *   wifi.ino
 */
-bool zapfiles = false; //true;
+bool zapfiles = false; //false; //true;
 
-String version = "1.1aa – NL";
+String version = "1.1ac – NL";
 #define   NEDERLANDS //  GERMAN//  SWEDISH //  FRENCH //
 
 
@@ -135,7 +136,7 @@ String version = "1.1aa – NL";
 
 #define GRAPH 1
 #define V3
-#define DEBUG 0// 1 // 1 is on serial only, 2 is serial + telnet, 
+#define DEBUG 1//0//1//0// 1 // 1 is on serial only, 2 is serial + telnet, 
 #define ESMR5 1
 //#define SLEEP_ENABLED 
 
@@ -144,7 +145,7 @@ const uint32_t  wakeTime = 90000; // stay awake wakeTime millisecs
 const uint32_t  sleepTime = 5000; //sleep sleepTime millisecs
 
 #if DEBUG == 1
-const char* host = "P1wifi";
+const char* host = "P1test";
 #define BLED LED_BUILTIN
 #define debug(x) Serial.print(x)
 #define debugf(x) Serial.printf(x)
@@ -226,7 +227,6 @@ ESP8266WebServer    server(80);
 #include <PubSubClient.h>
 WiFiClient espClient;                   // * Initiate WIFI client
 PubSubClient mqtt_client(espClient);    // * Initiate MQTT client
-long LAST_RECONNECT_ATTEMPT = 0;        // * MQTT Last reconnection counter
 bool MQTT_Server_Fail = false;
 long nextMQTTreconnectAttempt; 
 // end mqtt stuff
@@ -538,13 +538,13 @@ void setup() {
       }
      
       File logData = LittleFS.open("/logData.txt", "r");
-        if (!logData) {
+        if (logData) {
+          logData.read((byte *)&log_data, sizeof(log_data));
+          logData.close();
+        } else {
           debugln("Failed to open logData.txt for reading");
           needToInitLogVars = true;
           needToInitLogVarsGas = true;
-        } else {
-          logData.read((byte *)&log_data, sizeof(log_data));
-          logData.close();
         }
         if (zapfiles) zapFiles();
       
@@ -638,7 +638,7 @@ void loop() {
 
 void checkCounters(){
   // see logging.ino
-  
+  time_t t = now();
        if (coldbootE && gotPowerReading) {
         if (needToInitLogVars){
           doInitLogVars();
@@ -653,14 +653,14 @@ void checkCounters(){
           resetGasCount();
        }
    
-   if (!CHK_FLAG(logFlags, hourFlag) && minute() == 59) doHourlyLog();
-   if (!CHK_FLAG(logFlags,dayFlag) && (hour() == 23) && (minute() == 59)) doDailyLog();
-   if (!CHK_FLAG(logFlags, weekFlag) && weekday() == 1 && hour() == 23 && minute() == 59) doWeeklyLog(); // day of the week (1-7), Sunday is day 1
-   if (!CHK_FLAG(logFlags, monthFlag) && day() == 28 && month() == 2 && hour() == 23 && minute() == 59 && year() != 2024 && year() != 2028 ) doMonthlyLog();
-   if (!CHK_FLAG(logFlags, monthFlag) && day() == 29 && month() == 2 && hour() == 23 && minute() == 59 ) doMonthlyLog(); // schrikkeljaren
-   if (!CHK_FLAG(logFlags, monthFlag) && day() == 30 && (month() == 4 || month() == 6 || month()== 9 || month() == 11) && hour() == 23 && minute() == 59 ) doMonthlyLog();
-   if (!CHK_FLAG(logFlags, monthFlag) && day() == 31 && (month() == 1 || month() == 3 || month()== 5 || month() == 7 || month() == 8 || month() == 10 || month() == 12) && hour() == 23 && minute() == 59 ) doMonthlyLog();
-   if (!CHK_FLAG(logFlags, monthFlag) && day() == 31 && month() == 12 && hour() == 23 && minute() == 59 ) doYearlyLog();
+   if (!CHK_FLAG(logFlags, hourFlag) && minute(t) == 59) doHourlyLog();
+   if (!CHK_FLAG(logFlags, dayFlag) && (hour(t) == 23) && (minute(t) == 59)) doDailyLog();
+   if (!CHK_FLAG(logFlags, weekFlag) && weekday(t) == 1 && hour(t) == 23 && minute(t) == 59) doWeeklyLog(); // day of the week (1-7), Sunday is day 1
+   if (!CHK_FLAG(logFlags, monthFlag) && day(t) == 28 && month(t) == 2 && hour(t) == 23 && minute(t) == 59 && year(t) != 2024 && year(t) != 2028 ) doMonthlyLog();
+   if (!CHK_FLAG(logFlags, monthFlag) && day(t) == 29 && month(t) == 2 && hour(t) == 23 && minute(t) == 59 ) doMonthlyLog(); // schrikkeljaren
+   if (!CHK_FLAG(logFlags, monthFlag) && day(t) == 30 && (month(t) == 4 || month(t) == 6 || month(t)== 9 || month(t) == 11) && hour(t) == 23 && minute(t) == 59 ) doMonthlyLog();
+   if (!CHK_FLAG(logFlags, monthFlag) && day(t) == 31 && (month(t) == 1 || month(t) == 3 || month(t)== 5 || month(t) == 7 || month(t) == 8 || month(t) == 10 || month() == 12) && hour() == 23 && minute() == 59 ) doMonthlyLog();
+   if (!CHK_FLAG(logFlags, monthFlag) && day(t) == 31 && month(t) == 12 && hour(t) == 23 && minute(t) == 59 ) doYearlyLog();
 }
 
 void resetFlags(){
@@ -671,5 +671,5 @@ void resetFlags(){
   if (CHK_FLAG(logFlags, monthFlag) &&  (day() > 0)) CLR_FLAG(logFlags, monthFlag);
   if (CHK_FLAG(logFlags, yearFlag) &&  (day() == 1) && month() == 1) CLR_FLAG(logFlags, yearFlag);
   debug("logFlags : ");
-  Serial.println(logFlags, BIN);
+  Serial.println(logFlags);
 }

@@ -30,6 +30,7 @@ void addUptime(String& str){
 
 void addFoot(String& str){
   str += F("<div style='text-align:right;font-size:11px;color:#aaa;'><hr/>");
+  
   if (Mqtt) {
     if (MqttConnected) str += F("MQTT link: √ "); else str += F("MQTT – ");
     str += F(" laatste sample: ");

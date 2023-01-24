@@ -37,7 +37,7 @@ void addHead(String& str)
 void addRefreshHead(String& str)
 {
   str += F("<!DOCTYPE html><html lang='en' class=''>");
-  str += F("<META http-equiv=\"refresh\" content=\"30;URL=/\">");
+  str += F("<META http-equiv=\"refresh\" content=\"20;URL=/\">");
   str += F("<meta charset='utf-8'><meta name=\"viewport\" content=\"width=device-width,initial-scale=1,user-scalable=no\"/>");
   str += F("<head><title>Slimme meter</title>");
   str += F("<style>");

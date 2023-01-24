@@ -27,7 +27,6 @@
  * @see http://esp8266thingies.nl
  */
 
-// graph.js Ref: https://stackoverflow.com/q/59951311/9112798
 
 #if GRAPH == 1
 
@@ -40,34 +39,35 @@ void handleGraphMenu(){
   
   str += F("<html>\n<head>\n");
   str += F("<title>Slimme meter</title>");
-  str += F("</head><body>\n");
-
+  str += F("</head><body>");
+ 
   str += F("<fieldset><legend><b> Grafieken </b></legend>");
-  str += F("<form action='/SelectGraph' method='POST'>");
-  str += F("<input type='radio' id='day' name='period' value='day'> vandaag <input type='radio' id='week' name='period' value='week'> deze week ");
-  str += F("<input type='radio' id='month' name='period' value='month'> deze maand <input type='radio' id='year' name='period' value='year'> dit jaar</br>");
+    str += F("<fieldset><legend><b> periode </b></legend>"); 
+      str += F("<form action='/SelectGraph' method='POST'>");
+        str += F("<div>");
+          str += F("<input type='radio' id='day' name='period' value='day' checked><label for='day'>vandaag</label>");
+          str += F("<input type='radio' id='week' name='period' value='week'><label for='week'>deze week</label>");
+          str += F("<input type='radio' id='month' name='period' value='month'><label for='month'>deze maand</label>");
+          str += F("<input type='radio' id='year' name='period' value='year'><label for='year'>dit jaar</label></br>");
+        str += F("</div>");
   
-//  str += F("<input type='radio' id='day' name='period' value='day'><label for='day'>vandaag</label>");
-//  str += F("<input type='radio' id='week' name='period' value='week'><label for='week'>deze week</label>");
-//  str += F("<input type='radio' id='month' name='period' value='month'><label for='month'>deze maand</label>");
-//  str += F("<input type='radio' id='year' name='period' value='year'><label for='year'>dit jaar</label></br>");
-
+ //  str += F("<fieldset>");
+        str += F("<button name='graphtype' value='1' type='submit'>Energieverbruik T1/T2</button>");
+        str += F("<p><button name='graphtype' value='2' type='submit'>Energie retour T1/T2</button>");
+        str += F("<p><button name='graphtype' value='3' type='submit'>Energie totaal/retour</button>");
+        str += F("<p><button name='graphtype' value='4' type='submit'>Gasverbruik</button>");
+      str += F("</form>");
+   str += F("</fieldset>");
+ 
+   str += F("<fieldset><legend><b> Jaaroverzicht</b></legend>");
+    str += F("<form action='/GasCalendar' method='POST'>");
+    str += F("<p><button type='submit'>Gasverbruik dit jaar</button></form>");
+  str += F("</fieldset></form>");
   
-  str += F("<p><button name='graphtype' value='1' type='submit'>Energieverbruik T1/T2</button>");
-  str += F("<p><button name='graphtype' value='2' type='submit'>Energie retour T1/T2</button>");
-  str += F("<p><button name='graphtype' value='3' type='submit'>Energie totaal/retour</button>");
-  str += F("<p><button name='graphtype' value='4' type='submit'>Gasverbruik</button></form>");
-  str += F("</fieldset>");
-  
-  str += F("<fieldset><legend><b> Jaaroverzicht</b></legend>");
-  str += F("<form action='/GasCalendar' method='POST'>");
-  str += F("<p><button type='submit'>Gasverbruik dit jaar</button></form>");
-  str += F("</fieldset>");
-
+ str += F("</fieldset>"); // grafieken
 //  str += F("<form action='/Dir' method='GET'><button type='submit'>Directory</button></form>");
-//  str += F("<a href=\"/DumpLogs\">Dump log files</a><br>");
-
-  str += F("<form action='/' method='POST'><button class='button bhome'>Menu</button></form>");
+    str += F("<form action='/' method='POST'><button class='button bhome'>Menu</button>");
+  
   addFootBare(str); 
   server.send(200, "text/html", str);
 }
@@ -125,6 +125,8 @@ String str ="";
 char buffer[64];
 char path1[20];
 char path2[20];
+char totaal1[12];
+char totaal2[12];
 String pageTitle ="";
 
 if (period =="day") {
@@ -154,10 +156,10 @@ if (period =="day") {
     pageTitle = " Dit jaar ";
 }
 
-debug("file1 to read: ");
-debugln(path1);
-debug("file2 to read: ");
-debugln(path2);
+//debug("file1 to read: ");
+//debugln(path1);
+//debug("file2 to read: ");
+//debugln(path2);
 
 File file1 = LittleFS.open(path1, "r");
 File file2 = LittleFS.open(path2, "r");
@@ -171,23 +173,23 @@ if (type2[0] != '\0'){
 }
 
 server.sendContent(str);
-debugln(str);
+//debugln(str);
 
 str = F("function drawChart1() { var data = new google.visualization.arrayToDataTable([");
 str += label; //F("[\"uur\", \"m^3\"], ");
 server.sendContent(str);
-debugln(str);
+//debugln(str);
 
   if (!file1) {
     debugln("Failed to open file for reading");
     server.sendContent("['0', 0],");
-    debug("['0', 0], ");
+//    debug("['0', 0], ");
   } else {
     while (file1.available()) {
       int l = file1.readBytesUntil('\n', buffer, sizeof(buffer));
       buffer[l] = 0;
       server.sendContent(buffer);
-      debugln(buffer);
+ //     debugln(buffer);
     }
     file1.close();
   }
@@ -196,10 +198,12 @@ debugln(str);
  str += F("var options = {title: '");
  str += title1; 
  str += F(" '};"); //'Gasverbruik per uur in m^3'};");
- str += F("var chart = new google.visualization.ColumnChart(document.getElementById('Chart1'));");
+ if (type1[0] == 'T') 
+    str += F("var chart = new google.visualization.LineChart(document.getElementById('Chart1'));");
+    else str += F("var chart = new google.visualization.ColumnChart(document.getElementById('Chart1'));");
  str += F("chart.draw(data, options); }");
  server.sendContent( str);
- debugln(str);
+// debugln(str);
 
  delay(200);
  str ="";
@@ -208,7 +212,7 @@ if (type2[0] != '\0'){
   str = F("function drawChart2() { var data = new google.visualization.arrayToDataTable([");
   str += label; //F("[\"uur\", \"m^3\"], ");
   server.sendContent( str);
-  debugln(str);
+//  debugln(str);
 
   if (!file2) {
     debugln("Failed to open file for reading");
@@ -228,10 +232,12 @@ if (type2[0] != '\0'){
   str += F("var options = {title: '");
   str += title2; //'Gasverbruik per uur in m^3'
   str += F(" '};"); 
-  str += F("var chart = new google.visualization.ColumnChart(document.getElementById('Chart2'));");
+  if (type2[0] == 'T')     
+      str += F("var chart = new google.visualization.LineChart(document.getElementById('Chart2'));");
+      else  str += F("var chart = new google.visualization.ColumnChart(document.getElementById('Chart2'));");
   str += F("chart.draw(data, options); }");
   server.sendContent ( str);
-  debugln(str);
+//  debugln(str);
 }  //only if we have a second file to display
 
   str = F("</script>");
@@ -252,7 +258,7 @@ if (type2[0] != '\0'){
   str += F("<form action='/' method='POST'><button class='button bhome'>Menu</button></form>");
   addFootBare(str);   
   server.sendContent ( str);
-  debugln(str);
+//  debugln(str);
   server.sendContent(F(""));
  monitoring = true;
 }
@@ -271,16 +277,16 @@ str += F("function drawChart() {var dataTable=new google.visualization.DataTable
 str += F("dataTable.addRows([");
 
 server.sendContent(str);
-debugln(str);
+//debugln(str);
 
   if (!file) {
     debugln("Failed to open file for reading");
-    server.sendContent("[ new Date(2023,0,1), 0],");
+    server.sendContent("[new Date(2023,0,1), 0],");
   } else {
   while (file.available()) {
    int l = file.readBytesUntil('\n', buffer, sizeof(buffer));
    buffer[l] = 0;
-   server.sendContent("[ new Date");
+   server.sendContent("[new Date");
    server.sendContent(buffer);
   }
   file.close();
@@ -293,7 +299,7 @@ debugln(str);
   str += F("<form action='/' method='POST'><button class='button bhome'>Menu</button></form>");
   addFootBare(str);   
   server.sendContent (str);
-  debugln(str);
+//debugln(str);
   server.sendContent(F(""));
  
   monitoring = true;
