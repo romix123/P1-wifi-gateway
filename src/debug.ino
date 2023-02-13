@@ -28,7 +28,7 @@
  
 void readVoltage() { // read internal VCC
   volts = ESP.getVcc();
-  debugf("The internal VCC reads %1.2f volts\n", volts / 1000);
+  debugff("The internal VCC reads %1.2f volts\n", volts / 1000);
 }
 
 void PrintConfigData(){

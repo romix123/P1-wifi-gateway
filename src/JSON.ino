@@ -39,13 +39,13 @@ bool DomoticzJson(char* idx, int nValue, char* sValue){
  
   if (config_data.domoticzIP[0] != '-') {
     sprintf(url, "http://%s:%s/json.htm?type=command&param=udevice&idx=%s&nvalue=%d&svalue=%s", config_data.domoticzIP, config_data.domoticzPort, idx, nValue, sValue);
-    debugf("[HTTP] GET... URL: %s\n",url);
+    debugff("[HTTP] GET... URL: %s\n",url);
     http.begin(client, url); //HTTP
     int httpCode = http.GET();
         // httpCode will be negative on error
       if (httpCode > 0)
         { // HTTP header has been sent and Server response header has been handled
-            debugf("[HTTP] GET... code: %d\n", httpCode);
+            debugff("[HTTP] GET... code: %d\n", httpCode);
              // file found at server
             if (httpCode == HTTP_CODE_OK) {
                 String payload = http.getString();
@@ -54,7 +54,7 @@ bool DomoticzJson(char* idx, int nValue, char* sValue){
             }
         } else
       {
-          debugf("[HTTP] GET... failed, error: %s\n", http.errorToString(httpCode).c_str());
+          debugff("[HTTP] GET... failed, error: %s\n", http.errorToString(httpCode).c_str());
       }
     http.end();
     return retVal;

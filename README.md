@@ -33,10 +33,12 @@
    
    
      
-   versie: 1.1aa 
-   datum:  23 Jan 2023
+   versie: 1.1adc 
+   datum:  12 Feb 2023
    auteur: Ronald Leenes
    
+   1.1adc: implemented extensive logging
+   			updated Swedish version to align with Dutch version (German and French versions lack security features on setup/update)
    1.1aa: bug fixes
    1.1: implemented graphs
    		fixed reporting tariffIndicatorElectricity

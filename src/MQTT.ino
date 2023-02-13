@@ -146,7 +146,8 @@ void mqtt_send_metric(String name, char *metric)
     
       mqtt_send_metric("consumption/gas/delivered", gasReceived5min);
 
-      mqtt_send_metric("meter-stats/actual_tarif_group", tariffIndicatorElectricity);
+ //     mqtt_send_metric("meter-stats/actual_tarif_group", tariffIndicatorElectricity[3]);
+    send_metric("meter-stats/actual_tarif_group", tariffIndicatorElectricity[3]);
       mqtt_send_metric("meter-stats/power_failure_count", numberPowerFailuresAny);
       mqtt_send_metric("meter-stats/long_power_failure_count", numberLongPowerFailuresAny);
       mqtt_send_metric("meter-stats/short_power_drops", numberVoltageSagsL1);
@@ -171,6 +172,7 @@ void mqtt_send_metric(String name, char *metric)
       send_metric("current-month/gas", (atof(gasReceived5min) - atof(log_data.monthG)));
       LastReport = timestampkaal();
       MqttDelivered = true;
+      LastReportinMillis = millis();
     return;
     
   }
@@ -195,11 +197,12 @@ void mqtt_send_metric(String name, char *metric)
     
       mqtt_send_metric("gas_meter_m3", gasReceived5min);
 
-      mqtt_send_metric("actual_tarif_group", tariffIndicatorElectricity);
+      send_metric("actual_tarif_group", tariffIndicatorElectricity[3]);
       mqtt_send_metric("short_power_outages", numberPowerFailuresAny);
       mqtt_send_metric("long_power_outages", numberLongPowerFailuresAny);
       mqtt_send_metric("short_power_drops", numberVoltageSagsL1);
-      mqtt_send_metric("short_power_peaks", numberVoltageSwellsL1);   
+      mqtt_send_metric("short_power_peaks", numberVoltageSwellsL1); 
+      LastReportinMillis = millis();  
 #endif
 #ifdef GERMAN
       mqtt_send_metric("equipmentID", equipmentId);
@@ -229,6 +232,7 @@ void mqtt_send_metric(String name, char *metric)
       mqtt_send_metric("short_power_drops", numberVoltageSagsL1);
       mqtt_send_metric("short_power_peaks", numberVoltageSwellsL1);
       mqtt_send_metric("P1module_voltage", outstr);
+      LastReportinMillis = millis();
 #endif
 #ifdef SWEDISH
 /*
@@ -299,10 +303,11 @@ void mqtt_send_metric(String name, char *metric)
       mqtt_send_metric("currentL1", instantaneousCurrentL1);  // 31.7.0
       mqtt_send_metric("currentL2", instantaneousCurrentL2);  // 51.7.0
       mqtt_send_metric("currentL3", instantaneousCurrentL3);  // 71.7.0
-      mqtt_send_metric("P1module_voltage", outstr);
+//      mqtt_send_metric("P1module_voltage", outstr);
 #endif      
       LastReport = timestamp();
       MqttDelivered = true;
+      LastReportinMillis = millis();
 }
 
 void MQTT_Debug(){
@@ -313,6 +318,9 @@ void MQTT_Debug(){
       dtostrf(millis(), 10,0, outstr);
       send_mqtt_message("p1wifi/P1now", outstr);
 
+      dtostrf(nextUpdateTime, 10,0, outstr);
+      send_mqtt_message("p1wifi/P1next", outstr);
+      
       dtostrf(time_to_sleep, 10,0, outstr);
       send_mqtt_message("p1wifi/P1time_toSleep", outstr);
       

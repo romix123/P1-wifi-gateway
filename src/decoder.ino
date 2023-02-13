@@ -79,8 +79,8 @@ void getValue(char *theValue, char *buffer, int maxlen, char startchar, char end
  // if (domoticzJson) nodecimals = true;
     
   int s = 0;
-  if  (FindCharInArrayRev(buffer, ')(', maxlen - 2) != -1)  // some meters report the meterID in () before the section with actual gas value
-      s = FindCharInArrayRev(buffer, ')(', maxlen - 2);
+  if  (FindCharInArrayRev2(buffer, ')', maxlen - 2) != -1)  // some meters report the meterID in () before the section with actual gas value
+      s = FindCharInArrayRev2(buffer, ')', maxlen - 2) + 1;
   else
     s = FindCharInArrayRev(buffer, '(', maxlen - 2);
     
@@ -133,8 +133,8 @@ void getGas22Value(char *theValue, char *buffer, int maxlen, char startchar, cha
   if (!reportInDecimals) nodecimals = true;
     
   int s = 0;
-  if  (FindCharInArrayRev(buffer, ')(', maxlen - 2) != -1)  // some meters report the meterID in () before the section with actual gas value
-      s = FindCharInArrayRev(buffer, ')(', maxlen - 2);
+  if  (FindCharInArrayRev2(buffer, ')', maxlen - 2) != -1)  // some meters report the meterID in () before the section with actual gas value
+      s = FindCharInArrayRev2(buffer, ')', maxlen - 2) + 1;
   else
     s = FindCharInArrayRev(buffer, '(', maxlen - 2);
     
@@ -233,6 +233,8 @@ bool decodeTelegram(int len) {
   if (state == READING) {     
   if(endChar>=0)   // we have found the endchar !
   {
+    nextUpdateTime = millis() + interval; // set trigger for next round
+
     state = CHECKSUM;
     //add to crc calc 
     dataEnd = true;         // we're at the end of the data stream, so mark (for raw data output) We don't know if the data is valid, we will test this below.

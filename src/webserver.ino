@@ -153,3 +153,65 @@ void handleSetupSave() {
     ESP.reset();
   } 
 }
+
+void handleLogin(){
+  createToken();
+    debugln("handleLogin");
+
+  if (millis() < 60000) {
+    debug(millis());
+    debugln(" – You made it within the timeframe, go to setup without login."); 
+    bootSetup = true; // our ticket to handleSetup
+    handleSetup();
+  }
+   String str = "";
+    addHead(str);
+    addIntro(str);
+      str += F("<form action='/Setup2' method='POST'><fieldset>");
+       str += F("<input type='hidden' name='setuptoken' value='");
+       str+= setupToken;
+       str+=  F("'>");
+      str += F("<fieldset><legend><b>&nbsp;Login&nbsp;</b></legend>");
+      str += F("<p><b>Admin password</b><br>");
+      str += F("<input type='text' class='form-control' name='adminPassword' value='' </p>");
+      str+=  F("</fieldset>");
+      str += F("<p><button type='submit'>Login</button></form>");
+  addFoot(str);
+  server.send(200, "text/html", str);
+}
+
+void handleUpdateLogin(){
+  createToken();
+    debugln("handleUpdateLogin");
+
+   String str = "";
+    addHead(str);
+    addIntro(str);
+      str += F("<form action='/uploadDialog' method='POST'><fieldset>");
+       str += F("<input type='hidden' name='setuptoken' value='");
+       str+= setupToken;
+       str+=  F("'>");
+      str += F("<fieldset><legend><b>&nbsp;Login&nbsp;</b></legend>");
+      str += F("<p><b>Admin password</b><br>");
+      str += F("<input type='text' class='form-control' name='adminPassword' value='' </p>");
+      str+=  F("</fieldset>");
+      str += F("<p><button type='submit'>Login</button></form>");
+  addFoot(str);
+  server.send(200, "text/html", str);
+}
+
+void errorLogin(String returnpage){
+  debugln("errorLogin");
+    String str = "";
+    addHead(str);
+    addIntro(str);
+      str += F("<fieldset><legend><b>Fout</b></legend>");
+      str += F("<p><b>Admin password is incorrect.</b><br>");
+      str+=  F("</fieldset>");
+      str += F("<form action='/");
+      str += returnpage;
+      str += F("' method='POST'><button class='button bhome'>Opnieuw</button></form></p>");
+    addFoot(str);
+    server.send(200, "text/html", str);
+    bootSetup = false;
+}

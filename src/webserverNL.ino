@@ -30,6 +30,13 @@ void addUptime(String& str){
 
 void addFoot(String& str){
   str += F("<div style='text-align:right;font-size:11px;color:#aaa;'><hr/>");
+
+  str += F("[");
+  if (monitoring) str += F("M"); else str += F("m");
+  if (hourFlag) str += F("H"); else str += F("h");
+  if (dayFlag) str += F("D"); else str += F("d");
+  if (weekFlag) str += F("W"); else str += F("w");
+  str += F("] ");
   
   if (Mqtt) {
     if (MqttConnected) str += F("MQTT link: √ "); else str += F("MQTT – ");
@@ -127,70 +134,10 @@ void handleRoot(){
   server.send(200, "text/html", str);
   webstate = MAIN;
   monitoring = true;
-  nextUpdateTime = millis() + 2000;
+ // nextUpdateTime = millis() + 2000;
 }
 
-void handleLogin(){
-  createToken();
-    debugln("handleLogin");
 
-  if (millis() < 60000) {
-    debug(millis());
-    debugln(" – You made it within the timeframe, go to setup without login."); 
-    bootSetup = true; // our ticket to handleSetup
-    handleSetup();
-  }
-   String str = "";
-    addHead(str);
-    addIntro(str);
-      str += F("<form action='/Setup2' method='POST'><fieldset>");
-       str += F("<input type='hidden' name='setuptoken' value='");
-       str+= setupToken;
-       str+=  F("'>");
-      str += F("<fieldset><legend><b>&nbsp;Login&nbsp;</b></legend>");
-      str += F("<p><b>Admin password</b><br>");
-      str += F("<input type='text' class='form-control' name='adminPassword' value='' </p>");
-      str+=  F("</fieldset>");
-      str += F("<p><button type='submit'>Login</button></form>");
-  addFoot(str);
-  server.send(200, "text/html", str);
-}
-
-void handleUpdateLogin(){
-  createToken();
-    debugln("handleUpdateLogin");
-
-   String str = "";
-    addHead(str);
-    addIntro(str);
-      str += F("<form action='/uploadDialog' method='POST'><fieldset>");
-       str += F("<input type='hidden' name='setuptoken' value='");
-       str+= setupToken;
-       str+=  F("'>");
-      str += F("<fieldset><legend><b>&nbsp;Login&nbsp;</b></legend>");
-      str += F("<p><b>Admin password</b><br>");
-      str += F("<input type='text' class='form-control' name='adminPassword' value='' </p>");
-      str+=  F("</fieldset>");
-      str += F("<p><button type='submit'>Login</button></form>");
-  addFoot(str);
-  server.send(200, "text/html", str);
-}
-
-void errorLogin(String returnpage){
-  debugln("errorLogin");
-    String str = "";
-    addHead(str);
-    addIntro(str);
-      str += F("<fieldset><legend><b>Fout</b></legend>");
-      str += F("<p><b>Admin password is incorrect.</b><br>");
-      str+=  F("</fieldset>");
-      str += F("<form action='/");
-      str += returnpage;
-      str += F("' method='POST'><button class='button bhome'>Opnieuw</button></form></p>");
-    addFoot(str);
-    server.send(200, "text/html", str);
-    bootSetup = false;
-}
 
 void handleSetup(){
   if (millis() > 60000) {            // if we did not get here directly, check credentials
@@ -202,13 +149,14 @@ void handleSetup(){
     }
   }      
   debugln("direct call");
-  monitoring = false; // stop monitoring data
+  //monitoring = false; // stop monitoring data
 
  String str = ""; 
       debugln("handleSetupForm");
 
     addHead(str);
     addIntro(str);
+    str += F("<fieldset>");
       str += F("<form action='/SetupSave' method='POST'><fieldset>");
       str += F("<input type='hidden' name='setuptoken' value='");
        str+= setupToken;
@@ -283,9 +231,6 @@ void handleSetup(){
     server.send(200, "text/html", str);
     webstate = CONFIG;
 }
-
-
-
 
 void handleP1(){
   debugln("handleP1");

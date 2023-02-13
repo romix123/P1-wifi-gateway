@@ -19,8 +19,8 @@
 /**
  * @file P1WG2022current.ino
  * @author Ronald Leenes
- * @date 28.12.2022
- * @version 1.0u 
+ * @date 12.2.2023
+ * @version 1.1adc 
  *
  * @brief This file contains the main file for the P1 wifi gatewway
  *
@@ -62,10 +62,12 @@
  *  
  *  
  *    
- *  versie: 1.1ab 
- *  datum:  23 Jan 2023
+ *  versie: 1.1adc 
+ *  datum:  12 Feb 2023
  *  auteur: Ronald Leenes
  *  
+ *  1.1adc
+ *  1.1ad: bug fixes and graph improvements
  *  1.1aa: bug fixes
  *  1.1: implemented graphs
  *  
@@ -112,6 +114,7 @@
 *   
 *   needed files: 
 *   this one (obv), 
+*   vars.h            in the process of moving all vars here
 *   CRC16.h
 *   JSON.ino
 *   MQTT.ino
@@ -128,15 +131,15 @@
 */
 bool zapfiles = false; //false; //true;
 
-String version = "1.1ac – NL";
-#define   NEDERLANDS //  GERMAN//  SWEDISH //  FRENCH //
+String version = "1.1adc – NL";
+#define    NEDERLANDS // SWEDISH //  FRENCH //   GERMAN//   
 
 
 #define HOSTNAME "p1meter"
 
 #define GRAPH 1
 #define V3
-#define DEBUG 1//0//1//0// 1 // 1 is on serial only, 2 is serial + telnet, 
+#define DEBUG 0//1// 3// 1 // 1 is on serial only, 2 is serial + telnet, 
 #define ESMR5 1
 //#define SLEEP_ENABLED 
 
@@ -149,24 +152,32 @@ const char* host = "P1test";
 #define BLED LED_BUILTIN
 #define debug(x) Serial.print(x)
 #define debugf(x) Serial.printf(x)
-#define debugf(x,y) Serial.printf(x,y)
-#define debugff(x,y,z) Serial.printf(x,y,z)
+#define debugff(x,y) Serial.printf(x,y)
+#define debugfff(x,y,z) Serial.printf(x,y,z)
 #define debugln(x) Serial.println(x)
 #elif DEBUG == 2
 #define BLED LED_BUILTIN
 #define debug(x) Serial.print(x);if(telnetConnected)telnet.print(x)
 #define debugf(x) Serial.printf(x)
-#define debugf(x,y) Serial.printf(x,y)
-#define debugff(x,y,z) Serial.printf(x,y,z)
+#define debugff(x,y) Serial.printf(x,y)
+#define debugfff(x,y,z) Serial.printf(x,y,z)
 #define debugln(x) Serial.println(x);if(telnetConnected)telnet.println(x)
+#elif DEBUG == 3
+const char* host = "P1home";
+#define BLED LED_BUILTIN
+#define debug(x)
+#define debugln(x)
+#define debugf(x)
+#define debugff(x,y)
+#define debugfff(x,y,z)
 #else
 const char* host = "P1wifi";
 #define BLED LED_BUILTIN
 #define debug(x)
 #define debugln(x)
 #define debugf(x)
-#define debugf(x,y)
-#define debugff(x,y,z)
+#define debugff(x,y)
+#define debugfff(x,y,z)
 #endif
 
 #define errorHalt(msg) {debugln(F(msg)); return;}
@@ -187,6 +198,7 @@ const char* host = "P1wifi";
 #include "CRC16.h"
 
 #if GRAPH == 1
+//#include "lfs.h"
 #include "FS.h"
 #include <LittleFS.h>
 File file;
@@ -274,6 +286,9 @@ ADC_MODE(ADC_VCC);  // allows you to monitor the internal VCC level;
 // energy management vars
 int interval;
 unsigned long nextUpdateTime = 0;
+unsigned long LastReportinMillis = 0;
+time_t LastReportinSecs = 0;
+
 long last10 = 0;
 unsigned long time_to_wake = 0; // calculated wakeup time
 unsigned long time_to_sleep = 0;    // calculated sleep time
@@ -393,7 +408,7 @@ int devicestate = CONFIG;
 #define NONE 0
 #define MAIN 1
 #define DATA 2
-#define CONFIG 3
+#define WCONFIG 3
 #define UPDATE 4
 int webstate = NONE;
 
@@ -409,6 +424,7 @@ bool Mqtt = false;
 bool MqttConnected = false;
 bool MqttDelivered = false;
 String LastReport = ""; //timestamp of last telegram reported
+
 bool mqtt_dsmr = false; // deliver mqtt data in 'dsmr reader" format
 bool MQTT_debug = false;
 
@@ -517,10 +533,11 @@ void setup() {
       
   state = WAITING;    // signal that we are waiting for a valid start char (aka /)
   devicestate = CONFIG;
-  nextUpdateTime = nextMQTTreconnectAttempt = millis();
-
+  nextUpdateTime = nextMQTTreconnectAttempt = EverSoOften = millis();
+   
   monitoring = true; // start monitoring data
   time_to_sleep = millis() + wakeTime;  // we go to sleep wakeTime seconds from now
+  
 
  // handle Files
  debug("Mounting file system ... ");
@@ -536,11 +553,12 @@ void setup() {
             if (zapfiles) zapFiles();
           }
       }
-     
+
+     debugln("Reading logdata:");
       File logData = LittleFS.open("/logData.txt", "r");
         if (logData) {
-          logData.read((byte *)&log_data, sizeof(log_data));
-          logData.close();
+         logData.read((byte *)&log_data, sizeof(log_data)/sizeof(byte));
+        logData.close();
         } else {
           debugln("Failed to open logData.txt for reading");
           needToInitLogVars = true;
@@ -577,7 +595,7 @@ void readTelegram() {
 
 
 void loop() {  
-  if ((millis() > nextUpdateTime) && monitoring){
+  if ((millis() > nextUpdateTime)){ // && monitoring){
     if (!OEstate) { // OE is disabled  == false
        RTS_on();
        Serial.flush();
@@ -585,17 +603,14 @@ void loop() {
   } // update window  
   if (OEstate) readTelegram();
 
+#ifdef SLEEP_ENABLED
   if ((millis() > time_to_sleep) && !atsleep && wifiSta){  // not currently sleeping and sleeptime
-#ifdef SLEEP_ENABLED
     modemSleep();
-#endif
   }
-  
   if (wifiSta && (millis() > time_to_wake) && (WiFi.status() != WL_CONNECTED)) { // time to wake, if we're not already awake
-#ifdef SLEEP_ENABLED
      modemWake();
-#endif
   }
+#endif
   
   if (datagramValid && (state == DONE) && (WiFi.status() == WL_CONNECTED)){ 
 
@@ -619,12 +634,7 @@ void loop() {
       }
       if (MQTT_debug) MQTT_Debug();
 
-      nextUpdateTime = millis() + interval;
-      if (ESP.getFreeHeap() < 2000) ESP.reset(); // watchdog, we do have a memery leak (still)
       state = WAITING;
-
-      checkCounters();
-      resetFlags();
      }
 
 
@@ -633,12 +643,18 @@ void loop() {
         MDNS.update();
         if (Telnet) telnet.loop();
   }
-  //yield();
+
+  if (millis() > EverSoOften){
+    checkCounters();
+    resetFlags();
+    doWatchDogs();
+    EverSoOften = millis() + 22000;
+  }
 }   
 
 void checkCounters(){
   // see logging.ino
-  time_t t = now();
+ 
        if (coldbootE && gotPowerReading) {
         if (needToInitLogVars){
           doInitLogVars();
@@ -652,24 +668,44 @@ void checkCounters(){
           }
           resetGasCount();
        }
-   
-   if (!CHK_FLAG(logFlags, hourFlag) && minute(t) == 59) doHourlyLog();
-   if (!CHK_FLAG(logFlags, dayFlag) && (hour(t) == 23) && (minute(t) == 59)) doDailyLog();
-   if (!CHK_FLAG(logFlags, weekFlag) && weekday(t) == 1 && hour(t) == 23 && minute(t) == 59) doWeeklyLog(); // day of the week (1-7), Sunday is day 1
-   if (!CHK_FLAG(logFlags, monthFlag) && day(t) == 28 && month(t) == 2 && hour(t) == 23 && minute(t) == 59 && year(t) != 2024 && year(t) != 2028 ) doMonthlyLog();
-   if (!CHK_FLAG(logFlags, monthFlag) && day(t) == 29 && month(t) == 2 && hour(t) == 23 && minute(t) == 59 ) doMonthlyLog(); // schrikkeljaren
-   if (!CHK_FLAG(logFlags, monthFlag) && day(t) == 30 && (month(t) == 4 || month(t) == 6 || month(t)== 9 || month(t) == 11) && hour(t) == 23 && minute(t) == 59 ) doMonthlyLog();
-   if (!CHK_FLAG(logFlags, monthFlag) && day(t) == 31 && (month(t) == 1 || month(t) == 3 || month(t)== 5 || month(t) == 7 || month(t) == 8 || month(t) == 10 || month() == 12) && hour() == 23 && minute() == 59 ) doMonthlyLog();
-   if (!CHK_FLAG(logFlags, monthFlag) && day(t) == 31 && month(t) == 12 && hour(t) == 23 && minute(t) == 59 ) doYearlyLog();
+
+ //  if (!CHK_FLAG(logFlags, hourFlag) && ( minute() == 10 || minute() == 20 || minute() == 30 || minute() == 40 || minute() == 50) ) doHourlyLog();
+
+   if (!hourFlag && minute() > 58) doHourlyLog();
+   if (!dayFlag && (hour() == 23) && (minute() == 59)) doDailyLog();
+   if (!weekFlag && weekday() == 1 && hour() == 23 && minute() == 59) doWeeklyLog(); // day of the week (1-7), Sunday is day 1
+   if (!monthFlag && day() == 28 && month() == 2 && hour() == 23 && minute() == 59 && year() != 2024 && year() != 2028 ) doMonthlyLog();
+   if (!monthFlag && day() == 29 && month() == 2 && hour() == 23 && minute() == 59 ) doMonthlyLog(); // schrikkeljaren
+   if (!monthFlag && day() == 30 && (month() == 4 || month() == 6 || month()== 9 || month() == 11) && hour() == 23 && minute() == 59 ) doMonthlyLog();
+   if (!monthFlag && day() == 31 && (month() == 1 || month() == 3 || month()== 5 || month() == 7 || month() == 8 || month() == 10 || month() == 12) && hour() == 23 && minute() == 59 ) doMonthlyLog();
+   if (!monthFlag && day() == 31 && month() == 12 && hour() == 23 && minute() == 59 ) doYearlyLog();
 }
 
 void resetFlags(){
-  if (CHK_FLAG(logFlags, hourFlag) &&  (minute() > 0) ) CLR_FLAG(logFlags, hourFlag);// if (hourFlag &&  (minute() > 24)) hourFlag = false; // CLR_FLAG(logFlags, hourFlag);
-   if (CHK_FLAG(logFlags, dayFlag) && (day() > 0)) CLR_FLAG(logFlags, dayFlag);
 
-  if (CHK_FLAG(logFlags, weekFlag) &&  (weekday() > 1)) CLR_FLAG(logFlags, weekFlag);
-  if (CHK_FLAG(logFlags, monthFlag) &&  (day() > 0)) CLR_FLAG(logFlags, monthFlag);
-  if (CHK_FLAG(logFlags, yearFlag) &&  (day() == 1) && month() == 1) CLR_FLAG(logFlags, yearFlag);
-  debug("logFlags : ");
-  Serial.println(logFlags);
+  if (checkMinute >= 59) checkMinute = 0; 
+  if (hourFlag &&  ((minute() > (checkMinute + 1)) && (minute() < (checkMinute + 3)))) hourFlag=false;// if (hourFlag &&  (minute() > 24)) hourFlag = false; // CLR_FLAG(logFlags, hourFlag);
+  if (dayFlag && (day() > 0)) dayFlag = false;
+  if (weekFlag &&  (weekday() > 1)) weekFlag = false;
+  if (monthFlag &&  (day() > 0)) monthFlag=false;
+  if (yearFlag &&  (day() == 1) && month() == 1) yearFlag=false;
+}
+
+void doWatchDogs(){
+  char payload[60];
+  if (ESP.getFreeHeap() < 2000) ESP.reset(); // watchdog, in case we still have a memery leak
+  if (millis() - LastReportinMillis > 300000) {
+    Serial.flush();
+        sprintf(payload, "No data in 300 sec, restarting monitoring: ", timestampkaal());
+    send_mqtt_message("p1wifi/logging", payload);
+    hourFlag = false;
+    nextUpdateTime = millis() + 10000;
+    OEstate = false;
+    state = WAITING;
+    monitoring=true;
+  }
+  if (minute() == 23) hourFlag = false; // clear all flags at a safe timeslot. 
+  if (minute() == 43) hourFlag = false; // clear all flags at a safe timeslot.
+  if (!monitoring && (minute() == 16 || minute() == 31 || minute() == 46)  ) monitoring = true; // kludge to make sure we keep monitoring
+
 }

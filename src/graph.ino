@@ -102,16 +102,20 @@ char period[6];
     debugln(switcher);
    switch (atoi(switcher)){
     case 1: //delivered T1/T2
-      theGraph("E1.log", "E2.log", "Elektriciteit gebruik T1", "Elektriciteit gebruik T2", "[{label:'uur', type:'number'},{label:'kWh', type:'number'}],", period );
+ //     theGraph("E1.log", "E2.log", "Elektriciteit gebruik T1", "Elektriciteit gebruik T2", "[{label:'uur', type:'number'},{label:'kWh', type:'number'}],", period );
+      theGraph("E1", "E2", "Elektriciteit gebruik T1", "Elektriciteit gebruik T2", "[{label:'uur', type:'number'},{label:'kWh', type:'number'}],", period );
       break;
     case 2: // returned T1/T2
-      theGraph("R1.log", "R2.log","Elektriciteit retour T1", "Elektriciteit retour T2", "[{label:'uur', type:'number'},{label:'kWh', type:'number'}],", period);
+  //    theGraph("R1.log", "R2.log","Elektriciteit retour T1", "Elektriciteit retour T2", "[{label:'uur', type:'number'},{label:'kWh', type:'number'}],", period);
+      theGraph("R1", "R2","Elektriciteit retour T1", "Elektriciteit retour T2", "[{label:'uur', type:'number'},{label:'kWh', type:'number'}],", period);
       break;
     case 3: //Total E
-      theGraph("TE.log", "TR.log", "Elektriciteit totaal gebruik", "Elektriciteit totaal retour", "[{label:'uur', type:'number'},{label:'kWh', type:'number'}],", period);
+//      theGraph("TE.log", "TR.log", "Elektriciteit totaal gebruik", "Elektriciteit totaal retour", "[{label:'uur', type:'number'},{label:'kWh', type:'number'}],", period);
+      theGraph("TE", "TR", "Elektriciteit totaal gebruik", "Elektriciteit totaal retour", "[{label:'uur', type:'number'},{label:'kWh', type:'number'}],", period);
       break; 
     case 4: //Gas
-      theGraph("G.log", "","Gas","", "[{label:'uur', type:'number'},{label:'kubieke meter', type:'number'}],", period);
+//      theGraph("G.log", "","Gas","", "[{label:'uur', type:'number'},{label:'kubieke meter', type:'number'}],", period);
+      theGraph("G", "","Gas","", "[{label:'uur', type:'number'},{label:'kubieke meter', type:'number'}],", period);
       break;  
     default:
       break; 
@@ -155,11 +159,71 @@ if (period =="day") {
     strcat(path2, type2);
     pageTitle = " Dit jaar ";
 }
+strcat(path1, ".log");
+strcat(path2, ".log");
 
+/*
+const char* measures[] = {"E1", "E2", "R1", "R2", "TE", "TR", "G"};
+const char* offsets[] = {"hour", "day", "week", "month", "year"};
+int *target1, *target2;
+int measure1, measure2;
+char startval1[12], startval2[12];
+
+int offset =0;
+  for (int i = 0; i < 6; i++) {
+    if (String(type1) == measures[i]) {
+      measure1 = i;
+      break;
+    }
+  }
+  for (int i = 0; i < 6; i++) {
+    if (String(type2) == measures[i]) {
+      measure2 = i;
+      break;
+    }
+  } // we no know which datum we need to retrieve from log_data, now we have to find the correct offset (period)
+    for (int i = 0; i < 6; i++) {
+    if (period == offsets[i]) {
+      offset = i;
+      break;
+    }
+  }
+  // we now have pointers to direct us to the correct location in the log_data struct to retrieve the beginning of period value 
+  //each period uses 7 * 12 bytes
+
+target1 = (int*)&log_data + offset * 84 + measure1 * 12; //
+debug("Target 1: ");
+debugln(offset * 84 + measure1 * 12);
+ for (int i = 0; i < 12; i++) {
+  startval1[i] = *(target1);
+  target1++;
+ }
+ debug("value :");
+ debugln(startval1);
+//target2 = (int*)&log_data + offset * 84 + measure2 * 12; //
+/*
+ int *p;
+  // take address of displayDefault and assign to the pointer
+  p = (int*)&displayDefault;
+
+  // loop thorugh the elements of the struct
+  for (uint8_t cnt = 0; cnt < sizeof(displayDefault) / sizeof(int); cnt++)
+  {
+    // p points to an address of an element in the array; *p gets you the value ofthat address
+    // print it and next point the pointer to the address of the next element
+    Serial.println(*(p++));
+  }
+  
+  int *p; 
+  p = (int*)&log_data;
+  
+*/
 //debug("file1 to read: ");
 //debugln(path1);
 //debug("file2 to read: ");
 //debugln(path2);
+
+//https://stackoverflow.com/questions/44159990/how-to-add-a-total-to-a-chart-in-google-charts
 
 File file1 = LittleFS.open(path1, "r");
 File file2 = LittleFS.open(path2, "r");
@@ -174,6 +238,8 @@ if (type2[0] != '\0'){
 
 server.sendContent(str);
 //debugln(str);
+
+//str += F("function getSum(data, column){var total = 0;for (i = 0; i < data.getNumberOfRows(); i++) total = total + data.getValue(i, column); return total;}");
 
 str = F("function drawChart1() { var data = new google.visualization.arrayToDataTable([");
 str += label; //F("[\"uur\", \"m^3\"], ");
@@ -247,13 +313,14 @@ if (type2[0] != '\0'){
   str += F("<fieldset><legend><b>");
   str += pageTitle;
   str += F("</b></legend>");
-  str += F("<div id=\"Chart1\" style=\"width:100%; max-width:1200px; height:500px\"></div><br>");
+  str += F("<div id='Chart1' style='width:100%; max-width:1200px; height:500px'></div><br>");
   str += F("Totaal deze periode: ");
-  str += "nog te implementeren</br><hr>";
+  str += totalXY(type1, period);
 if (type2[0] != '\0'){
   str += F("<div id=\"Chart2\" style=\"width:100%; max-width:1200px; height:500px\"></div><br>");
   str += F("Totaal deze periode: ");
-  str += "nog te implementeren</br></fieldset>";
+  str += totalXY(type2, period);
+  str += "</br></fieldset>";
 }
   str += F("<form action='/' method='POST'><button class='button bhome'>Menu</button></form>");
   addFootBare(str);   

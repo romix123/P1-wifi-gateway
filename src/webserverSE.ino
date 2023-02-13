@@ -31,9 +31,6 @@ void addUptime(String& str){
 void addFoot(String& str){
   str += F("<div style='text-align:right;font-size:11px;color:#aaa;'><hr/>version: ");
   str += version;
-  char sysmsg[100];
-  sprintf_P(sysmsg, PSTR(" – %1.2fV"), volts / 1000);
-  str += sysmsg;
   str += F("<br><a href='http://esp8266thingies.nl' target='_blank' style='color:#aaa;'>esp8266thingies.nl</a>");
   str += F("</div></div></body></html>");
 }
@@ -68,19 +65,22 @@ void uploadDiag(String& str){
   webstate = UPDATE;
 }
 
-void successResponse(String& str){
-  addHead(str);
+void successResponse(){
+  String str = "";
+  addRefreshHead(str);
   addIntro(str);
   str += F("<fieldset>");
   str += F("<fieldset><legend><b>Firmware update</b></legend>");
   str += F("<p><b>De firmware is succesvol bijgewerkt</b><br><br>");
-  str += F("<p>De module zal nu herstarten. Dat duurt ongeveer een minuut</p><br>");
+  str += F("<p>De module zal nu herstarten. Dat duurt ongeveer een minuut</p>");
   str += F("<p>De blauwe Led zal 2x oplichten wanneer de module klaar is met opstarten</p>");
   str += F("<p>De led zal langzaam knipperen tijdens koppelen aan uw WiFi netwerk.</p>");
   str += F("<p>Als de blauwe led blijft branden is de instelling mislukt en zult u <br>");
   str += F("opnieuw moeten koppelen met WIfi netwerk 'P1_Setup' met wachtwoord 'configP1'.</p>");
   str += F("</fieldset></p>");
   str += F("<div style='text-align:right;font-size:11px;'><hr/><a href='http://eps8266thingies.nl' target='_blank' style='color:#aaa;'>eps8266thingies.nl</a></div></div></fieldset></body></html>");
+  server.send(200, "text/html", str);
+  delay(2000);
 }
 
 void handleRoot(){
@@ -101,7 +101,16 @@ void handleRoot(){
 
 void handleSetup(){
     debugln("handleSetup");
-    monitoring = false; // stop monitoring data
+  if (millis() > 60000) {            // if we did not get here directly, check credentials
+     debugln("indirect call");
+    if (strcmp(server.arg("adminPassword").c_str(), config_data.adminPassword) != 0) {  // passwords don't match
+      debugln("Error: handlesetup entered with wrong password");
+      errorLogin("Setup");
+      return;
+    }
+  }      
+  debugln("direct call");
+   // monitoring = false; // stop monitoring data
 
  String str = ""; 
       debugln("handleSetupForm");
@@ -109,8 +118,17 @@ void handleSetup(){
     addHead(str);
     addIntro(str);
       str += F("<fieldset>");
-       str += F("<fieldset><legend><b>&nbsp;Wifi parametrar&nbsp;</b></legend>");
        str += F("<form action='/SetupSave' method='POST'><p><b>SSId</b><br>");
+       str += F("<input type='hidden' name='setuptoken' value='");
+       str+= setupToken;
+       str+=  F("'>");
+        str += F("<fieldset><legend><b>&nbsp;Admin&nbsp;</b></legend>");
+      str += F("<p><b>admin password</b><br>");
+       str += F("<input type='text' class='form-control' name='adminPassword' value='");
+       str+= config_data.adminPassword;
+       str+=  F("'></p></fieldset>");
+              
+       str += F("<fieldset><legend><b>&nbsp;Wifi parametrar&nbsp;</b></legend>");
        str += F("<input type='text' class='form-control' name='ssid' value='");
        str+= config_data.ssid;
        str+=  F("'></p>");
@@ -333,6 +351,36 @@ void handleHelp(){
   str += F("</fieldset></p>");
   str += F("<div style='text-align:right;font-size:11px;'><hr/><a href='http://eps8266thingies.nl' target='_blank' style='color:#aaa;'>eps8266thingies.nl</a></div></div></fieldset></body></html>");
 server.send(200, "text/html", str);
+}
+
+
+void handleUploadForm(){
+   if (strcmp(server.arg("adminPassword").c_str(), config_data.adminPassword) != 0) {  // passwords don't match
+      debugln("Error: update entered with wrong password");
+      errorLogin("Update");
+      return;
+    } else  AdminAuthenticated = true;
+  String str="";
+  monitoring = false; // stop monitoring data
+  addHead(str);
+  addIntro(str);
+  str += F("<fieldset><fieldset><legend><b>Update firmware</b></legend>");
+  str += F("<form method='POST' action='/update' enctype='multipart/form-data'><p>");
+  str += F("<b>Firmware</b><input type='file' accept='.bin,.bin.gz' name='firmware'></p>");
+  str += F("<button type='submit'>Update</button>");
+  str += F("</form>");
+  str += F("<form action='/' method='POST'><button class='button bhome'>Menu</button></form>");
+  addFootBare(str); 
+  webstate = UPDATE;
+  server.send(200, "text/html", str);
+}
+
+void addFootBare(String& str){
+  str += F("<div style='text-align:right;font-size:11px;color:#aaa;'><hr/>");
+  str += F(" firmware version: ");
+  str += version;
+  str += F("<br><a href='http://esp8266thingies.nl' target='_blank' style='color:#aaa;'>esp8266thingies.nl</a>");
+  str += F("</div></div></body></html>");
 }
 
 #endif

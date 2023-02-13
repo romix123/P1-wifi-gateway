@@ -4,21 +4,27 @@
 
  // logging vars
  byte logFlags;
- #define secFlag    1
- #define minFlag    2
- #define hourFlag   4
- #define dayFlag    8
- #define weekFlag   16
- #define monthFlag  32
- #define yearFlag   64
+// #define secFlag    1
+// #define minFlag    2
+// #define hourFlag   4
+// #define dayFlag    8
+// #define weekFlag   16
+// #define monthFlag  32
+// #define yearFlag   64
 
-//bool hourFlag = false;
-//bool dayFlag = false;
+bool hourFlag = false;
+bool dayFlag = false;
+bool weekFlag = false;
+bool monthFlag = false;
+bool yearFlag=false;
+int EverSoOften = 0;
+
 #define SET_FLAG(n, f) n = n | f;   //((n) |= (f)) 
 #define CLR_FLAG(n, f) n = n & !f;  //((n) &= ~(f)) 
 //#define TGL_FLAG(n, f) ((n) ^= (f)) 
 #define CHK_FLAG(n, f) (n & f) //((n) & (f))
 
+int checkMinute = 0; // holds when doHourly was called 
 struct logvars{
   char hourE1[12];  // delivered tariff 1
   char hourE2[12];  // delivered tariff 2
