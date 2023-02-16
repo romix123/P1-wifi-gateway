@@ -1,75 +1,5 @@
 #ifdef NEDERLANDS
-void addIntro(String& str){
-    char ipstr[20];
-  IPAddress ip = WiFi.localIP();
-  sprintf_P(ipstr, PSTR("%u.%u.%u.%u"), ip[0], ip[1], ip[2], ip[3]);
-      str +=("<body><div style='text-align:left;display:inline-block;color:#000000;width:600px;'><div style='text-align:center;color:#000000;'><h2>P1 wifi-gateway</h2></div><br>");
-      str += ("<p style='text-align:right;font-size:11px;color:#aaa'><a href='http://");
-      str += ipstr;
-      str += ("/Help' target='_blank'>Help</a>");
-}
 
-void addUptime(String& str){
-  char ipstr[20];
-  IPAddress ip = WiFi.localIP();
-  sprintf_P(ipstr, PSTR("%u.%u.%u.%u"), ip[0], ip[1], ip[2], ip[3]);
-    
-  str += ("<div style='text-align:left;font-size:11px;color:#aaa'><hr/>");
-    char strUpTime[40];
-    int minuten = millis() / 60000;
-    int dagen = minuten / 1440;
-    minuten = minuten % 1440;
-    int uren = minuten / 60;
-    minuten = minuten % 60;
-    sprintf_P(strUpTime, PSTR("%d dagen %d uren %d minuten"), dagen, uren, minuten);
-  str += strUpTime;
-  str += ("</div><div style='text-align:right;font-size:11px;color:#aaa'>");
-  str += ipstr;
-  str += ("</div>");
-}
-
-void addFoot(String& str){
-  str += F("<div style='text-align:right;font-size:11px;color:#aaa;'><hr/>");
-
-  str += F("[");
-  if (monitoring) str += F("M"); else str += F("m");
-  if (hourFlag) str += F("H"); else str += F("h");
-  if (dayFlag) str += F("D"); else str += F("d");
-  if (weekFlag) str += F("W"); else str += F("w");
-  str += F("] ");
-  
-  if (Mqtt) {
-    if (MqttConnected) str += F("MQTT link: √ "); else str += F("MQTT – ");
-    str += F(" laatste sample: ");
-    str += LastReport;
-  }
-  str += F(" firmware versie: ");
-  str += version;
-  str += F("<br><a href='http://esp8266thingies.nl' target='_blank' style='color:#aaa;'>esp8266thingies.nl</a>");
-  str += F("</div></div></body></html>");
-}
-void addFootBare(String& str){
-  str += F("<div style='text-align:right;font-size:11px;color:#aaa;'><hr/>");
-  str += F(" firmware versie: ");
-  str += version;
-  str += F("<br><a href='http://esp8266thingies.nl' target='_blank' style='color:#aaa;'>esp8266thingies.nl</a>");
-  str += F("</div></div></body></html>");
-}
-
-void setupSaved(String& str){
-//  str += F("<script>var countDownDate = new Date().getTime()+5000;var x = setInterval(function() {var now = new Date().getTime();var distance = countDownDate - now;var seconds = Math.floor((distance % (1000 * 15)) / 1000);document.getElementById(\"timer\").innerHTML = seconds + \" seconden tot module weer bereikbaar.\";if (seconds < 2) {location.replace(\"http://p1wifi.local\")}}, 1000);</script>");
-  str += F("<fieldset>");
-  str += F("<fieldset><legend><b>Wifi en module setup</b></legend>");
-  str += F("<p><b>De instellingen zijn succesvol bewaard</b><br><br>");
-  str += F("<p>De module zal nu herstarten. Dat duurt ongeveer een minuut.</p><br>");
-  str += F("<p>De led zal langzaam knipperen tijdens koppelen aan uw WiFi netwerk.</p>");
-  str += F("<p>Als de blauwe led blijft branden is de instelling mislukt en zult u <br>");
-  str += F("opnieuw moeten koppelen met Wifi netwerk 'P1_Setup' .</p>");
-  str += F("<br>");
-  //str += F("<p id=\"timer\"></p>");
-  str += F("</fieldset></p>");
-  str += F("<div style='text-align:right;font-size:11px;'><hr/><a href='http://eps8266thingies.nl' target='_blank' style='color:#aaa;'>eps8266thingies.nl</a></div></div></fieldset></body></html>");
-}
 
 void handleUploadForm(){
    if (strcmp(server.arg("adminPassword").c_str(), config_data.adminPassword) != 0) {  // passwords don't match
@@ -79,7 +9,7 @@ void handleUploadForm(){
     } else  AdminAuthenticated = true;
   String str="";
   monitoring = false; // stop monitoring data
-  addHead(str);
+  addHead(str,0);
   addIntro(str);
   str += F("<fieldset><fieldset><legend><b>Update firmware</b></legend>");
   str += F("<form method='POST' action='/update' enctype='multipart/form-data'><p>");
@@ -92,50 +22,9 @@ void handleUploadForm(){
   server.send(200, "text/html", str);
 }
 
-void successResponse(){
-  String str = "";
-  addRefreshHead(str);
-  addIntro(str);
-  str += F("<fieldset>");
-  str += F("<fieldset><legend><b>Firmware update</b></legend>");
-  str += F("<p><b>De firmware is succesvol bijgewerkt</b><br><br>");
-  str += F("<p>De module zal nu herstarten. Dat duurt ongeveer een minuut</p>");
-  str += F("<p>De blauwe Led zal 2x oplichten wanneer de module klaar is met opstarten</p>");
-  str += F("<p>De led zal langzaam knipperen tijdens koppelen aan uw WiFi netwerk.</p>");
-  str += F("<p>Als de blauwe led blijft branden is de instelling mislukt en zult u <br>");
-  str += F("opnieuw moeten koppelen met WIfi netwerk 'P1_Setup' met wachtwoord 'configP1'.</p>");
-  str += F("</fieldset></p>");
-  str += F("<div style='text-align:right;font-size:11px;'><hr/><a href='http://eps8266thingies.nl' target='_blank' style='color:#aaa;'>eps8266thingies.nl</a></div></div></fieldset></body></html>");
-  server.send(200, "text/html", str);
-  delay(2000);
-}
-
-void handleRoot(){
-    debugln("handleRoot");
-   String str = "";
-    addHead(str);
-    addIntro(str);
-
-    str += F("<main class='form-signin'>");
-     str += F("<fieldset><legend><b> Data </b></legend>");
-    str += F("<form action='/P1' method='post'><button type='p1' class='button bhome'>Meterdata</button></form>");
-#if GRAPH == 1
-  str += F("<form action='/Grafieken' method='GET'><button type='submit'>Grafieken</button></form>");
- // str += F("<form action='/Dir' method='GET'><button type='submit'>Directory</button></form>");
-#endif
-    str += F("</fieldset>");
-     str += F("<fieldset><legend><b> Setup </b></legend>");
-    str += F("<form action='/Setup' method='post'><button type='Setup'>Setup</button></form>");
-    str += F("<form action='/Update' method='GET'><button type='submit'>Update firmware</button></fieldset></form>");
 
 
-  addUptime(str);
-  addFoot(str);
-  server.send(200, "text/html", str);
-  webstate = MAIN;
-  monitoring = true;
- // nextUpdateTime = millis() + 2000;
-}
+
 
 
 
@@ -154,7 +43,7 @@ void handleSetup(){
  String str = ""; 
       debugln("handleSetupForm");
 
-    addHead(str);
+    addHead(str,0);
     addIntro(str);
     str += F("<fieldset>");
       str += F("<form action='/SetupSave' method='POST'><fieldset>");
@@ -242,12 +131,11 @@ void handleP1(){
   
   char str2[10];
   int temp;
-    addHead(str);
+    addHead(str,60);
     addIntro(str);
 
- // str += ("</p>");
+
   str += F("<form ><fieldset><legend><b>Meetwaarden</b></legend>");
- // str += F("<form action='/' method='post'>");
 
   str += "<p><div class='row'><div class='column'><b>Verbruik laag tarief: totaal</b><input type='text' class='form-control c6' value='";
   str += electricityUsedTariff1;
@@ -349,40 +237,5 @@ void handleRawData(){
   }
 }
 
-void handleHelp(){
-    char ipstr[20];
-  IPAddress ip = WiFi.localIP();
-  sprintf_P(ipstr, PSTR("%u.%u.%u.%u"), ip[0], ip[1], ip[2], ip[3]);
- String str;
- addHead(str);
-  addIntro(str);
-  str += F("<fieldset>");
-  str += F("<fieldset><legend><b>Help</b></legend>");
-  str += F("<p><b>De P1 wifigateway kan op 4 manieren data afleveren.</b><br><br>");
-  str += F("<p>Altijd beschikbaar zijn de kernwaarden via het P1 menu (of via ");
-  str += ipstr;
-  str += F("/P1, of via p1wifi.local/P1 )</p><br>");
-  
-  str += F("<p>De ruwe data is beschikbaar via ");
-  str += ipstr;
-  str += F("/Data, of via p1wifi.local/Data</p><br><br>");
-  str += F("<p>Meer gangbaar is het gebruik van de gateway met een domotica systeem.</p>");
-  str += F("<p><b>Domoticz</b> accepteert json berichten. Geef hiertoe het IP adres van <br>");
-  str += F("uw Domoticz server op en het poortnummer waarop deze kan worden benaderd (doorgaans 8080).</p>");
-  str += F("De benodigde Idx voor gas en electra verkrijgt u door eerst in Domoticz virtule sensors ");
-  str += F("voor beiden aan te maken. Na creatie verschijnen de Idxen onder het tabblad 'devices'.</p><br>");
-  str +=F("");
-  str +=F("Data kan ook (door Domoticz bijvoorbeeld) worden uitgelezen via poort 23 van de module (p1wifi.local:23).");
-  str +=F("Dit is de manier waarop Domoticz hardware device [P1 Smart Meter with LAN interface] data kan ophalen.");
-  str +=F("Aan de p1wifi kant hoeft daarvoor niets te worden ingesteld (geen vinkjes bij json en mqtt). ");
 
-  str += F("Voor andere systemen kunt u gebruik maken van een MQTT broker. Vul de gegevens van de ");
-  str += F("broker in, en stel het root topic in. Voor Home Assistant is dat 'sensors/power/p1meter'.</p>");
-  str += F("Daniel de Jong beschijft op zijn <a href='https://github.com/daniel-jong/esp8266_p1meter'>github</a> hoe u HA verder configureert.</p>");
-  str += F("Geef met de checkboxes aan welke rapportage methode(n) u wilt gebruiken.</p>");
-
-  str += F("</fieldset></p>");
-  str += F("<div style='text-align:right;font-size:11px;'><hr/><a href='http://eps8266thingies.nl' target='_blank' style='color:#aaa;'>eps8266thingies.nl</a></div></div></fieldset></body></html>");
-server.send(200, "text/html", str);
-}
 #endif

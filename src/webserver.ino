@@ -1,17 +1,24 @@
 // HTML statics
 
-void addHead(String& str)
+void addHead(String& str, int refresh)
 {
+  String str2; 
   str += F("<!DOCTYPE html><html lang='en' class=''>");
+  if (refresh > 0){
+  str += F("<META http-equiv='refresh' content='");
+    str += String(refresh);
+    str += F(";URL=/'>");
+  }
   str += F("<meta charset='utf-8'><meta name=\"viewport\" content=\"width=device-width,initial-scale=1,user-scalable=no\"/>");
   str += F("<head><title>Slimme meter</title>");
   str += F("<style>");
-  str += F("div, fieldset, input, select {padding: 5px; font-size: 1em;}");
+  str += F("div, fieldset, input, {padding: 5px; font-size: 1em;}");
+  str += F("input, select {padding: 2px; font-size: 0.8em;}");
   str += F("fieldset {background: #ECEAE4;}");
   str += F("p {margin: 0.5em 0;}");
-  str += F("input {width: 100%; box-sizing: border-box; -webkit-box-sizing: border-box; -moz-box-sizing: border-box; background: #ffffff; color: #000000;}");
+  str += F("input {box-sizing: border-box; -webkit-box-sizing: border-box; -moz-box-sizing: border-box; background: #ffffff; color: #000000;}"); //width:'100%'
   str += F("input[type=range] {width: 90%;}");
-  str += F("select {width: 100%; background: #ffffff; color: #000000;}");
+  str += F("select {background: #ffffff; color: #000000;}"); //
   str += F("textarea {resize: vertical; width: 98%; height: 318px; padding: 5px; overflow: auto; background: #ffffff; color: #000000;}");
   str += F("body {text-align: center; font-family: verdana, sans-serif; background: #ffffff;}");
   str += F("td {padding: 0px;}");
@@ -37,7 +44,7 @@ void addHead(String& str)
 void addRefreshHead(String& str)
 {
   str += F("<!DOCTYPE html><html lang='en' class=''>");
-  str += F("<META http-equiv=\"refresh\" content=\"20;URL=/\">");
+  str += F("<META http-equiv='refresh' content='60;URL=/'>");
   str += F("<meta charset='utf-8'><meta name=\"viewport\" content=\"width=device-width,initial-scale=1,user-scalable=no\"/>");
   str += F("<head><title>Slimme meter</title>");
   str += F("<style>");
@@ -61,7 +68,7 @@ void addGraphHead(String& str){
   str += F("<meta charset='utf-8'><meta name=\"viewport\" content=\"width=device-width,initial-scale=1,user-scalable=no\"/>");
   str += F("<head><title>Slimme meter</title>");
   str += F("<style>");
-  str += F("div, fieldset, input, select {padding: 5px; font-size: 1em;}");
+  str += F("div, fieldset, select, input, {padding: 5px; font-size: 1em;}");
   str += F("fieldset {background: #ECEAE4;}");
   str += F("p {margin: 0.5em 0;}");
   str += F("body {text-align: center; font-family: verdana, sans-serif; background: #ffffff;}");
@@ -71,6 +78,62 @@ void addGraphHead(String& str){
   str += F(".bhome:hover {background: #A2E1DB;}");
   str += F(".p {float: left; text-align: left;}</style>");
 }
+
+void addIntro(String& str){
+    char ipstr[20];
+  IPAddress ip = WiFi.localIP();
+  sprintf_P(ipstr, PSTR("%u.%u.%u.%u"), ip[0], ip[1], ip[2], ip[3]);
+      str +=("<body><div style='text-align:left;display:inline-block;color:#000000;width:600px;'><div style='text-align:center;color:#000000;'><h2>P1 wifi-gateway</h2></div><br>");
+      str += ("<p style='text-align:right;font-size:11px;color:#aaa'><a href='http://");
+      str += ipstr;
+      str += (HELP);
+}
+
+void addUptime(String& str){
+  char ipstr[20];
+  IPAddress ip = WiFi.localIP();
+  sprintf_P(ipstr, PSTR("%u.%u.%u.%u"), ip[0], ip[1], ip[2], ip[3]);
+    
+  str += ("<div style='text-align:left;font-size:11px;color:#aaa'><hr/>");
+    char strUpTime[40];
+    int minuten = millis() / 60000;
+    int dagen = minuten / 1440;
+    minuten = minuten % 1440;
+    int uren = minuten / 60;
+    minuten = minuten % 60;
+    sprintf_P(strUpTime, PSTR(TIMESTAMP), dagen, uren, minuten);
+  str += strUpTime;
+  str += ("</div><div style='text-align:right;font-size:11px;color:#aaa'>");
+  str += ipstr;
+  str += ("</div>");
+}
+
+void handleRoot(){
+    debugln("handleRoot");
+   String str = "";
+    addHead(str,0);
+    addIntro(str);
+
+    str += F("<main class='form-signin'>");
+     str += F("<fieldset><legend><b> Data </b></legend>");
+    str += F(MAIN_METER_VALUES);
+#if GRAPH == 1
+  str += F(MAIN_GRAPHS);
+ // str += F("<form action='/Dir' method='GET'><button type='submit'>Directory</button></form>");
+#endif
+    str += F("</fieldset>");
+     str += F(MAIN_SETUP_TITLE);
+    str += F(MAIN_SETUP);
+    str += F(MAIN_UPDATE);
+  addUptime(str);
+  addFoot(str);
+  server.send(200, "text/html", str);
+  webstate = MAIN;
+  monitoring = true;
+ // nextUpdateTime = millis() + 2000;
+}
+
+
 
 void handleSetupSave() {
   debugln("handleSetupSave");
@@ -165,7 +228,7 @@ void handleLogin(){
     handleSetup();
   }
    String str = "";
-    addHead(str);
+    addHead(str,0);
     addIntro(str);
       str += F("<form action='/Setup2' method='POST'><fieldset>");
        str += F("<input type='hidden' name='setuptoken' value='");
@@ -185,7 +248,7 @@ void handleUpdateLogin(){
     debugln("handleUpdateLogin");
 
    String str = "";
-    addHead(str);
+    addHead(str,0);
     addIntro(str);
       str += F("<form action='/uploadDialog' method='POST'><fieldset>");
        str += F("<input type='hidden' name='setuptoken' value='");
@@ -203,7 +266,7 @@ void handleUpdateLogin(){
 void errorLogin(String returnpage){
   debugln("errorLogin");
     String str = "";
-    addHead(str);
+    addHead(str,0);
     addIntro(str);
       str += F("<fieldset><legend><b>Fout</b></legend>");
       str += F("<p><b>Admin password is incorrect.</b><br>");
@@ -214,4 +277,78 @@ void errorLogin(String returnpage){
     addFoot(str);
     server.send(200, "text/html", str);
     bootSetup = false;
+}
+
+void setupSaved(String& str){
+//  str += F("<script>var countDownDate = new Date().getTime()+5000;var x = setInterval(function() {var now = new Date().getTime();var distance = countDownDate - now;var seconds = Math.floor((distance % (1000 * 15)) / 1000);document.getElementById(\"timer\").innerHTML = seconds + \" seconden tot module weer bereikbaar.\";if (seconds < 2) {location.replace(\"http://p1wifi.local\")}}, 1000);</script>");
+  str += F("<fieldset>");
+  str += F(SETUP_SAVED_TITLE);
+  str += F(SETUP_SAVED_TEXT);
+  str += F("</fieldset></p>");
+  str += F("<div style='text-align:right;font-size:11px;'><hr/><a href='http://eps8266thingies.nl' target='_blank' style='color:#aaa;'>eps8266thingies.nl</a></div></div></fieldset></body></html>");
+}
+
+
+void successResponse(){
+  String str = "";
+  addHead(str, 30);
+  addIntro(str);
+  str += F("<fieldset>");
+  str += F(FIRMWARE_UPDATE_SUCCESS_TITLE);
+  str += F(FIRMWARE_UPDATE_SUCCESS_TEXT);
+  str += F("</fieldset></p>");
+  str += F("<div style='text-align:right;font-size:11px;'><hr/><a href='http://eps8266thingies.nl' target='_blank' style='color:#aaa;'>eps8266thingies.nl</a></div></div></fieldset></body></html>");
+  server.send(200, "text/html", str);
+  delay(2000);
+}
+
+void handleHelp(){
+    char ipstr[20];
+  IPAddress ip = WiFi.localIP();
+  sprintf_P(ipstr, PSTR("%u.%u.%u.%u"), ip[0], ip[1], ip[2], ip[3]);
+ String str;
+  addHead(str,0);
+  addIntro(str);
+  str += F("<fieldset>");
+  str += F(HELP_TITLE);
+  str += F(HELP_TEXT1);
+  str += ipstr;
+  str += F("/P1 / p1wifi.local/P1 ");
+  str += F(HELP_RAW); 
+  str += ipstr;
+  str += F("/Data / p1wifi.local/Data</p><br><br>");
+   str += F(HELP_TEXT2); 
+  str += F("</fieldset></p>");
+
+  str += F("<div style='text-align:right;font-size:11px;'><hr/><form><input type='button' value='Go back!' onclick='history.back()'></form><a href='http://eps8266thingies.nl' target='_blank' style='color:#aaa;'>eps8266thingies.nl</a></div></div></fieldset></body></html>");
+server.send(200, "text/html", str);
+}
+
+
+void addFoot(String& str){
+  str += F("<div style='text-align:right;font-size:11px;color:#aaa;'><hr/>");
+
+  str += F("[");
+  if (monitoring) str += F("M"); else str += F("m");
+  if (hourFlag) str += F("H"); else str += F("h");
+  if (dayFlag) str += F("D"); else str += F("d");
+  if (weekFlag) str += F("W"); else str += F("w");
+  str += F("] ");
+  
+  if (Mqtt) {
+    if (MqttConnected) str += F("MQTT link: √ "); else str += F("MQTT – ");
+    str += F(LAST_SAMPLE);
+    str += LastReport;
+  }
+  str += F(FIRMWARE_REV);
+  str += version;
+  str += F("<br><a href='http://esp8266thingies.nl' target='_blank' style='color:#aaa;'>esp8266thingies.nl</a>");
+  str += F("</div></div></body></html>");
+}
+void addFootBare(String& str){
+  str += F("<div style='text-align:right;font-size:11px;color:#aaa;'><hr/>");
+  str += F(FIRMWARE_REV);
+  str += version;
+  str += F("<br><a href='http://esp8266thingies.nl' target='_blank' style='color:#aaa;'>esp8266thingies.nl</a>");
+  str += F("</div></div></body></html>");
 }

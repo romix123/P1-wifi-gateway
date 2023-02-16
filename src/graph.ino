@@ -34,21 +34,18 @@
 void handleGraphMenu(){
   String str="";
  
-  addHead(str);
+  addHead(str,0);
   addIntro(str);
   
-  str += F("<html>\n<head>\n");
-  str += F("<title>Slimme meter</title>");
-  str += F("</head><body>");
  
   str += F("<fieldset><legend><b> Grafieken </b></legend>");
     str += F("<fieldset><legend><b> periode </b></legend>"); 
       str += F("<form action='/SelectGraph' method='POST'>");
-        str += F("<div>");
-          str += F("<input type='radio' id='day' name='period' value='day' checked><label for='day'>vandaag</label>");
-          str += F("<input type='radio' id='week' name='period' value='week'><label for='week'>deze week</label>");
-          str += F("<input type='radio' id='month' name='period' value='month'><label for='month'>deze maand</label>");
-          str += F("<input type='radio' id='year' name='period' value='year'><label for='year'>dit jaar</label></br>");
+        str += F("<div ><table width='95%' ><tr>");
+          str += F("<td width='25%'><input type='radio' id='day' name='period' value='day' checked /><label for='day'>vandaag</label></td>");
+          str += F("<td width='25%'><input type='radio' id='week' name='period' value='week' /><label for='week'>deze week</label></td>");
+          str += F("<td width='25%'><input type='radio' id='month' name='period' value='month' /><label for='month'>deze maand</label></td>");
+          str += F("<td width='25%'><input type='radio' id='year' name='period' value='year' /><label for='year'>dit jaar</label></td></tr></table></br>");
         str += F("</div>");
   
  //  str += F("<fieldset>");
@@ -361,9 +358,9 @@ server.sendContent(str);
  }
  str = "";
  str += F("]); var chart = new google.visualization.Calendar(document.getElementById('calendar_gas')); var options = { title: 'Gas gebruiksintensiteit', height: 350};");
- str += F("chart.draw(dataTable, options);}</script></head><body><div id='calendar_gas' style='width: 1000px; height: 350px;'></div>");
+ str += F("chart.draw(dataTable, options);}</script></head><body><div id='calendar_gas' style='width: 800px; height: 350px;'></div>");
 
-  str += F("<form action='/' method='POST'><button class='button bhome'>Menu</button></form>");
+  str += F("<form action='/' method='POST'><button class='button bhome' style='width: 300px' >Menu</button></form>");
   addFootBare(str);   
   server.sendContent (str);
 //debugln(str);

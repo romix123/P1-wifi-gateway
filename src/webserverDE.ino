@@ -1,42 +1,4 @@
 #ifdef GERMAN
-void addIntro(String& str){
-    char ipstr[20];
-  IPAddress ip = WiFi.localIP();
-  sprintf_P(ipstr, PSTR("%u.%u.%u.%u"), ip[0], ip[1], ip[2], ip[3]);
-      str +=("<body><div style='text-align:left;display:inline-block;color:#000000;width:600px;'><div style='text-align:center;color:#000000;'><h2>P1 wifi-gateway</h2></div><br>");
-      str += ("<p style='text-align:right;font-size:11px;color:#aaa'><a href='http://");
-      str += ipstr;
-      str += ("/Help' target='_blank'>Hilfe</a>");
-}
-
-void addUptime(String& str){
-  char ipstr[20];
-  IPAddress ip = WiFi.localIP();
-  sprintf_P(ipstr, PSTR("%u.%u.%u.%u"), ip[0], ip[1], ip[2], ip[3]);
-    
-  str += ("<div style='text-align:left;font-size:11px;color:#aaa'><hr/>");
-    char strUpTime[40];
-    int minuten = millis() / 60000;
-    int dagen = minuten / 1440;
-    minuten = minuten % 1440;
-    int uren = minuten / 60;
-    minuten = minuten % 60;
-    sprintf_P(strUpTime, PSTR("%d Tagen %d Uhren %d Minuten"), dagen, uren, minuten);
-  str += strUpTime;
-  str += ("<p style='text-align:right;font-size:11px;color:#aaa'>");
-  str += ipstr;
-  str += ("</div>");
-}
-
-void addFoot(String& str){
-  str += F("<div style='text-align:right;font-size:11px;color:#aaa;'><hr/>version: ");
-  str += version;
-  char sysmsg[100];
-  sprintf_P(sysmsg, PSTR(" – %1.2fV"), volts / 1000);
-  str += sysmsg;
-  str += F("<br><a href='http://esp8266thingies.nl' target='_blank' style='color:#aaa;'>esp8266thingies.nl</a>");
-  str += F("</div></div></body></html>");
-}
 
 void setupSaved(String& str){
  // str += F("<script>var countDownDate = new Date().getTime()+50000;var x = setInterval(function() {var now = new Date().getTime();var distance = countDownDate - now;var seconds = Math.floor((distance % (1000 * 60)) / 1000);document.getElementById(\"timer\").innerHTML = seconds + \" seconden tot module weer bereikbaar.\";if (seconds < 2) {location.replace(\"http://p1wifi.local\")}}, 1000);</script>");
@@ -55,7 +17,7 @@ void setupSaved(String& str){
 
 void uploadDiag(String& str){
   monitoring = false; // stop monitoring data
-  addHead(str);
+  addHead(str,0);
   addIntro(str);
   str += F("<fieldset><fieldset><legend><b>Update firmware</b></legend>");
   str += F("<form action='' method='post'><form method='POST' action='' enctype='multipart/form-data'><p>");
@@ -68,7 +30,7 @@ void uploadDiag(String& str){
 }
 
 void successResponse(String& str){
-  addHead(str);
+  addHead(str,30);
   addIntro(str);
   str += F("<fieldset>");
   str += F("<fieldset><legend><b>Firmware update</b></legend>");
@@ -83,7 +45,7 @@ void successResponse(String& str){
 void handleRoot(){
     debugln("handleRoot");
   String str = ""; 
-    addHead(str);
+    addHead(str,0);
     addIntro(str);
 
     str += F("<main class='form-signin'>");
@@ -98,12 +60,12 @@ void handleRoot(){
 
 void handleSetup(){
     debugln("handleSetup");
-    monitoring = false; // stop monitoring data
+   // monitoring = false; // stop monitoring data
     
  String str = ""; 
       debugln("handleSetupForm");
 
-    addHead(str);
+    addHead(str,0);
     addIntro(str);
       str += F("<fieldset>");
        str += F("<fieldset><legend><b>&nbsp;Wifi parameters&nbsp;</b></legend>");
@@ -183,7 +145,7 @@ void handleP1(){
   
   char str2[10];
   int temp;
-    addHead(str);
+    addHead(str,60);
     addIntro(str);
   //  str += ("<p>");
   //  str += P1timestamp;
@@ -298,7 +260,7 @@ void handleHelp(){
   sprintf_P(ipstr, PSTR("%u.%u.%u.%u"), ip[0], ip[1], ip[2], ip[3]);
   
  String str;
- addHead(str);
+ addHead(str,0);
   addIntro(str);
   str += F("<fieldset>");
   str += F("<fieldset><legend><b>Hilfe</b></legend>");
