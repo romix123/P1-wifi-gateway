@@ -29,7 +29,10 @@
   (en het bespaart hoe dan ook wat stroom (die weliswaar door je energieleverancier wordt betaald, maar toch). Alle kleine 
   beetjes helpen..
  
-   informatie, vragen, suggesties ed richten aan romix@macuser.nl 
+   informatie, vragen, suggesties ed richten aan ronaldleenes@icloud.com
+   
+   Zie http://esp8266thingies.nl voor meer informatie over de module en
+   http://www.esp8266thingies.nl/wp/forum-2/ voor het disussieforum
    
    
      
