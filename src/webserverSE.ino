@@ -19,7 +19,7 @@ void uploadDiag(String& str){
 
 void successResponse(){
   String str = "";
-  addRefreshHead(str);
+  addHead(str,0);
   addIntro(str);
   str += F("<fieldset>");
   str += F("<fieldset><legend><b>Firmware update</b></legend>");

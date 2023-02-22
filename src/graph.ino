@@ -222,8 +222,8 @@ debugln(offset * 84 + measure1 * 12);
 
 //https://stackoverflow.com/questions/44159990/how-to-add-a-total-to-a-chart-in-google-charts
 
-File file1 = LittleFS.open(path1, "r");
-File file2 = LittleFS.open(path2, "r");
+File file1 = FST.open(path1, "r");
+File file2 = FST.open(path2, "r");
 
 addGraphHead(str);
 str += F("<script type=\"text/javascript\" src=\"https://www.gstatic.com/charts/loader.js\"></script>");
@@ -256,7 +256,7 @@ server.sendContent(str);
     }
     file1.close();
   }
- delay(200);
+   delay(200);
  str = F("]);");
  str += F("var options = {title: '");
  str += title1; 
@@ -267,8 +267,8 @@ server.sendContent(str);
  str += F("chart.draw(data, options); }");
  server.sendContent( str);
 // debugln(str);
+   delay(200);
 
- delay(200);
  str ="";
 
 if (type2[0] != '\0'){
@@ -289,7 +289,7 @@ if (type2[0] != '\0'){
       debug(str);
     }
     file2.close();
-    delay(200);
+   delay(200);
   }
   str = F("]);");
   str += F("var options = {title: '");
@@ -330,7 +330,7 @@ if (type2[0] != '\0'){
 void calendarGas(){
 String str ="";
 char buffer[64];
-File file = LittleFS.open("/YearGc.log", "r");
+File file = FST.open("/YearGc.log", "r");
 monitoring = false;
 
 
@@ -358,9 +358,8 @@ server.sendContent(str);
  }
  str = "";
  str += F("]); var chart = new google.visualization.Calendar(document.getElementById('calendar_gas')); var options = { title: 'Gas gebruiksintensiteit', height: 350};");
- str += F("chart.draw(dataTable, options);}</script></head><body><div id='calendar_gas' style='width: 800px; height: 350px;'></div>");
+ str += F("chart.draw(dataTable, options);}</script></head><body><div id='calendar_gas' style='width: 800px; height: 350px;'><form action='/' method='POST'><button class='button bhome' style='width: 300px' >Menu</button></form></div>");
 
-  str += F("<form action='/' method='POST'><button class='button bhome' style='width: 300px' >Menu</button></form>");
   addFootBare(str);   
   server.sendContent (str);
 //debugln(str);

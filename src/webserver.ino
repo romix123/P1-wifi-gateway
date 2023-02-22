@@ -12,11 +12,10 @@ void addHead(String& str, int refresh)
   str += F("<meta charset='utf-8'><meta name=\"viewport\" content=\"width=device-width,initial-scale=1,user-scalable=no\"/>");
   str += F("<head><title>Slimme meter</title>");
   str += F("<style>");
-  str += F("div, fieldset, input, {padding: 5px; font-size: 1em;}");
-  str += F("input, select {padding: 2px; font-size: 0.8em;}");
+  str += F("div, fieldset, input, select {padding: 5px; font-size: 1em;}");
   str += F("fieldset {background: #ECEAE4;}");
   str += F("p {margin: 0.5em 0;}");
-  str += F("input {box-sizing: border-box; -webkit-box-sizing: border-box; -moz-box-sizing: border-box; background: #ffffff; color: #000000;}"); //width:'100%'
+  str += F("input {box-sizing: border-box; -webkit-box-sizing: border-box; width:'100%'; -moz-box-sizing: border-box; background: #ffffff; color: #000000;}"); //width:'100%'
   str += F("input[type=range] {width: 90%;}");
   str += F("select {background: #ffffff; color: #000000;}"); //
   str += F("textarea {resize: vertical; width: 98%; height: 318px; padding: 5px; overflow: auto; background: #ffffff; color: #000000;}");
@@ -41,20 +40,20 @@ void addHead(String& str, int refresh)
   str += F("</style></head>");
 }
 
-void addRefreshHead(String& str)
-{
-  str += F("<!DOCTYPE html><html lang='en' class=''>");
-  str += F("<META http-equiv='refresh' content='60;URL=/'>");
-  str += F("<meta charset='utf-8'><meta name=\"viewport\" content=\"width=device-width,initial-scale=1,user-scalable=no\"/>");
-  str += F("<head><title>Slimme meter</title>");
-  str += F("<style>");
-  str += F("div, fieldset, input, select {padding: 5px; font-size: 1em;}");
-  str += F("fieldset {background: #ECEAE4;}");
-  str += F("p {margin: 0.5em 0;}");
-  str += F("body {text-align: center; font-family: verdana, sans-serif; background: #ffffff;}");
-  str += F(".p {float: left; text-align: left;}");  
-  str += F("</style></head>");
-}
+//void addRefreshHead(String& str)
+//{
+//  str += F("<!DOCTYPE html><html lang='en' class=''>");
+//  str += F("<META http-equiv='refresh' content='60;URL=/'>");
+//  str += F("<meta charset='utf-8'><meta name=\"viewport\" content=\"width=device-width,initial-scale=1,user-scalable=no\"/>");
+//  str += F("<head><title>Slimme meter</title>");
+//  str += F("<style>");
+//  str += F("div, fieldset, input, select {padding: 5px; font-size: 1em;}");
+//  str += F("fieldset {background: #ECEAE4;}");
+//  str += F("p {margin: 0.5em 0;}");
+//  str += F("body {text-align: center; font-family: verdana, sans-serif; background: #ffffff;}");
+//  str += F(".p {float: left; text-align: left;}");  
+//  str += F("</style></head>");
+//}
 
 void addGraphHead(String& str){
   server.sendHeader("Cache-Control", "no-cache, no-store, must-revalidate");
@@ -208,7 +207,7 @@ void handleSetupSave() {
     EEPROM.put(0, config_data);
     EEPROM.commit();
 
-    addRefreshHead(str);
+    addHead(str,0);
     addIntro(str);
     setupSaved(str);
     server.send(200, "text/html", str);    
@@ -260,6 +259,27 @@ void handleUpdateLogin(){
       str+=  F("</fieldset>");
       str += F("<p><button type='submit'>Login</button></form>");
   addFoot(str);
+  server.send(200, "text/html", str);
+}
+
+void handleUploadForm(){
+   if (strcmp(server.arg("adminPassword").c_str(), config_data.adminPassword) != 0) {  // passwords don't match
+      debugln("Error: update entered with wrong password");
+      errorLogin("Update");
+      return;
+    } else  AdminAuthenticated = true;
+  String str="";
+  monitoring = false; // stop monitoring data
+  addHead(str,0);
+  addIntro(str);
+  str += F("<fieldset><fieldset><legend><b>Update firmware</b></legend>");
+  str += F("<form method='POST' action='/update' enctype='multipart/form-data'><p>");
+  str += F("<b>Firmware</b><input type='file' accept='.bin,.bin.gz' name='firmware'></p>");
+  str += F("<button type='submit'>Update</button>");
+  str += F("</form>");
+  str += F("<form action='/' method='POST'><button class='button bhome'>Menu</button></form>");
+  addFootBare(str); 
+  webstate = UPDATE;
   server.send(200, "text/html", str);
 }
 

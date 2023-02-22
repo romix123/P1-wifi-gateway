@@ -27,10 +27,40 @@
  */
  
 void doJSON(){
+  
   UpdateElectricity();
   UpdateGas();
 }
 
+#if HANS == 1
+bool HansJson(char* idx, int nValue, char* sValue){
+  WiFiClient client;
+  HTTPClient http;
+  bool retVal = false;
+  char req[255];
+  char serverName[100];
+
+  if (config_data.domoticzIP[0] != '-') {
+  sprintf(serverName, "http://%s/cnf?cmd=set_ajax_meter&dev_id=M4", config_data.domoticzIP);
+
+  http.begin(client, serverName);
+    debugln(serverName);
+  http.addHeader("Content-Type", "application/json");
+    debugln("Content-Type\", \"application/json");
+  http.setAuthorization("admin", "1234abcd");
+    debugln("admin:1234abcd");
+
+  sprintf(req, "{ \"model\": \"HTTP input\", \"import_wh\": %s, \"export_wh\": %s, \"voltage\": [%s,%s,%s], \"current\": [%s, %s, %s], \"power_va\": %s }", 12345 , 23456,  instantaneousVoltageL1, instantaneousVoltageL2,instantaneousVoltageL3,instantaneousCurrentL1,instantaneousCurrentL2,instantaneousCurrentL3);
+  debugln(req);
+//curl -i -X POST -H 'Content-Type: application/json' -d '{ "model": "HTTP input", "import_wh": 12345, "export_wh": 23456, "voltage": [231, 232, 233], "current": [10001, 10002, 10003], "power_va": 2000 }' --user admin:1234abcd 'http://192.168.1.183/cnf?cmd=set_ajax_meter&dev_id=M4'
+  int httpResponseCode = http.POST(req);
+    http.end();
+    return httpResponseCode;
+  } // we just return if there is no IP to report to.
+  return true;
+}
+
+#else
 bool DomoticzJson(char* idx, int nValue, char* sValue){
   WiFiClient client;
   HTTPClient http;
@@ -61,6 +91,11 @@ bool DomoticzJson(char* idx, int nValue, char* sValue){
   } // we just return if there is no IP to report to.
   return true;
 }
+#endif
+
+
+
+
 
 void UpdateGas(){  //sends over the gas setting to server(s)
   if(strncmp(gasReceived5min, prevGAS, sizeof(gasReceived5min)) != 0){          // if we have a new value, report

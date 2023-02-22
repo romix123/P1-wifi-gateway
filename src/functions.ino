@@ -86,6 +86,7 @@ void settime(){
   setTime(NUM(6,10) + NUM(7,1), NUM(8, 10) + NUM(9, 1), NUM(10, 10) + NUM(11, 1), NUM(4, 10)+ NUM(5, 1), NUM(2,10) + NUM(3, 1), NUM(0, 10) + NUM(1,1)); 
   debug(timestamp());
   LastReportinSecs = now();
+  timeIsSet = true;
 }
 
 String timestamp(){
@@ -94,6 +95,15 @@ String timestamp(){
 
 String timestampkaal(){
     return (String) hour() + ":" + minute() + ":" + second();
+}
+
+void timeIsSet_cb(){
+  if (!timeIsSet)
+  {
+    debugln("Time is set, starting timer service.");
+    timeIsSet = true;
+    timerAlarm.startService();
+  }
 }
 
 void createToken(){
@@ -111,7 +121,7 @@ void createToken(){
 void listDir(const char * dirname) {
   debugff("Listing directory: %s\n", dirname);
 
-  Dir root = LittleFS.openDir(dirname);
+  Dir root = FST.openDir(dirname);
 
   while (root.next()) {
     File file = root.openFile("r");
@@ -133,7 +143,7 @@ void listDir(const char * dirname) {
 void readFile(const char * path) {
   debugff("Reading file: %s\n", path);
   debugln();
-  File file = LittleFS.open(path, "r");
+  File file = FST.open(path, "r");
   if (!file) {
     debugln("Failed to open file for reading");
     return;
@@ -150,7 +160,7 @@ void readFile(const char * path) {
 void writeFile(const char * path, const char * message) {
   debugff("Writing file: %s\n", path);
 
-  File file = LittleFS.open(path, "w");
+  File file = FST.open(path, "w");
   if (!file) {
     debugln("Failed to open file for writing");
     return;
@@ -169,7 +179,7 @@ void appendFile(const char * path, const char * message) {
   debugfff("Appending to file: %s time: %s\n", path, (String)millis());
   char payload[50];
 
-  File file = LittleFS.open(path, "a");
+  File file = FST.open(path, "a");
   if (!file) {
     debugln("Failed to open file for appending");
     sprintf(payload, "can't open file %s", path);
@@ -186,15 +196,15 @@ void appendFile(const char * path, const char * message) {
     sprintf(payload,"Append to %s with %s failed: %s", path, message, timestampkaal());
     send_mqtt_message("p1wifi/logging", payload);
   }
-  delay(5000);
   file.flush();
+    delay(3000);
   file.close();
 }
 
 void renameFile(const char * path1, const char * path2) {
   debugff("Renaming file %s ", path1);
   debugff("to %s\n", path2);
-  if (LittleFS.rename(path1, path2)) {
+  if (FST.rename(path1, path2)) {
     debugln("File renamed");
   } else {
     debugln("Rename failed");
@@ -203,7 +213,7 @@ void renameFile(const char * path1, const char * path2) {
 
 void deleteFile(const char * path) {
   debugff("Deleting file: %s\n", path);
-  if (LittleFS.remove(path)) {
+  if (FST.remove(path)) {
     debugln("File deleted");
   } else {
     debugln("Delete failed");
@@ -258,7 +268,7 @@ int numLines(const char * path){
   char ch;
   
   debugln("counting lines in file");
-    File file = LittleFS.open(path, "r");
+    File file = FST.open(path, "r");
   if (!file) {
     debugln("Failed to open file for reading");
     return 0;
@@ -277,8 +287,8 @@ int numLines(const char * path){
 
 boolean MountFS(){
     debugln("Mount LittleFS");
-  if (!LittleFS.begin()) {
-    debugln("LittleFS mount failed");
+  if (!FST.begin()) {
+    debugln("FST mount failed");
     return false;
   }
   return true;
@@ -287,7 +297,7 @@ boolean MountFS(){
 
 static void handleNotFound() {
   String path = server.uri();
-  if (!LittleFS.exists(path)) {
+  if (!FST.exists(path)) {
     server.send(404, "text/plain", "Path " + path + " not found. Please double-check the URL");
     return;
   }
@@ -303,7 +313,7 @@ static void handleNotFound() {
   } else if (path.endsWith(".log")) {
     contentType = "text/plain";
   }
-  File file = LittleFS.open(path, "r");
+  File file = FST.open(path, "r");
   server.streamFile(file, contentType);
   file.close();
 }
@@ -313,6 +323,14 @@ void zapFiles(){
   debug("Cleaning out logfiles ... ");
 
   deleteFile("/HourE1.log");
+  deleteFile("/HourE2.log");
+  deleteFile("/HourR1.log");
+  deleteFile("/HourR2.log");
+  deleteFile("/HourTE.log");
+  deleteFile("/HourTR.log");
+  deleteFile("/HourG.log");
+
+    deleteFile("/HourE1.log");
   deleteFile("/HourE2.log");
   deleteFile("/HourR1.log");
   deleteFile("/HourR2.log");
@@ -365,15 +383,15 @@ debugln("done.");
 void formatFS(){
   char payload[50];
       sprintf(payload,"Formatting filesystem at %s", timestampkaal());
-      send_mqtt_message("p1wifi/logging", payload);
+     if (MQTT_debug) send_mqtt_message("p1wifi/logging", payload);
 
-    LittleFS.format();
+    FST.format();
     
-          if (!LittleFS.begin()) {
-            debugln("LittleFS mount failed AGAIN");
+          if (!FST.begin()) {
+            debugln("FST mount failed AGAIN");
           } else {
             sprintf(payload,"Filesystem formatted at %s", timestampkaal());
-            send_mqtt_message("p1wifi/logging", payload);
+          if (MQTT_debug)  send_mqtt_message("p1wifi/logging", payload);
           }
 }
 

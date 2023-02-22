@@ -256,6 +256,7 @@ bool decodeTelegram(int len) {
     
     if(validCRCFound) {
       debugln("\nVALID CRC FOUND!"); 
+      LastSample = millis();
       datagramValid = true;
       gotPowerReading = true; // we at least got electricty readings. Not all setups have a gas meter attached, so gotGasReading is handled when we actually get gasIds coming in
       state = DONE;
@@ -307,6 +308,7 @@ bool decodeTelegram(int len) {
           if (strncmp(telegram, "0-0:1.0.0", strlen("0-0:1.0.0")) == 0) {
               getStr12(P1timestamp, telegram, len, '(');
               if (timeStatus() == timeNotSet) settime();
+              timeIsSet = true;
               if ((hour() == 0) && (minute() == 30 )) settime(); //resync every 24 hours
               break;
           }

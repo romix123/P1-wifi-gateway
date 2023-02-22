@@ -106,7 +106,18 @@ void doInitLogVarsGas(){
   debugln("done.");
 }
 
-
+void doMinutelyLog(){
+   //  if (minFlag) return;
+   FST.begin();
+  char buffer[60];
+  char value[13];
+  dtostrf((atof(gasReceived5min) - atof(minG)), 6, 2, value);
+  sprintf(buffer, "['%s:%s:%s',%s],\n", (String)hour(), (String)minute(), (String)second(), value);
+  appendFile("/MinG.log", buffer);
+  strcpy(minG, gasReceived5min);
+  FST.end();
+  MountFS();
+}
 void doHourlyLog(){
   /*
    * cur - hour
@@ -115,7 +126,7 @@ void doHourlyLog(){
    * set flag
    */
   // if (hourFlag) return;
-   LittleFS.begin();
+   FST.begin();
    
   debugff("Hourly log started at %s ... ", timestampkaal());
   char buffer[60];
@@ -159,11 +170,11 @@ void doHourlyLog(){
   // save state to file
   deleteFile("/logData1.txt");
   renameFile("/logData.txt", "/logData1.txt");
-  File file = LittleFS.open("/logData.txt", "w");
+  File file = FST.open("/logData.txt", "w");
   file.write((byte *)&log_data, sizeof(log_data));
   file.close();
 
-  LittleFS.end();
+  FST.end();
   hourFlag = true;
   debugff("completed at %s.", timestampkaal());
   debugln();
@@ -171,7 +182,7 @@ void doHourlyLog(){
   if (MountFS()){
     char payload[50];
       sprintf(payload,"Remounted FS at %s", timestampkaal());
-      send_mqtt_message("p1wifi/logging", payload);
+     if (MQTT_debug) send_mqtt_message("p1wifi/logging", payload);
   } 
 }
 
@@ -200,7 +211,7 @@ if (month() < 10) str += "0";
   
   dtostrf((atof(electricityUsedTariff1) - atof(log_data.dayE1)), 6, 2, value);
   sprintf(buffer, "['%s',%s],\n", str, value);
-//  appendFile("/DayE1.log", buffer);
+//  appendFile("DayE1.log", buffer);
   appendFile("/WeekE1.log", buffer);
   appendFile("/MonthE1.log", buffer);
   appendFile("/YearE1.log", buffer);
@@ -208,7 +219,7 @@ if (month() < 10) str += "0";
 
   dtostrf((atof(electricityUsedTariff2) - atof(log_data.dayE2)), 6, 2, value);
   sprintf(buffer, "['%s',%s],\n", str, value);
-//  appendFile("/DayE2.log", buffer);
+//  appendFile("DayE2.log", buffer);
   appendFile("/WeekE2.log", buffer);
   appendFile("/MonthE2.log", buffer);
   appendFile("/YearE2.log", buffer);
@@ -224,7 +235,7 @@ if (month() < 10) str += "0";
 
   dtostrf((atof(electricityReturnedTariff2) - atof(log_data.dayR2)), 6, 2, value);
   sprintf(buffer, "['%s',%s],\n", str, value);
-//  appendFile("/DayR2.log", buffer);
+//  appendFile("DayR2.log", buffer);
   appendFile("/WeekR2.log", buffer);
   appendFile("/MonthR2.log", buffer);
   appendFile("/YearR2.log", buffer);
@@ -232,7 +243,7 @@ if (month() < 10) str += "0";
   
   dtostrf((atof(gasReceived5min) - atof(log_data.dayG)), 6, 2, value);
   sprintf(buffer, "['%s',%s],\n", str, value);
-//  appendFile("/DayG.log", buffer); 
+//  appendFile("DayG.log", buffer); 
   appendFile("/WeekG.log", buffer);
   appendFile("/MonthG.log", buffer);
   appendFile("/YearG.log", buffer);  
@@ -243,7 +254,7 @@ if (month() < 10) str += "0";
 
   dtostrf((atof(log_data.dayE1) + atof(log_data.dayE2)), 6, 2, value);
   sprintf(buffer, "['%s',%s],\n", str, value);
-//  appendFile("/DayTE.log", buffer);
+//  appendFile("DayTE.log", buffer);
   appendFile("/WeekTE.log", buffer);
   appendFile("/MonthTE.log", buffer);
   appendFile("/YearTE.log", buffer);  
@@ -251,7 +262,7 @@ if (month() < 10) str += "0";
 
   dtostrf((atof(log_data.dayR1) + atof(log_data.dayR2)), 6, 2, value);
   sprintf(buffer, "['%s',%s],\n", str, value);
-//  appendFile("/DayTR.log", buffer);
+//  appendFile("DayTR.log", buffer);
   appendFile("/WeekTR.log", buffer);
   appendFile("/MonthTR.log", buffer);
   appendFile("/YearTR.log", buffer);  
@@ -463,11 +474,11 @@ void DirListing(){
   str += F("<title>Slimme meter</title>");
   str += F("</head><body>\n");
 
-Dir root = LittleFS.openDir("/");
+Dir root = FST.openDir("/");
  while (root.next()) {
     File file = root.openFile("r");
     str += ("  FILE: ");
-    str += ("<a href='/");
+    str += ("<a href='");
     str += (root.fileName());
     str += ("'>");
     str += (root.fileName());

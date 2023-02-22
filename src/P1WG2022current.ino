@@ -134,15 +134,16 @@
 */
 bool zapfiles = false; //false; //true;
 
-String version = "1.1b – NL";
-#define    NEDERLANDS // SWEDISH //  FRENCH //   GERMAN//   
+String version = "1.1bc – NL";
+#define     NEDERLANDS // SWEDISH //  FRENCH //      GERMAN//
 
 
 #define HOSTNAME "p1meter"
-
+#define FSystem 1 // 0= LittleFS 1 = SPIFFS  
+#define HANS 0
 #define GRAPH 1
 #define V3
-#define DEBUG 1//0//1// 3// 1 // 1 is on serial only, 2 is serial + telnet, 
+#define DEBUG 3//0// 1//3//1//0//1// 3// 1 // 1 is on serial only, 2 is serial + telnet, 
 #define ESMR5 1
 //#define SLEEP_ENABLED 
 
@@ -193,8 +194,13 @@ const char* host = "P1wifi";
 #define OE  16 //IO16 OE on the 74AHCT1G125 
 #define DR  4  //IO4 is Data Request
 
- 
+#include <TZ.h>
+#define MYTZ TZ_Europe_Amsterdam
 #include <TimeLib.h>
+#include <coredecls.h> // settimeofday_cb()
+#include <MyAlarm.h>
+
+
 #include <ESP8266WiFi.h>
 #include <ESP8266HTTPClient.h>
 #include <WiFiUdp.h>
@@ -202,8 +208,13 @@ const char* host = "P1wifi";
 
 #if GRAPH == 1
 //#include "lfs.h"
-#include "FS.h"
+#if FSystem == 0
 #include <LittleFS.h>
+#define FST LittleFS
+#elif FSystem == 1
+#include "FS.h" //SPIFFS
+#define FST SPIFFS
+#endif
 File file;
 #endif
 
@@ -315,9 +326,9 @@ String textMessage;
 char instantaneousVoltageL1[7];
 char instantaneousVoltageL2[7];
 char instantaneousVoltageL3[7];
-char instantaneousCurrentL1[6];
-char instantaneousCurrentL2[6];
-char instantaneousCurrentL3[6];
+char instantaneousCurrentL1[9];
+char instantaneousCurrentL2[9];
+char instantaneousCurrentL3[9];
 char activePowerL1P[9];
 char activePowerL2P[9];
 char activePowerL3P[9];
@@ -467,25 +478,24 @@ void setup() {
    
   monitoring = true; // start monitoring data
   time_to_sleep = millis() + wakeTime;  // we go to sleep wakeTime seconds from now
-  
 
  // handle Files
  debug("Mounting file system ... ");
-      if (!LittleFS.begin()) {
-          debugln("LittleFS mount failed");
+      if (!FST.begin()) {
+          debugln("FST mount failed");
           debug("Formatting file system ... "); 
-          LittleFS.format();
-          if (!LittleFS.begin()) {
-            debugln("LittleFS mount failed AGAIN");
+          FST.format();
+          if (!FST.begin()) {
+            debugln("FST mount failed AGAIN");
           } else 
           { 
             debugln("done.");
             if (zapfiles) zapFiles();
           }
-      }
+      } else debugln("done.");
 
      debugln("Reading logdata:");
-      File logData = LittleFS.open("/logData.txt", "r");
+      File logData = FST.open("/logData.txt", "r");
         if (logData) {
          logData.read((byte *)&log_data, sizeof(log_data)/sizeof(byte));
         logData.close();
@@ -498,6 +508,10 @@ void setup() {
       
   } // WL connected
  //debugln("Something is terribly wrong, no network connection");
+  timerAlarm.stopService();
+  settimeofday_cb(timeIsSet_cb);
+  configTime(MYTZ, "pool.ntp.org");
+  
 }
 
 void readTelegram() {
@@ -580,12 +594,32 @@ void loop() {
     doWatchDogs();
     EverSoOften = millis() + 22000;
   }
+  timerAlarm.update();
 }   
+
+void initTimers(){
+#if DEBUG == 1
+  timerAlarm.createHour(59, 0, doHourlyLog);
+  timerAlarm.createHour(15, 0, doHourlyLog);
+  timerAlarm.createHour(30, 0, doHourlyLog);
+  timerAlarm.createHour(45, 0, doHourlyLog);
+#else
+  timerAlarm.createHour(59, 0, doHourlyLog);
+#endif
+  timerAlarm.createDay(23,58, 0, doDailyLog);
+  timerAlarm.createWeek(timerAlarm.dw_Sunday, 23, 59, 0, doWeeklyLog);
+  timerAlarm.createMonth(31, 0, 0, 0, doMonthlyLog);
+}
 
 void checkCounters(){
   // see logging.ino
+      if (timeIsSet && !TimeTriggersSet) {
+           initTimers();
+           TimeTriggersSet= true;
+          }
  
        if (coldbootE && gotPowerReading) {
+          
         if (needToInitLogVars){
           doInitLogVars();
         }
@@ -601,20 +635,23 @@ void checkCounters(){
 
  //  if (!CHK_FLAG(logFlags, hourFlag) && ( minute() == 10 || minute() == 20 || minute() == 30 || minute() == 40 || minute() == 50) ) doHourlyLog();
 
-   if (!hourFlag && minute() > 58) doHourlyLog();
-   if (!dayFlag && (hour() == 23) && (minute() == 59)) doDailyLog();
-   if (!weekFlag && weekday() == 1 && hour() == 23 && minute() == 59) doWeeklyLog(); // day of the week (1-7), Sunday is day 1
-   if (!monthFlag && day() == 28 && month() == 2 && hour() == 23 && minute() == 59 && year() != 2024 && year() != 2028 ) doMonthlyLog();
-   if (!monthFlag && day() == 29 && month() == 2 && hour() == 23 && minute() == 59 ) doMonthlyLog(); // schrikkeljaren
-   if (!monthFlag && day() == 30 && (month() == 4 || month() == 6 || month()== 9 || month() == 11) && hour() == 23 && minute() == 59 ) doMonthlyLog();
+  // if (!minFlag && second() > 55) doMinutelyLog();
+   
+  // if (!hourFlag && minute() > 58) doHourlyLog();
+  // if (!dayFlag && (hour() == 23) && (minute() == 59)) doDailyLog();
+  // if (!weekFlag && weekday() == 1 && hour() == 23 && minute() == 59) doWeeklyLog(); // day of the week (1-7), Sunday is day 1
+  // if (!monthFlag && day() == 28 && month() == 2 && hour() == 23 && minute() == 59 && year() != 2024 && year() != 2028 ) doMonthlyLog();
+ //  if (!monthFlag && day() == 29 && month() == 2 && hour() == 23 && minute() == 59 ) doMonthlyLog(); // schrikkeljaren
+ //  if (!monthFlag && day() == 30 && (month() == 4 || month() == 6 || month()== 9 || month() == 11) && hour() == 23 && minute() == 59 ) doMonthlyLog();
    if (!monthFlag && day() == 31 && (month() == 1 || month() == 3 || month()== 5 || month() == 7 || month() == 8 || month() == 10 || month() == 12) && hour() == 23 && minute() == 59 ) doMonthlyLog();
    if (!monthFlag && day() == 31 && month() == 12 && hour() == 23 && minute() == 59 ) doYearlyLog();
 }
 
 void resetFlags(){
 
+  if (minFlag && (second() > 5) && (second() < 10)) minFlag = false;
   if (checkMinute >= 59) checkMinute = 0; 
-  if (hourFlag &&  ((minute() > (checkMinute + 1)) && (minute() < (checkMinute + 3)))) hourFlag=false;// if (hourFlag &&  (minute() > 24)) hourFlag = false; // CLR_FLAG(logFlags, hourFlag);
+  if (hourFlag &&  ((minute() > (checkMinute + 2)) && (minute() < (checkMinute + 4)))) hourFlag=false;// if (hourFlag &&  (minute() > 24)) hourFlag = false; // CLR_FLAG(logFlags, hourFlag);
   if (dayFlag && (day() > 0)) dayFlag = false;
   if (weekFlag &&  (weekday() > 1)) weekFlag = false;
   if (monthFlag &&  (day() > 0)) monthFlag=false;
@@ -624,7 +661,7 @@ void resetFlags(){
 void doWatchDogs(){
   char payload[60];
   if (ESP.getFreeHeap() < 2000) ESP.reset(); // watchdog, in case we still have a memery leak
-  if (millis() - LastReportinMillis > 300000) {
+  if (millis() - LastSample > 300000) {
     Serial.flush();
         sprintf(payload, "No data in 300 sec, restarting monitoring: ", timestampkaal());
     send_mqtt_message("p1wifi/logging", payload);
