@@ -240,26 +240,26 @@ void deleteFile(const char * path) {
  * if not at end-of-file.
  *
  */
-size_t readField(File* file, char* str, size_t size, char* delim) {
-  char ch;
-  size_t n = 0;
-
-  
-  while ((n + 1) < size){ // && filel.available()) {
-    ch = file->read(); 
-    debug(ch);
-      // Delete CR.
-      if (ch == '\r') {
-      continue;
-    }
-    str[n++] = ch;
-    if (strchr(delim, ch)) {
-        break;
-    }
-  }
-  str[n] = '\0';
-  return n;
-}
+//size_t readField(File* file, char* str, size_t size, char* delim) {
+//  char ch;
+//  size_t n = 0;
+//
+//  
+//  while ((n + 1) < size){ // && filel.available()) {
+//    ch = file->read(); 
+//    debug(ch);
+//      // Delete CR.
+//      if (ch == '\r') {
+//      continue;
+//    }
+//    str[n++] = ch;
+//    if (strchr(delim, ch)) {
+//        break;
+//    }
+//  }
+//  str[n] = '\0';
+//  return n;
+//}
 
 
 

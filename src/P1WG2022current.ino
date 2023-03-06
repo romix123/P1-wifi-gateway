@@ -132,18 +132,20 @@
 *   wifi.ino
 *   
 */
+
+
 bool zapfiles = false; //false; //true;
 
-String version = "1.1bc – NL";
-#define     NEDERLANDS // SWEDISH //  FRENCH //      GERMAN//
+String version = "1.1bcd – NL";
+#define   NEDERLANDS // SWEDISH //  FRENCH //    GERMAN//    
 
 
 #define HOSTNAME "p1meter"
 #define FSystem 1 // 0= LittleFS 1 = SPIFFS  
-#define HANS 0
+
 #define GRAPH 1
 #define V3
-#define DEBUG 3//0// 1//3//1//0//1// 3// 1 // 1 is on serial only, 2 is serial + telnet, 
+#define DEBUG 3//0//1//3//0// 1//3//1//0//1// 3// 1 // 1 is on serial only, 2 is serial + telnet, 
 #define ESMR5 1
 //#define SLEEP_ENABLED 
 
@@ -664,15 +666,15 @@ void doWatchDogs(){
   if (millis() - LastSample > 300000) {
     Serial.flush();
         sprintf(payload, "No data in 300 sec, restarting monitoring: ", timestampkaal());
-    send_mqtt_message("p1wifi/logging", payload);
+    if (MQTT_debug) send_mqtt_message("p1wifi/logging", payload);
     hourFlag = false;
     nextUpdateTime = millis() + 10000;
     OEstate = false;
     state = WAITING;
     monitoring=true;
   }
-  if (minute() == 23) hourFlag = false; // clear all flags at a safe timeslot. 
-  if (minute() == 43) hourFlag = false; // clear all flags at a safe timeslot.
-  if (!monitoring && (minute() == 16 || minute() == 31 || minute() == 46)  ) monitoring = true; // kludge to make sure we keep monitoring
+ // if (minute() == 23) hourFlag = false; // clear all flags at a safe timeslot. 
+ // if (minute() == 43) hourFlag = false; // clear all flags at a safe timeslot.
+ // if (!monitoring && (minute() == 16 || minute() == 31 || minute() == 46)  ) monitoring = true; // kludge to make sure we keep monitoring
 
 }

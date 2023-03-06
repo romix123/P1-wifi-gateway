@@ -15,7 +15,7 @@ void addHead(String& str, int refresh)
   str += F("div, fieldset, input, select {padding: 5px; font-size: 1em;}");
   str += F("fieldset {background: #ECEAE4;}");
   str += F("p {margin: 0.5em 0;}");
-  str += F("input {box-sizing: border-box; -webkit-box-sizing: border-box; width:'100%'; -moz-box-sizing: border-box; background: #ffffff; color: #000000;}"); //width:'100%'
+  str += F("input {width: 100%; box-sizing: border-box; -webkit-box-sizing: border-box; -moz-box-sizing: border-box; background: #ffffff; color: #000000;}");
   str += F("input[type=range] {width: 90%;}");
   str += F("select {background: #ffffff; color: #000000;}"); //
   str += F("textarea {resize: vertical; width: 98%; height: 318px; padding: 5px; overflow: auto; background: #ffffff; color: #000000;}");
@@ -370,5 +370,5 @@ void addFootBare(String& str){
   str += F(FIRMWARE_REV);
   str += version;
   str += F("<br><a href='http://esp8266thingies.nl' target='_blank' style='color:#aaa;'>esp8266thingies.nl</a>");
-  str += F("</div></div></body></html>");
+  str += F("</div></body></html>"); //</div>
 }

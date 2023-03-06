@@ -358,7 +358,7 @@ server.sendContent(str);
  }
  str = "";
  str += F("]); var chart = new google.visualization.Calendar(document.getElementById('calendar_gas')); var options = { title: 'Gas gebruiksintensiteit', height: 350};");
- str += F("chart.draw(dataTable, options);}</script></head><body><div id='calendar_gas' style='width: 800px; height: 350px;'><form action='/' method='POST'><button class='button bhome' style='width: 300px' >Menu</button></form></div>");
+ str += F("chart.draw(dataTable, options);}</script></head><body><div id='calendar_gas' style='width: 800px; height: 350px;'></div><div><form action='/' method='POST'><button class='button bhome' style='width: 300px' >Menu</button></form></div>");
 
   addFootBare(str);   
   server.sendContent (str);

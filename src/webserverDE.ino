@@ -1,19 +1,19 @@
 #ifdef GERMAN
-
-void setupSaved(String& str){
- // str += F("<script>var countDownDate = new Date().getTime()+50000;var x = setInterval(function() {var now = new Date().getTime();var distance = countDownDate - now;var seconds = Math.floor((distance % (1000 * 60)) / 1000);document.getElementById(\"timer\").innerHTML = seconds + \" seconden tot module weer bereikbaar.\";if (seconds < 2) {location.replace(\"http://p1wifi.local\")}}, 1000);</script>");
-  str += F("<fieldset>");
-  str += F("<fieldset><legend><b>WLAN- und Modul-Setup</b></legend>");
-   str += F("<p><b>Die Einstellungen wurden erfolgreich gespeichert</b><br><br>");
-   str += F("<p>Das Modul wird jetzt neu gestartet. Dies dauert etwa eine Minute.<br>Die blaue LED leuchtet 2x auf, wenn das Modul den Bootvorgang beendet hat</p>");
-   str += F("<p>Die LED blinkt langsam, während die Verbindung zu Ihrem WLAN-Netzwerk hergestellt wird.</p>");
-   str += F("<p>Wenn die blaue LED an bleibt, ist die Einstellung fehlgeschlagen und Sie werden <br>");
-   str += F("muss erneut mit dem WLAN-Netzwerk 'P1_Setup' verbunden werden .</p>");
-   str += F("<br>");
- // str += F("<p id=\"timer\"></p>");
-  str += F("</fieldset></p>");
-  str += F("<div style='text-align:right;font-size:11px;'><hr/><a href='http://eps8266thingies.nl' target='_blank' style='color:#aaa;'>eps8266thingies.nl</a></div></div></fieldset></body></html>");
-}
+//
+//void setupSaved(String& str){
+// // str += F("<script>var countDownDate = new Date().getTime()+50000;var x = setInterval(function() {var now = new Date().getTime();var distance = countDownDate - now;var seconds = Math.floor((distance % (1000 * 60)) / 1000);document.getElementById(\"timer\").innerHTML = seconds + \" seconden tot module weer bereikbaar.\";if (seconds < 2) {location.replace(\"http://p1wifi.local\")}}, 1000);</script>");
+//  str += F("<fieldset>");
+//  str += F("<fieldset><legend><b>WLAN- und Modul-Setup</b></legend>");
+//   str += F("<p><b>Die Einstellungen wurden erfolgreich gespeichert</b><br><br>");
+//   str += F("<p>Das Modul wird jetzt neu gestartet. Dies dauert etwa eine Minute.<br>Die blaue LED leuchtet 2x auf, wenn das Modul den Bootvorgang beendet hat</p>");
+//   str += F("<p>Die LED blinkt langsam, während die Verbindung zu Ihrem WLAN-Netzwerk hergestellt wird.</p>");
+//   str += F("<p>Wenn die blaue LED an bleibt, ist die Einstellung fehlgeschlagen und Sie werden <br>");
+//   str += F("muss erneut mit dem WLAN-Netzwerk 'P1_Setup' verbunden werden .</p>");
+//   str += F("<br>");
+// // str += F("<p id=\"timer\"></p>");
+//  str += F("</fieldset></p>");
+//  str += F("<div style='text-align:right;font-size:11px;'><hr/><a href='http://eps8266thingies.nl' target='_blank' style='color:#aaa;'>eps8266thingies.nl</a></div></div></fieldset></body></html>");
+//}
 
 void uploadDiag(String& str){
   monitoring = false; // stop monitoring data
@@ -29,47 +29,51 @@ void uploadDiag(String& str){
   webstate = UPDATE;
 }
 
-void successResponse(String& str){
-  addHead(str,30);
-  addIntro(str);
-  str += F("<fieldset>");
-  str += F("<fieldset><legend><b>Firmware update</b></legend>");
-  str += F("<p><b>Die Firmware wurde erfolgreich aktualisiert</b><br><br>");
-   str += F("<p>Das Modul wird jetzt neu gestartet. Dies dauert etwa eine Minute.</p><br>");
-   str += F("<p>Die blaue LED leuchtet 2x auf, wenn das Modul den Bootvorgang beendet hat blinkt die LED langsam, während die Verbindung zu Ihrem WLAN-Netzwerk hergestellt wird.</p>");
-   str += F("<p>Wenn die blaue LED an bleibt, ist die Einstellung fehlgeschlagen und Sie werden müssen erneut mit dem WLAN-Netzwerk 'P1_Setup' mit dem Passwort 'configP1' verbunden werden.</p>");
-  str += F("</fieldset></p>");
-  str += F("<div style='text-align:right;font-size:11px;'><hr/><a href='http://eps8266thingies.nl' target='_blank' style='color:#aaa;'>eps8266thingies.nl</a></div></div></fieldset></body></html>");
-}
 
-void handleRoot(){
-    debugln("handleRoot");
-  String str = ""; 
-    addHead(str,0);
-    addIntro(str);
-
-    str += F("<main class='form-signin'>");
-    str += F("<form action='/P1' method='post'><button type='p1' class='button bhome'>Messwerte</button></form>");
-    str += F("<form action='/Setup' method='post'><button type='Setup'>Setup</button></form>");
-    str += F("<form action='/update' method='GET'><button type='submit'>Update firmware</button></form>");
-  addUptime(str);
-  addFoot(str);
-  server.send(200, "text/html", str);
-  webstate = MAIN;
-}
+//
+//void handleRoot(){
+//    debugln("handleRoot");
+//  String str = ""; 
+//    addHead(str,0);
+//    addIntro(str);
+//
+//    str += F("<main class='form-signin'>");
+//    str += F("<form action='/P1' method='post'><button type='p1' class='button bhome'>Messwerte</button></form>");
+//    str += F("<form action='/Setup' method='post'><button type='Setup'>Setup</button></form>");
+//    str += F("<form action='/update' method='GET'><button type='submit'>Update firmware</button></form>");
+//  addUptime(str);
+//  addFoot(str);
+//  server.send(200, "text/html", str);
+//  webstate = MAIN;
+//}
 
 void handleSetup(){
-    debugln("handleSetup");
-   // monitoring = false; // stop monitoring data
-    
+  if (millis() > 60000) {            // if we did not get here directly, check credentials
+     debugln("indirect call");
+    if (strcmp(server.arg("adminPassword").c_str(), config_data.adminPassword) != 0) {  // passwords don't match
+      debugln("Error: handlesetup entered with wrong password");
+      errorLogin("Setup");
+      return;
+    }
+  }    
  String str = ""; 
       debugln("handleSetupForm");
 
     addHead(str,0);
     addIntro(str);
       str += F("<fieldset>");
+      str += F("<form action='/SetupSave' method='POST'><p><b>SSId</b><br>");
+      str += F("<input type='hidden' name='setuptoken' value='");
+       str+= setupToken;
+       str+=  F("'>");
+             str += F("<fieldset><legend><b>&nbsp;Admin&nbsp;</b></legend>");
+      str += F("<p><b>admin password</b><br>");
+       str += F("<input type='text' class='form-control' name='adminPassword' value='");
+       str+= config_data.adminPassword;
+       str+=  F("'></p></fieldset>");
+       
        str += F("<fieldset><legend><b>&nbsp;Wifi parameters&nbsp;</b></legend>");
-       str += F("<form action='/SetupSave' method='POST'><p><b>SSId</b><br>");
+       
        str += F("<input type='text' class='form-control' name='ssid' value='");
        str+= config_data.ssid;
        str+=  F("'></p>");
@@ -254,39 +258,4 @@ void handleRawData(){
   }
 }
 
-void handleHelp(){
-    char ipstr[20];
-  IPAddress ip = WiFi.localIP();
-  sprintf_P(ipstr, PSTR("%u.%u.%u.%u"), ip[0], ip[1], ip[2], ip[3]);
-  
- String str;
- addHead(str,0);
-  addIntro(str);
-  str += F("<fieldset>");
-  str += F("<fieldset><legend><b>Hilfe</b></legend>");
-  str += F("<p><b>Das P1 WiFi-Gateway kann Daten auf 4 Arten liefern.</b><br><br>");
-  str += F("<p>Die Kernwerte sind immer über das P1-Menü verfügbar (entweder über");
-  str += ipstr;
-  str += F("/P1, oder ¨ber p1wifi.local/P1 )</p><br>");
-  
-  str += F("<p>Die Rohdaten sind über ");
-  str += ipstr;
-  str += F("/Data, oder über p1wifi.local/Data verfügbar</p><br><br>");
-  str += F("<p>Häufiger ist die Verwendung des Gateways mit einem Hausautomationssystem.</p>");
-  str += F("<p><b>Domoticz</b> akzeptiert json-Nachrichten. Geben Sie dazu die IP-Adresse von Ihren Domoticz-Server und die Portnummer, über die darauf zugegriffen werden kann ein (normalerweise 8080).</p>");
-  str += F("Die notwendigen Idx für Gas und Strom erhalten Sie, indem Sie zunächst virtuelle Sensoren in Domoticz für beide erstellen.");
-  str += F("Nach der Erstellung erscheinen die Idxes auf der Registerkarte 'Geräte'.</p><br>");
-  str +=F("");
-  str +=F("Über Port 23 des Moduls (p1wifi.local:23) können Daten auch gelesen werden (z.B. von Domoticz).");
-  str +=F("Auf diese Weise kann die Domoticz mittels Hardware einstellung [P1 Smart Meter mit LAN-Schnittstelle] Daten abrufen.");
-  str +=F("Sie brauchen am p1wifi seite nichts einzustellen (Nr Häkchen bei json und mqtt).");
-
-  str += F("Für andere Systeme können Sie einen MQTT-Broker verwenden. Füllen Sie die Details der Broker aus und legen Sie das Stammthema fest. Für Home Assistant ist dies „sensors/power/p1meter“.</p>");
-  str += F("Daniel de Jong beschreibt auf seinem <a href='https://github.com/daniel-jong/esp8266_p1meter'>github</a> wie man HA weiter konfiguriert.</p>");
-  str += F("Verwenden Sie die Kontrollkästchen, um anzugeben, welche Berichtsmethode(n) Sie verwenden möchten.</p>");
-
-  str += F("</fieldset></p>");
-  str += F("<div style='text-align:right;font-size:11px;'><hr/><a href='http://eps8266thingies.nl' target='_blank' style='color:#aaa;'>eps8266thingies.nl</a></div></div></fieldset></body></html>");
-server.send(200, "text/html", str);
-}
 #endif
