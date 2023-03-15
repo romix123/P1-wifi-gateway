@@ -305,7 +305,7 @@ void setupSaved(String& str){
   str += F(SETUP_SAVED_TITLE);
   str += F(SETUP_SAVED_TEXT);
   str += F("</fieldset></p>");
-  str += F("<div style='text-align:right;font-size:11px;'><hr/><a href='http://eps8266thingies.nl' target='_blank' style='color:#aaa;'>eps8266thingies.nl</a></div></div></fieldset></body></html>");
+  str += F("<div style='text-align:right;font-size:11px;'><hr/><a href='http://esp8266thingies.nl' target='_blank' style='color:#aaa;'>esp8266thingies.nl</a></div></div></fieldset></body></html>");
 }
 
 
@@ -317,7 +317,7 @@ void successResponse(){
   str += F(FIRMWARE_UPDATE_SUCCESS_TITLE);
   str += F(FIRMWARE_UPDATE_SUCCESS_TEXT);
   str += F("</fieldset></p>");
-  str += F("<div style='text-align:right;font-size:11px;'><hr/><a href='http://eps8266thingies.nl' target='_blank' style='color:#aaa;'>eps8266thingies.nl</a></div></div></fieldset></body></html>");
+  str += F("<div style='text-align:right;font-size:11px;'><hr/><a href='http://esp8266thingies.nl' target='_blank' style='color:#aaa;'>esp8266thingies.nl</a></div></div></fieldset></body></html>");
   server.send(200, "text/html", str);
   delay(2000);
 }
@@ -340,7 +340,7 @@ void handleHelp(){
    str += F(HELP_TEXT2); 
   str += F("</fieldset></p>");
 
-  str += F("<div style='text-align:right;font-size:11px;'><hr/><form><input type='button' value='Go back!' onclick='history.back()'></form><a href='http://eps8266thingies.nl' target='_blank' style='color:#aaa;'>eps8266thingies.nl</a></div></div></fieldset></body></html>");
+  str += F("<div style='text-align:right;font-size:11px;'><hr/><form><input type='button' value='Go back!' onclick='history.back()'></form><a href='http://esp8266thingies.nl' target='_blank' style='color:#aaa;'>esp8266thingies.nl</a></div></div></fieldset></body></html>");
 server.send(200, "text/html", str);
 }
 

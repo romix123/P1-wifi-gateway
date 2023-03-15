@@ -12,7 +12,7 @@
 //   str += F("<br>");
 // // str += F("<p id=\"timer\"></p>");
 //  str += F("</fieldset></p>");
-//  str += F("<div style='text-align:right;font-size:11px;'><hr/><a href='http://eps8266thingies.nl' target='_blank' style='color:#aaa;'>eps8266thingies.nl</a></div></div></fieldset></body></html>");
+//  str += F("<div style='text-align:right;font-size:11px;'><hr/><a href='http://esp8266thingies.nl' target='_blank' style='color:#aaa;'>esp8266thingies.nl</a></div></div></fieldset></body></html>");
 //}
 
 void uploadDiag(String& str){

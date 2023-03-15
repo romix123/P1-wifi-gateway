@@ -77,6 +77,7 @@ int interval;
 unsigned long nextUpdateTime = 0;
 unsigned long LastReportinMillis = 0;
 unsigned long LastSample = 0;
+unsigned long APtimer = 0;        // time we went into AP mode. Restart module if in AP for 10 mins as we might have gotten in AP due to router wifi issue 
 time_t LastReportinSecs = 0;
 
 long last10 = 0;

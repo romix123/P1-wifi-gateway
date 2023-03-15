@@ -1,26 +1,7 @@
 #ifdef NEDERLANDS
 
 
-void handleUploadForm(){
-   if (strcmp(server.arg("adminPassword").c_str(), config_data.adminPassword) != 0) {  // passwords don't match
-      debugln("Error: update entered with wrong password");
-      errorLogin("Update");
-      return;
-    } else  AdminAuthenticated = true;
-  String str="";
-  monitoring = false; // stop monitoring data
-  addHead(str,0);
-  addIntro(str);
-  str += F("<fieldset><fieldset><legend><b>Update firmware</b></legend>");
-  str += F("<form method='POST' action='/update' enctype='multipart/form-data'><p>");
-  str += F("<b>Firmware</b><input type='file' accept='.bin,.bin.gz' name='firmware'></p>");
-  str += F("<button type='submit'>Update</button>");
-  str += F("</form>");
-  str += F("<form action='/' method='POST'><button class='button bhome'>Menu</button></form>");
-  addFootBare(str); 
-  webstate = UPDATE;
-  server.send(200, "text/html", str);
-}
+
 
 
 
@@ -187,8 +168,28 @@ if (P1prot == 5){
   str += instantaneousVoltageL2;
   str += " V'></div>";
   str += "<div class='column3' style='text-align:right'><b>L3</b><input type='text' class='form-control c7' value='";
-   str += instantaneousVoltageL2;
+   str += instantaneousVoltageL3;
     str += " V'></div></div></p>";
+
+   str += "<p><div class='row'><div class='column3'><b>Verbruik: L1</b><input type='text' class='form-control c6' value='";
+  str += activePowerL1P;
+  str += " kW'></div>";
+  str += "<div class='column3' style='text-align:right'><b>L2</b><input type='text' class='form-control c7' value='";
+  str += activePowerL2P;
+  str += " kW'></div>";
+  str += "<div class='column3' style='text-align:right'><b>L3</b><input type='text' class='form-control c7' value='";
+   str += activePowerL3P;
+    str += " kW'></div></div></p>";
+
+     str += "<p><div class='row'><div class='column3'><b>Retour: L1</b><input type='text' class='form-control c6' value='";
+  str += activePowerL1NP;
+  str += " kW'></div>";
+  str += "<div class='column3' style='text-align:right'><b>L2</b><input type='text' class='form-control c7' value='";
+  str += activePowerL2NP;
+  str += " kW'></div>";
+  str += "<div class='column3' style='text-align:right'><b>L3</b><input type='text' class='form-control c7' value='";
+   str += activePowerL3NP;
+    str += " kW'></div></div></p>";
 }
        str += "<p><div class='row'><div class='column3'><b>Amperage: L1</b><input type='text' class='form-control c6' value='";
   str += instantaneousCurrentL1;

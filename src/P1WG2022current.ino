@@ -62,10 +62,12 @@
  *  
  *  
  *    
- *  versie: 1.1b 
+ *  versie: 1.1bd 
  *  datum:  12 Feb 2023
  *  auteur: Ronald Leenes
  *  
+ *  1.1bd: added 3 phase consumption in webdashboard
+ *          fixe 3 phase voltage in webdashboard
  *  1.1b    cleaning up, bug fixes, cosmetic changes
  *  1.1adc
  *  1.1ad: bug fixes and graph improvements
@@ -133,10 +135,12 @@
 *   
 */
 
+// to do: implement reboot when 5 mins in setup-window
+
 
 bool zapfiles = false; //false; //true;
 
-String version = "1.1bcd – NL";
+String version = "1.1bd – NL";
 #define   NEDERLANDS // SWEDISH //  FRENCH //    GERMAN//    
 
 
@@ -145,7 +149,7 @@ String version = "1.1bcd – NL";
 
 #define GRAPH 1
 #define V3
-#define DEBUG 3//0//1//3//0// 1//3//1//0//1// 3// 1 // 1 is on serial only, 2 is serial + telnet, 
+#define DEBUG 0//3//0//1//3//0// 1//3//1//0//1// 3// 1 // 1 is on serial only, 2 is serial + telnet, 
 #define ESMR5 1
 //#define SLEEP_ENABLED 
 
@@ -331,12 +335,12 @@ char instantaneousVoltageL3[7];
 char instantaneousCurrentL1[9];
 char instantaneousCurrentL2[9];
 char instantaneousCurrentL3[9];
-char activePowerL1P[9];
-char activePowerL2P[9];
-char activePowerL3P[9];
-char activePowerL1NP[9];
-char activePowerL2NP[9];
-char activePowerL3NP[9];
+char activePowerL1P[10];
+char activePowerL2P[10];
+char activePowerL3P[10];
+char activePowerL1NP[10];
+char activePowerL2NP[10];
+char activePowerL3NP[10];
 
 // Swedish specific
 char cumulativeActiveImport[12];    // 1.8.0
@@ -369,18 +373,6 @@ char gasDomoticz[12];       //Domoticz wil gas niet in decimalen?
 
 char prevGAS[12];           // not an P1 protocol var, but holds gas value
 
-
-// char dayStartGaz[12];
-// char dayStartUsedT1[12];
-// char dayStartUsedT2[12];
-// char dayStartReturnedT1[12];
-// char dayStartReturnedT2[12];
-
-// char monthStartGaz[12];
-// char monthStartUsedT1[12];
-// char monthStartUsedT2[12];
-// char monthStartReturnedT1[12];
-// char monthStartReturnedT2[12];
 
 
 
@@ -445,6 +437,7 @@ void setup() {
         LEDon
         WiFi.mode(WIFI_AP);
         softAp = WiFi.softAP("P1_Setup", "");
+        APtimer = millis();
         breaking = true;
         break;
       }
@@ -673,6 +666,7 @@ void doWatchDogs(){
     state = WAITING;
     monitoring=true;
   }
+  if (softAp && (millis() - APtimer  > 600000) ) ESP.reset(); // we have been in AP mode for 600 sec. 
  // if (minute() == 23) hourFlag = false; // clear all flags at a safe timeslot. 
  // if (minute() == 43) hourFlag = false; // clear all flags at a safe timeslot.
  // if (!monitoring && (minute() == 16 || minute() == 31 || minute() == 46)  ) monitoring = true; // kludge to make sure we keep monitoring

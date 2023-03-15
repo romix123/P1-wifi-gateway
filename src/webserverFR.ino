@@ -16,7 +16,7 @@ void setupSaved(String& str){
   str += F("<br>");
   //str += F("<p id=\"timer\"></p>");
   str += F("</fieldset></p>");
-  str += F("<div style='text-align:right;font-size:11px;'><hr/><a href='http://eps8266thingies.nl' target='_blank' style='color:#aaa;'>eps8266thingies.nl</a></div></div></fieldset></body></html>");
+  str += F("<div style='text-align:right;font-size:11px;'><hr/><a href='http://esp8266thingies.nl' target='_blank' style='color:#aaa;'>esp8266thingies.nl</a></div></div></fieldset></body></html>");
 }
 
 void uploadDiag(String& str){
@@ -45,7 +45,7 @@ void successResponse(String& str){
   str += F("<p>Si la LED bleue reste allumée, Si la LED bleue reste allumée, c'est que le réglage a échoué. Reconnectez vous alors au réseau WiFi 'P1_Setup' pour corriger les paramètres.</p>");
   str += F("<br>");
   str += F("</fieldset></p>");
-  str += F("<div style='text-align:right;font-size:11px;'><hr/><a href='http://eps8266thingies.nl' target='_blank' style='color:#aaa;'>eps8266thingies.nl</a></div></div></fieldset></body></html>");
+  str += F("<div style='text-align:right;font-size:11px;'><hr/><a href='http://esp8266thingies.nl' target='_blank' style='color:#aaa;'>esp8266thingies.nl</a></div></div></fieldset></body></html>");
 }
 
 void handleRoot(){
@@ -288,7 +288,7 @@ str +=F("Les données peuvent également être lues (par Domoticz par exemple) v
   str += F("Daniel de Jong décrit sur son github comment configurer davantage HA. <br>Utilisez les cases à cocher pour indiquer la ou les méthodes de déclaration que vous souhaitez utiliser.</p>");
 
   str += F("</fieldset></p>");
-  str += F("<div style='text-align:right;font-size:11px;'><hr/><a href='http://eps8266thingies.nl' target='_blank' style='color:#aaa;'>eps8266thingies.nl</a></div></div></fieldset></body></html>");
+  str += F("<div style='text-align:right;font-size:11px;'><hr/><a href='http://esp8266thingies.nl' target='_blank' style='color:#aaa;'>esp8266thingies.nl</a></div></div></fieldset></body></html>");
 server.send(200, "text/html", str);
 }
 #endif

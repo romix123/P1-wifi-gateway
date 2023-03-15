@@ -137,9 +137,9 @@ void mqtt_send_metric(String name, char *metric)
       mqtt_send_metric("reading/phase_currently_delivered_l1", activePowerL1P);
       mqtt_send_metric("reading/phase_currently_delivered_l2", activePowerL2P);
       mqtt_send_metric("reading/phase_currently_delivered_l3", activePowerL3P);
-      mqtt_send_metric("reading/phase_currently_returned_l1", instantaneousCurrentL1);
-      mqtt_send_metric("reading/phase_currently_returned_l2", instantaneousCurrentL2);
-      mqtt_send_metric("reading/phase_currently_returned_l3", instantaneousCurrentL3);
+      mqtt_send_metric("reading/phase_currently_returned_l1", activePowerL1NP);
+      mqtt_send_metric("reading/phase_currently_returned_l2", activePowerL2NP);
+      mqtt_send_metric("reading/phase_currently_returned_l3", activePowerL3NP);
       mqtt_send_metric("reading/phase_voltage_l1", instantaneousVoltageL1);
       mqtt_send_metric("reading/phase_voltage_l2", instantaneousVoltageL2);
       mqtt_send_metric("reading/phase_voltage_l3", instantaneousVoltageL3);
