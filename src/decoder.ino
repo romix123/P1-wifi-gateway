@@ -364,18 +364,29 @@ bool decodeTelegram(int len) {
           if (strncmp(telegram, "1-0:24.7.0", strlen("1-0:24.7.0")) == 0)
               getValue(momentaryReactiveExportL1, telegram, len, '(', '*');
 #endif
-
+     
+              
          // 1-0:21.7.0(00.378*kW) Instantaan vermogen Elektriciteit levering L1
           if (strncmp(telegram, "1-0:21.7.0", strlen("1-0:21.7.0")) == 0)
               getValue(activePowerL1P, telegram, len, '(', '*');
 
+
+
           // 1-0:22.7.0(00.378*kW) Instantaan vermogen Elektriciteit levering L1
           if (strncmp(telegram, "1-0:21.7.0", strlen("1-0:21.7.0")) == 0)
               getValue(activePowerL1NP, telegram, len, '(', '*');
-              
+
+          // 1-0:22.7.0(00.378*kW) Instantaan vermogen Elektriciteit levering L1
+          if (strncmp(telegram, "1-0:21.7.0", strlen("1-0:21.7.0")) == 0)
+              getValue(activePowerL1NP, telegram, len, '(', 'k'); // kludge for ISKRA meter
+
+                   
         if (strncmp(telegram, "1-0:2.7.0", strlen("1-0:2.7.0")) == 0)
         getValue(actualElectricityPowerReturned, telegram, len, '(', '*');
               
+        if (strncmp(telegram, "1-0:2.7.0", strlen("1-0:2.7.0")) == 0)
+        getValue(actualElectricityPowerReturned, telegram, len, '(', 'k'); // kludge for ISKRA meter
+        
           // 1-0:2.8.1(000348.890*kWh) Elektra opbrengst laag tarief
           if (strncmp(telegram, "1-0:2.8.1", strlen("1-0:2.8.1")) == 0) 
               getValue(electricityReturnedTariff1, telegram, len, '(', '*');
