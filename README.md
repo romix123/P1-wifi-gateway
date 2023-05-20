@@ -31,6 +31,8 @@
  
    informatie, vragen, suggesties ed richten aan ronaldleenes@icloud.com
    
+   default adminpassword: adminpwd
+   
    Zie http://esp8266thingies.nl voor meer informatie over de module en
    http://www.esp8266thingies.nl/wp/forum-2/ voor het disussieforum
    
