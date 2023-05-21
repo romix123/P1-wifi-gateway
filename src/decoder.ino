@@ -212,7 +212,7 @@ bool decodeTelegram(int len) {
     //start found. Reset CRC calculation
     currentCRC=CRC16(0x0000,(unsigned char *) telegram+startChar, len-startChar);
     // and reset datagram 
-    datagram ="";
+    datagram = "";
     datagramValid = false;
     dataEnd = false;
 
@@ -220,6 +220,7 @@ bool decodeTelegram(int len) {
       for(int cnt=startChar; cnt<len-startChar;cnt++){
        // debug(telegram[cnt]);
         datagram += telegram[cnt];
+        if (devicestate == CONFIG) meterId += telegram[cnt]; // we only need to collect the meterId once
       }    
     debugln("Start found!");
     state = READING;
@@ -376,16 +377,17 @@ bool decodeTelegram(int len) {
           if (strncmp(telegram, "1-0:21.7.0", strlen("1-0:21.7.0")) == 0)
               getValue(activePowerL1NP, telegram, len, '(', '*');
 
-          // 1-0:22.7.0(00.378*kW) Instantaan vermogen Elektriciteit levering L1
-          if (strncmp(telegram, "1-0:21.7.0", strlen("1-0:21.7.0")) == 0)
-              getValue(activePowerL1NP, telegram, len, '(', 'k'); // kludge for ISKRA meter
-
                    
         if (strncmp(telegram, "1-0:2.7.0", strlen("1-0:2.7.0")) == 0)
         getValue(actualElectricityPowerReturned, telegram, len, '(', '*');
-              
-        if (strncmp(telegram, "1-0:2.7.0", strlen("1-0:2.7.0")) == 0)
-        getValue(actualElectricityPowerReturned, telegram, len, '(', 'k'); // kludge for ISKRA meter
+
+        if (meterId.substring(0) == "ISK5\2M550E-1011"){      
+            if (strncmp(telegram, "1-0:2.7.0", strlen("1-0:2.7.0")) == 0)
+                getValue(actualElectricityPowerDelivered, telegram, len, '(', '*'); // kludge for ISKRA meter
+                // 1-0:22.7.0(00.378*kW) Instantaan vermogen Elektriciteit levering L1
+            if (strncmp(telegram, "1-0:22.7.0", strlen("1-0:22.7.0")) == 0)
+                getValue(actualElectricityPowerReturned, telegram, len, '(', '*'); // kludge for ISKRA meter
+        }
         
           // 1-0:2.8.1(000348.890*kWh) Elektra opbrengst laag tarief
           if (strncmp(telegram, "1-0:2.8.1", strlen("1-0:2.8.1")) == 0) 
