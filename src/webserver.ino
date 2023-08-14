@@ -103,6 +103,8 @@ void addUptime(String& str){
     sprintf_P(strUpTime, PSTR(TIMESTAMP), dagen, uren, minuten);
   str += strUpTime;
   str += ("</div><div style='text-align:right;font-size:11px;color:#aaa'>");
+  str += meterName;
+  str += " @ ";
   str += ipstr;
   str += ("</div>");
 }

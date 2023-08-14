@@ -62,10 +62,11 @@
  *  
  *  
  *    
- *  versie: 1.1bd 
- *  datum:  12 Feb 2023
+ *  versie: 1.1be 
+ *  datum:  20 May 2023
  *  auteur: Ronald Leenes
  *  
+ *  1.1be: added support for ISKRA /ISK5\2M550E-1011 (which terminates 1-0.2.7.0 and 1-0:22.7.0 without *, using kW instead) 
  *  1.1bd: added 3 phase consumption in webdashboard
  *          fixe 3 phase voltage in webdashboard
  *  1.1b    cleaning up, bug fixes, cosmetic changes
@@ -140,8 +141,8 @@
 
 bool zapfiles = false; //false; //true;
 
-String version = "1.1bd – NL";
-#define   NEDERLANDS // SWEDISH //  FRENCH //    GERMAN//    
+String version = "1.1be – NL";
+#define   NEDERLANDS //  SWEDISH //      GERMAN//   FRENCH // 
 
 
 #define HOSTNAME "p1meter"
@@ -155,7 +156,7 @@ String version = "1.1bd – NL";
 
 
 const uint32_t  wakeTime = 90000; // stay awake wakeTime millisecs 
-const uint32_t  sleepTime = 5000; //sleep sleepTime millisecs
+const uint32_t  sleepTime = 15000; //sleep sleepTime millisecs
 
 #if DEBUG == 1
 const char* host = "P1test";
@@ -384,6 +385,11 @@ void setup() {
 
   pinMode(BLED, OUTPUT);
   Serial.begin(115200);
+/* swap serial ports to gpio15(tx) and gpio13(rx)
+  delay(500);
+  Serial.swap();
+  delay(500);
+end swap  */ 
   debugln("Serial.begin(115200);");
     
   pinMode(OE, OUTPUT);      //IO16 OE on the 74AHCT1G125
@@ -590,6 +596,7 @@ void loop() {
     EverSoOften = millis() + 22000;
   }
   timerAlarm.update();
+
 }   
 
 void initTimers(){

@@ -223,6 +223,7 @@ bool decodeTelegram(int len) {
         if (devicestate == CONFIG) meterId += telegram[cnt]; // we only need to collect the meterId once
       }    
     debugln("Start found!");
+    if (devicestate == CONFIG) identifyMeter();
     state = READING;
     return false;
   } else {
@@ -381,7 +382,7 @@ bool decodeTelegram(int len) {
         if (strncmp(telegram, "1-0:2.7.0", strlen("1-0:2.7.0")) == 0)
         getValue(actualElectricityPowerReturned, telegram, len, '(', '*');
 
-        if (meterId.substring(0) == "ISK5\2M550E-1011"){      
+        if (meterId.indexOf("ISK5\2M550E-1011") != -1){      
             if (strncmp(telegram, "1-0:2.7.0", strlen("1-0:2.7.0")) == 0)
                 getValue(actualElectricityPowerDelivered, telegram, len, '(', '*'); // kludge for ISKRA meter
                 // 1-0:22.7.0(00.378*kW) Instantaan vermogen Elektriciteit levering L1

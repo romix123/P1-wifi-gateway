@@ -445,3 +445,14 @@ String totalXY(const char * type, String period){
   }
   return "fault";
 }
+
+void identifyMeter(){
+  
+  if (meterId.indexOf("ISK5\2M550E-1011") != -1) meterName = "ISKRA AM550e-1011";
+  if (meterId.indexOf("KFM5KAIFA-METER") != -1) meterName = "Kaifa  MA105";
+  if (meterId.indexOf("XMX5LGBBFG10") != -1) meterName = "Landis + Gyr E350";
+  if (meterId.indexOf("XMX5LG") != -1) meterName = "Landis + Gyr";
+  if (meterId.indexOf("Ene5\T210-D") != -1) meterName = "Sagemcom T210-D";
+
+  debugln(meterName);
+}

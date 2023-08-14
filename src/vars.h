@@ -94,6 +94,8 @@ bool bootSetup = false;           // flag for adminpassword bypass
 char telegram[MAXLINELENGTH];     // holds a single line of the datagram 
 String datagram;                  // holds entire datagram for raw output  
 String meterId ="";
+String meterName ="";
+
 bool datagramValid = false;    //
 bool dataEnd = false;             // signals that we have found the end char in the data (!)
 unsigned int currentCRC=0;        // the CRC v alue of the datagram
