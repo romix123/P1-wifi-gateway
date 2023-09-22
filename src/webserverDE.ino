@@ -194,11 +194,11 @@ void handleP1(){
   
 
   str += "<p><div class='row'><b>Aktuelle Nutzung</b><input type='text' class='form-control c6' value='";
-  str += actualElectricityPowerDelivered;
+  str += actualElectricityPowerDeli;
   str += eenheid2;
 
   str += "<p><div class='row'><b>Aktuelle Einspeisung</b><input type='text' class='form-control c6' value='";
-  str += actualElectricityPowerReturned;
+  str += actualElectricityPowerRet;
   str += eenheid2;
 
   str += "<p><div class='row'><div class='column3'><b>Stromspannung:<br>L1</b><input type='text' class='form-control c6' value='";

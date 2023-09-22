@@ -82,10 +82,10 @@ void addIntro(String& str){
     char ipstr[20];
   IPAddress ip = WiFi.localIP();
   sprintf_P(ipstr, PSTR("%u.%u.%u.%u"), ip[0], ip[1], ip[2], ip[3]);
-      str +=("<body><div style='text-align:left;display:inline-block;color:#000000;width:600px;'><div style='text-align:center;color:#000000;'><h2>P1 wifi-gateway</h2></div><br>");
-      str += ("<p style='text-align:right;font-size:11px;color:#aaa'><a href='http://");
+      str += F("<body><div style='text-align:left;display:inline-block;color:#000000;width:600px;'><div style='text-align:center;color:#000000;'><h2>P1 wifi-gateway</h2></div><br>");
+      str += F("<p style='text-align:right;font-size:11px;color:#aaa'><a href='http://");
       str += ipstr;
-      str += (HELP);
+      str += F(HELP);
 }
 
 void addUptime(String& str){
@@ -93,7 +93,7 @@ void addUptime(String& str){
   IPAddress ip = WiFi.localIP();
   sprintf_P(ipstr, PSTR("%u.%u.%u.%u"), ip[0], ip[1], ip[2], ip[3]);
     
-  str += ("<div style='text-align:left;font-size:11px;color:#aaa'><hr/>");
+  str += F("<div style='text-align:left;font-size:11px;color:#aaa'><hr/>");
     char strUpTime[40];
     int minuten = millis() / 60000;
     int dagen = minuten / 1440;
@@ -102,11 +102,17 @@ void addUptime(String& str){
     minuten = minuten % 60;
     sprintf_P(strUpTime, PSTR(TIMESTAMP), dagen, uren, minuten);
   str += strUpTime;
-  str += ("</div><div style='text-align:right;font-size:11px;color:#aaa'>");
+  str += F("</div><div style='text-align:right;font-size:11px;color:#aaa'>");
   str += meterName;
   str += " @ ";
   str += ipstr;
-  str += ("</div>");
+  str += F("</div>");
+  if (Telnet){
+  str += F("<div style='text-align:right;font-size:11px;color:#aaa'>");
+  str += activetelnets;
+  str += F(" actieve telnet connecties");
+  str += F("</div>");
+  }
 }
 
 void handleRoot(){
@@ -222,7 +228,7 @@ void handleLogin(){
   createToken();
     debugln("handleLogin");
 
-  if (millis() < 60000) {
+  if (millis() < 120000) {
     debug(millis());
     debugln(" – You made it within the timeframe, go to setup without login."); 
     bootSetup = true; // our ticket to handleSetup

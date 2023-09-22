@@ -124,6 +124,8 @@ void mqtt_send_metric(String name, char *metric)
 
  void MQTT_reporter(){
 #ifdef NEDERLANDS
+        debug2("MQTT reporter: ");
+        debug2ln(actualElectricityPowerRet);
   if (mqtt_dsmr){
       mqtt_send_metric("equipmentID", equipmentId);
 
@@ -131,8 +133,8 @@ void mqtt_send_metric(String name, char *metric)
       mqtt_send_metric("reading/electricity_delivered_2", electricityUsedTariff2);
       mqtt_send_metric("reading/electricity_returned_1", electricityReturnedTariff1);
       mqtt_send_metric("reading/electricity_returned_2", electricityReturnedTariff2);
-      mqtt_send_metric("reading/electricity_currently_delivered", actualElectricityPowerDelivered);
-      mqtt_send_metric("reading/electricity_currently_returned", actualElectricityPowerReturned);
+      mqtt_send_metric("reading/electricity_currently_delivered", actualElectricityPowerDeli);
+      mqtt_send_metric("reading/electricity_currently_returned", actualElectricityPowerRet);
 
       mqtt_send_metric("reading/phase_currently_delivered_l1", activePowerL1P);
       mqtt_send_metric("reading/phase_currently_delivered_l2", activePowerL2P);
@@ -182,8 +184,8 @@ void mqtt_send_metric(String name, char *metric)
       mqtt_send_metric("consumption_high_tarif", electricityUsedTariff2);
       mqtt_send_metric("returndelivery_low_tarif", electricityReturnedTariff1);
       mqtt_send_metric("returndelivery_high_tarif", electricityReturnedTariff2);
-      mqtt_send_metric("actual_consumption", actualElectricityPowerDelivered);
-      mqtt_send_metric("actual_returndelivery", actualElectricityPowerReturned);
+      mqtt_send_metric("actual_consumption", actualElectricityPowerDeli);
+      mqtt_send_metric("actual_returndelivery", actualElectricityPowerRet);
 
       mqtt_send_metric("l1_instant_power_usage", activePowerL1P);
       mqtt_send_metric("l2_instant_power_usage", activePowerL2P);
@@ -211,8 +213,8 @@ void mqtt_send_metric(String name, char *metric)
       mqtt_send_metric("consumption_high_tarif", electricityUsedTariff2);
       mqtt_send_metric("returndelivery_low_tarif", electricityReturnedTariff1);
       mqtt_send_metric("returndelivery_high_tarif", electricityReturnedTariff2);
-      mqtt_send_metric("actual_consumption", actualElectricityPowerDelivered);
-      mqtt_send_metric("actual_returndelivery", actualElectricityPowerReturned);
+      mqtt_send_metric("actual_consumption", actualElectricityPowerDeli);
+      mqtt_send_metric("actual_returndelivery", actualElectricityPowerRet);
 
       mqtt_send_metric("l1_instant_power_usage", activePowerL1P);
       mqtt_send_metric("l2_instant_power_usage", activePowerL2P);

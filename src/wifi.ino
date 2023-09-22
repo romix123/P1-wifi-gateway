@@ -168,8 +168,9 @@ void start_services(){
        // mqtt_reconnect();
     debugln("   … MQTT");
     }
-    if (Telnet){ 
+  if (Telnet){ 
       setupTelnet();
+      Telnet = true;
       debugln("   … telnet");
     }
 }

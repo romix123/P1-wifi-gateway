@@ -1,5 +1,5 @@
  /*
- * Copyright (c) 2022 Ronald Leenes
+ * Copyright (c) 2023 Ronald Leenes
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,8 +19,8 @@
 /**
  * @file P1WG2022current.ino
  * @author Ronald Leenes
- * @date 12.2.2023
- * @version 1.1b 
+ * @date 22.09.2023
+ * @version 1.1c 
  *
  * @brief This file contains the main file for the P1 wifi gatewway
  *
@@ -62,10 +62,13 @@
  *  
  *  
  *    
- *  versie: 1.1be 
- *  datum:  20 May 2023
+ *  versie: 1.1c 
+ *  datum:  22 Sep 2023
  *  auteur: Ronald Leenes
  *  
+ *  1.1c: clean-up. Telnet can now accept 10 sessions at the same time. Restart when max is reached.
+ *  1.1bf: kludge to fix empty ret value. Somehow the value is overwritten by something. Relocating defs for actualElectricityPowerDeli and Ret seems to fix it ofr now
+ *  1.1bea: extended field length for actualElectricityPowerDeli[12] and actualElectricityPowerRet[12];
  *  1.1be: added support for ISKRA /ISK5\2M550E-1011 (which terminates 1-0.2.7.0 and 1-0:22.7.0 without *, using kW instead) 
  *  1.1bd: added 3 phase consumption in webdashboard
  *          fixe 3 phase voltage in webdashboard
@@ -139,24 +142,34 @@
 // to do: implement reboot when 5 mins in setup-window
 
 
-bool zapfiles = false; //false; //true;
+bool zapfiles = false; 
 
-String version = "1.1be – NL";
+String version = "1.1c – NL";
 #define   NEDERLANDS //  SWEDISH //      GERMAN//   FRENCH // 
-
 
 #define HOSTNAME "p1meter"
 #define FSystem 1 // 0= LittleFS 1 = SPIFFS  
 
 #define GRAPH 1
 #define V3
-#define DEBUG 0//3//0//1//3//0// 1//3//1//0//1// 3// 1 // 1 is on serial only, 2 is serial + telnet, 
+#define DEBUG 0//1//0//3//2//1 is on serial only, 2 is serial + telnet, 
+#define DEBUG2 0
+#define DEBUGT 1
+
 #define ESMR5 1
 //#define SLEEP_ENABLED 
 
 
 const uint32_t  wakeTime = 90000; // stay awake wakeTime millisecs 
 const uint32_t  sleepTime = 15000; //sleep sleepTime millisecs
+
+#if DEBUG2 == 1
+#define debug2(x) Serial.print(x)
+#define debug2ln(x) Serial.println(x)
+#else
+#define debug2(x)
+#define debug2ln(x)
+#endif
 
 #if DEBUG == 1
 const char* host = "P1test";
@@ -200,6 +213,9 @@ const char* host = "P1wifi";
 #define LEDon   digitalWrite(BLED, LOW);
 #define OE  16 //IO16 OE on the 74AHCT1G125 
 #define DR  4  //IO4 is Data Request
+
+#include "vars.h"
+#include "lang.h"
 
 #include <TZ.h>
 #define MYTZ TZ_Europe_Amsterdam
@@ -251,11 +267,6 @@ ESP8266WebServer    server(80);
 #include <WiFiClient.h>
 #include <ESP8266mDNS.h>
 
-//#include "ESP8266HTTPUpdateServer.h"
-//const char* update_username = "admin";
-
-//ESP8266HTTPUpdateServer httpUpdater;
-
 // mqtt stuff . https://github.com/ict-one-nl/P1-Meter-ESP8266-MQTT/blob/master/P1Meter/P1Meter.ino
 #include <PubSubClient.h>
 WiFiClient espClient;                   // * Initiate WIFI client
@@ -265,115 +276,11 @@ long nextMQTTreconnectAttempt;
 // end mqtt stuff
 
 //// Raw data server
-#include "ESPTelnet.h" 
-ESPTelnet telnet;
-uint16_t  port = 23;
-IPAddress ip;
-bool telnetConnected = false;
-// end raw data stuff
-
-#include "vars.h"
-#include "lang.h"
-
-struct settings {
-  char dataSet[4];
-  char ssid[32];
-  char password[32];
-  char domoticzIP[30] = "IPaddress";
-  char domoticzPort[10] = "Port";
-  char domoticzEnergyIdx[10] = "EnergyIdx";
-  char domoticzGasIdx[10] = "GasIdx";
-  char mqttTopic[50] = "sensors/power/p1meter";
-  char mqttIP[30] = "";
-  char mqttPort[10]  = "";
-  char mqttUser[32] = "";
-  char mqttPass[32] = "";
-  char interval[3] = "20";
-  char domo[4] ="j";
-  char mqtt[4] ="n";
-  char watt[4] = "n";
-  char telnet[4] = "n";
-  char debug[4] = "n";
-  char adminPassword[32];
-} config_data = {};
-
-
-
-float RFpower = 0;      //20.5; // (For OdBm of output power, lowest. Supply current~70mA) 
-                        //20.5dBm (For 20.5dBm of output, highest. Supply current~85mA)
+WiFiServer telnet(port);
+WiFiClient telnetClients[MAX_SRV_CLIENTS];
 
 ADC_MODE(ADC_VCC);  // allows you to monitor the internal VCC level;
-  float volts;
   
-
-// Vars to store meter readings
-// we capture all data in char arrays or Strings for longer hard to delineate data
-String P1header;
-char P1version[8];
-int P1prot;             // 4 or 5 based on P1version 1-3:0.2.8 
-char P1timestamp[30]  = "\0";
-char equipmentId[100] = "\0";
-char electricityUsedTariff1[12];
-char electricityUsedTariff2[12];
-char electricityReturnedTariff1[12];
-char electricityReturnedTariff2[12];
-char tariffIndicatorElectricity[8];
-char actualElectricityPowerDelivered[8];
-char actualElectricityPowerReturned[8];
-char numberPowerFailuresAny[6];
-char numberLongPowerFailuresAny[6];
-String longPowerFailuresLog;
-char numberVoltageSagsL1[7];
-char numberVoltageSagsL2[7];
-char numberVoltageSagsL3[7];
-char numberVoltageSwellsL1[7];
-char numberVoltageSwellsL2[7];
-char numberVoltageSwellsL3[7];
-String textMessage;
-char instantaneousVoltageL1[7];
-char instantaneousVoltageL2[7];
-char instantaneousVoltageL3[7];
-char instantaneousCurrentL1[9];
-char instantaneousCurrentL2[9];
-char instantaneousCurrentL3[9];
-char activePowerL1P[10];
-char activePowerL2P[10];
-char activePowerL3P[10];
-char activePowerL1NP[10];
-char activePowerL2NP[10];
-char activePowerL3NP[10];
-
-// Swedish specific
-char cumulativeActiveImport[12];    // 1.8.0
-char cumulativeActiveExport[12];    // 2.8.0
-char cumulativeReactiveImport[12];  // 3.8.0
-char cumulativeReactiveExport[12];  // 4.8.0
-char momentaryActiveImport[12];     // 1.7.0
-char momentaryActiveExport[12];     // 2.7.0
-char momentaryReactiveImport[12];   // 3.7.0
-char momentaryReactiveExport[12];   // 4.7.0
-char momentaryReactiveImportL1[12]; // 23.7.0
-char momentaryReactiveImportL2[12]; // 43.7.0
-char momentaryReactiveImportL3[12]; // 63.7.0
-char momentaryReactiveExportL1[12]; // 24.7.0
-char momentaryReactiveExportL2[12]; // 44.7.0
-char momentaryReactiveExportL3[12]; // 64.7.0
-
-char reactivePowerL1P[9]; // Sweden uses these 6
-char reactivePowerL2P[9];
-char reactivePowerL3P[9];
-char reactivePowerL1NP[9];
-char reactivePowerL2NP[9];
-char reactivePowerL3NP[9];
-
-// end Swedish
-char deviceType[5];
-char gasId[100] = "\0";;
-char gasReceived5min[12];
-char gasDomoticz[12];       //Domoticz wil gas niet in decimalen?
-
-char prevGAS[12];           // not an P1 protocol var, but holds gas value
-
 
 
 
@@ -406,11 +313,11 @@ end swap  */
   EEPROM.get( 0, config_data );
   
   if (config_data.dataSet[0] !='j') {
-      config_data = (settings) {"n", "","","192.168.1.12","8080","1234","1235","sensors/power/p1meter","192.168.1.12","1883", "mqtt_user", "mqtt_passwd", "30", "n","n","n","n","n","adminpwd"};
+      config_data = (settings) {"n", "orbi","Moesmate","192.168.1.12","8080","1234","1235","sensors/power/p1meter","192.168.1.12","1883", "mqtt_user", "mqtt_passwd", "30", "n","n","n","n","n","adminpwd"};
   }
  
   (config_data.watt[0] =='j') ? reportInDecimals = false : reportInDecimals = true;
-  (config_data.domo[0] =='j') ? Json = true :Json = false;
+  (config_data.domo[0] =='j') ? Json = true : Json = false;
   (config_data.mqtt[0] =='j') ? Mqtt = true : Mqtt = false;
   (config_data.telnet[0] =='j') ? Telnet = true : Telnet = false;
   (config_data.debug[0] =='j') ? MQTT_debug = true : MQTT_debug = false;
@@ -471,15 +378,9 @@ end swap  */
 #else
       start_services();
 #endif
-      debugln("All systems are go...");
+     
       
-  state = WAITING;    // signal that we are waiting for a valid start char (aka /)
-  devicestate = CONFIG;
-  nextUpdateTime = nextMQTTreconnectAttempt = EverSoOften = millis();
-   
-  monitoring = true; // start monitoring data
-  time_to_sleep = millis() + wakeTime;  // we go to sleep wakeTime seconds from now
-
+ 
  // handle Files
  debug("Mounting file system ... ");
       if (!FST.begin()) {
@@ -512,7 +413,16 @@ end swap  */
   timerAlarm.stopService();
   settimeofday_cb(timeIsSet_cb);
   configTime(MYTZ, "pool.ntp.org");
-  
+
+ debugln("All systems are go...");
+  alignToTelegram();
+  state = WAITING;    // signal that we are waiting for a valid start char (aka /)
+  devicestate = CONFIG;
+  nextUpdateTime = nextMQTTreconnectAttempt = EverSoOften = TenSecBeat = millis();
+   
+  monitoring = true; // start monitoring data
+  time_to_sleep = millis() + wakeTime;  // we go to sleep wakeTime seconds from now  
+  datagram.reserve(1500);
 }
 
 void readTelegram() {
@@ -525,6 +435,7 @@ void readTelegram() {
       yield();
       ToggleLED      
       if(decodeTelegram(len+1)){     // test for valid CRC
+        debug2ln(datagram);
           break;
       } else { // we don't have valid data, but still may need to report to Domo
         if (dataEnd && !CRCcheckEnabled) { //this is used for dsmr 2.2 meters
@@ -535,9 +446,6 @@ void readTelegram() {
     LEDoff
   }
 }
-
-
-
 
 void loop() {  
   if ((millis() > nextUpdateTime)){ // && monitoring){
@@ -558,27 +466,17 @@ void loop() {
 #endif
   
   if (datagramValid && (state == DONE) && (WiFi.status() == WL_CONNECTED)){ 
-
       if (Mqtt) {
         doMQTT();
         if (MqttDelivered) {
-          datagramValid = false;
-          state = WAITING;
-          MqttDelivered = false;
+           MqttDelivered = false;  // reset
         }
       }
-      if (Json) {
-        doJSON();
-        datagramValid = false;
-        state = WAITING;
-      }
-      if (Telnet) {
-        TelnetReporter();
-        datagramValid = false;
-        state = WAITING;
-      }
+      if (Json)       doJSON();
+      if (Telnet)     TelnetReporter();
       if (MQTT_debug) MQTT_Debug();
-
+      
+      datagramValid = false;  // reset
       state = WAITING;
      }
 
@@ -586,96 +484,20 @@ void loop() {
   if (softAp || (WiFi.status() == WL_CONNECTED)) {
         server.handleClient(); //handle web requests
         MDNS.update();
-        if (Telnet) telnet.loop();
+  //      if (Telnet) telnetloop();// telnet.loop();
   }
 
-  if (millis() > EverSoOften){
+if (millis() > TenSecBeat){
+  if (Telnet && wifiSta) telnetloop();
+  TenSecBeat = millis() + 10000;
+}
+
+if (millis() > EverSoOften){
     checkCounters();
     resetFlags();
     doWatchDogs();
     EverSoOften = millis() + 22000;
+    
   }
   timerAlarm.update();
-
 }   
-
-void initTimers(){
-#if DEBUG == 1
-  timerAlarm.createHour(59, 0, doHourlyLog);
-  timerAlarm.createHour(15, 0, doHourlyLog);
-  timerAlarm.createHour(30, 0, doHourlyLog);
-  timerAlarm.createHour(45, 0, doHourlyLog);
-#else
-  timerAlarm.createHour(59, 0, doHourlyLog);
-#endif
-  timerAlarm.createDay(23,58, 0, doDailyLog);
-  timerAlarm.createWeek(timerAlarm.dw_Sunday, 23, 59, 0, doWeeklyLog);
-  timerAlarm.createMonth(31, 0, 0, 0, doMonthlyLog);
-}
-
-void checkCounters(){
-  // see logging.ino
-      if (timeIsSet && !TimeTriggersSet) {
-           initTimers();
-           TimeTriggersSet= true;
-          }
- 
-       if (coldbootE && gotPowerReading) {
-          
-        if (needToInitLogVars){
-          doInitLogVars();
-        }
-          resetEnergyDaycount();
-          resetEnergyMonthcount();
-        }
-       if (coldbootG && gotGasReading) {
-          if (needToInitLogVarsGas){
-            doInitLogVarsGas();
-          }
-          resetGasCount();
-       }
-
- //  if (!CHK_FLAG(logFlags, hourFlag) && ( minute() == 10 || minute() == 20 || minute() == 30 || minute() == 40 || minute() == 50) ) doHourlyLog();
-
-  // if (!minFlag && second() > 55) doMinutelyLog();
-   
-  // if (!hourFlag && minute() > 58) doHourlyLog();
-  // if (!dayFlag && (hour() == 23) && (minute() == 59)) doDailyLog();
-  // if (!weekFlag && weekday() == 1 && hour() == 23 && minute() == 59) doWeeklyLog(); // day of the week (1-7), Sunday is day 1
-  // if (!monthFlag && day() == 28 && month() == 2 && hour() == 23 && minute() == 59 && year() != 2024 && year() != 2028 ) doMonthlyLog();
- //  if (!monthFlag && day() == 29 && month() == 2 && hour() == 23 && minute() == 59 ) doMonthlyLog(); // schrikkeljaren
- //  if (!monthFlag && day() == 30 && (month() == 4 || month() == 6 || month()== 9 || month() == 11) && hour() == 23 && minute() == 59 ) doMonthlyLog();
-   if (!monthFlag && day() == 31 && (month() == 1 || month() == 3 || month()== 5 || month() == 7 || month() == 8 || month() == 10 || month() == 12) && hour() == 23 && minute() == 59 ) doMonthlyLog();
-   if (!monthFlag && day() == 31 && month() == 12 && hour() == 23 && minute() == 59 ) doYearlyLog();
-}
-
-void resetFlags(){
-
-  if (minFlag && (second() > 5) && (second() < 10)) minFlag = false;
-  if (checkMinute >= 59) checkMinute = 0; 
-  if (hourFlag &&  ((minute() > (checkMinute + 2)) && (minute() < (checkMinute + 4)))) hourFlag=false;// if (hourFlag &&  (minute() > 24)) hourFlag = false; // CLR_FLAG(logFlags, hourFlag);
-  if (dayFlag && (day() > 0)) dayFlag = false;
-  if (weekFlag &&  (weekday() > 1)) weekFlag = false;
-  if (monthFlag &&  (day() > 0)) monthFlag=false;
-  if (yearFlag &&  (day() == 1) && month() == 1) yearFlag=false;
-}
-
-void doWatchDogs(){
-  char payload[60];
-  if (ESP.getFreeHeap() < 2000) ESP.reset(); // watchdog, in case we still have a memery leak
-  if (millis() - LastSample > 300000) {
-    Serial.flush();
-        sprintf(payload, "No data in 300 sec, restarting monitoring: ", timestampkaal());
-    if (MQTT_debug) send_mqtt_message("p1wifi/logging", payload);
-    hourFlag = false;
-    nextUpdateTime = millis() + 10000;
-    OEstate = false;
-    state = WAITING;
-    monitoring=true;
-  }
-  if (softAp && (millis() - APtimer  > 600000) ) ESP.reset(); // we have been in AP mode for 600 sec. 
- // if (minute() == 23) hourFlag = false; // clear all flags at a safe timeslot. 
- // if (minute() == 43) hourFlag = false; // clear all flags at a safe timeslot.
- // if (!monitoring && (minute() == 16 || minute() == 31 || minute() == 46)  ) monitoring = true; // kludge to make sure we keep monitoring
-
-}

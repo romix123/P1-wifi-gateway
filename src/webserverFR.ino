@@ -198,12 +198,12 @@ void handleP1(){
   
 
   str += "<p><div class='row'><b>Consommation instantanée de courant</b><input type='text' class='form-control c6' value='";
-  str += actualElectricityPowerDelivered;
+  str += actualElectricityPowerDeli;
   str += eenheid2;
 
 
  str += "<p><div class='row'><b>Production instantanée de courant</b><input type='text' class='form-control c6' value='";
-  str += actualElectricityPowerReturned;
+  str += actualElectricityPowerRet;
   str += eenheid2;
 
   str += "<p><div class='row'><div class='column3'><b>Tension: L1</b><input type='text' class='form-control c6' value='";

@@ -25,6 +25,23 @@
  *
  * @see http://esp8266thingies.nl
  */
+
+void alignToTelegram(){
+  // make sure we don't drop into the middle of a telegram on boot. Read whatever is in the stream until we find the end char !
+  // then read until EOL and flsuh serial, return to loop to pick up the first complete telegram.
+  
+  int inByte = 0;         // incoming serial byte
+  char buf[10];
+  if (Serial.available()>0) {
+    while (Serial.available()) {
+      inByte = Serial.read();
+      if (inByte == '!') break;
+    }
+      Serial.readBytesUntil('\n', buf, 9);
+      Serial.flush();      
+  }
+}
+
 void blink(int t){
   for (int i=0 ; i <=t; i++){
     LEDon       // Signaal naar laag op ESP-M3
@@ -448,11 +465,93 @@ String totalXY(const char * type, String period){
 
 void identifyMeter(){
   
-  if (meterId.indexOf("ISK5\2M550E-1011") != -1) meterName = "ISKRA AM550e-1011";
-  if (meterId.indexOf("KFM5KAIFA-METER") != -1) meterName = "Kaifa  MA105";
+  if (meterId.indexOf("ISK5\\2M550E-1011") != -1) meterName = "ISKRA AM550e-1011";
+  if (meterId.indexOf("KFM5KAIFA-METER") != -1) meterName = "Kaifa  (MA105 of MA304)";
   if (meterId.indexOf("XMX5LGBBFG10") != -1) meterName = "Landis + Gyr E350";
   if (meterId.indexOf("XMX5LG") != -1) meterName = "Landis + Gyr";
-  if (meterId.indexOf("Ene5\T210-D") != -1) meterName = "Sagemcom T210-D";
+  
+  if (meterId.indexOf("Ene5\\T210-D") != -1) meterName = "Sagemcom T210-D";
 
   debugln(meterName);
+}
+
+void initTimers(){
+#if DEBUG == 1
+  timerAlarm.createHour(59, 0, doHourlyLog);
+  timerAlarm.createHour(15, 0, doHourlyLog);
+  timerAlarm.createHour(30, 0, doHourlyLog);
+  timerAlarm.createHour(45, 0, doHourlyLog);
+#else
+  timerAlarm.createHour(59, 0, doHourlyLog);
+#endif
+  timerAlarm.createDay(23,58, 0, doDailyLog);
+  timerAlarm.createWeek(timerAlarm.dw_Sunday, 23, 59, 0, doWeeklyLog);
+  timerAlarm.createMonth(31, 0, 0, 0, doMonthlyLog);
+}
+
+void checkCounters(){
+  // see logging.ino
+      if (timeIsSet && !TimeTriggersSet) {
+           initTimers();
+           TimeTriggersSet= true;
+          }
+ 
+       if (coldbootE && gotPowerReading) {
+          
+        if (needToInitLogVars){
+          doInitLogVars();
+        }
+          resetEnergyDaycount();
+          resetEnergyMonthcount();
+        }
+       if (coldbootG && gotGasReading) {
+          if (needToInitLogVarsGas){
+            doInitLogVarsGas();
+          }
+          resetGasCount();
+       }
+
+ //  if (!CHK_FLAG(logFlags, hourFlag) && ( minute() == 10 || minute() == 20 || minute() == 30 || minute() == 40 || minute() == 50) ) doHourlyLog();
+
+  // if (!minFlag && second() > 55) doMinutelyLog();
+   
+  // if (!hourFlag && minute() > 58) doHourlyLog();
+  // if (!dayFlag && (hour() == 23) && (minute() == 59)) doDailyLog();
+  // if (!weekFlag && weekday() == 1 && hour() == 23 && minute() == 59) doWeeklyLog(); // day of the week (1-7), Sunday is day 1
+  // if (!monthFlag && day() == 28 && month() == 2 && hour() == 23 && minute() == 59 && year() != 2024 && year() != 2028 ) doMonthlyLog();
+ //  if (!monthFlag && day() == 29 && month() == 2 && hour() == 23 && minute() == 59 ) doMonthlyLog(); // schrikkeljaren
+ //  if (!monthFlag && day() == 30 && (month() == 4 || month() == 6 || month()== 9 || month() == 11) && hour() == 23 && minute() == 59 ) doMonthlyLog();
+   if (!monthFlag && day() == 31 && (month() == 1 || month() == 3 || month()== 5 || month() == 7 || month() == 8 || month() == 10 || month() == 12) && hour() == 23 && minute() == 59 ) doMonthlyLog();
+   if (!monthFlag && day() == 31 && month() == 12 && hour() == 23 && minute() == 59 ) doYearlyLog();
+}
+
+void resetFlags(){
+
+  if (minFlag && (second() > 5) && (second() < 10)) minFlag = false;
+  if (checkMinute >= 59) checkMinute = 0; 
+  if (hourFlag &&  ((minute() > (checkMinute + 2)) && (minute() < (checkMinute + 4)))) hourFlag=false;// if (hourFlag &&  (minute() > 24)) hourFlag = false; // CLR_FLAG(logFlags, hourFlag);
+  if (dayFlag && (day() > 0)) dayFlag = false;
+  if (weekFlag &&  (weekday() > 1)) weekFlag = false;
+  if (monthFlag &&  (day() > 0)) monthFlag=false;
+  if (yearFlag &&  (day() == 1) && month() == 1) yearFlag=false;
+}
+
+void doWatchDogs(){
+  char payload[60];
+  if (ESP.getFreeHeap() < 2000) ESP.reset(); // watchdog, in case we still have a memery leak
+  if (millis() - LastSample > 300000) {
+    Serial.flush();
+        sprintf(payload, "No data in 300 sec, restarting monitoring: ", timestampkaal());
+    if (MQTT_debug) send_mqtt_message("p1wifi/logging", payload);
+    hourFlag = false;
+    nextUpdateTime = millis() + 10000;
+    OEstate = false;
+    state = WAITING;
+    monitoring=true;
+  }
+  if (softAp && (millis() - APtimer  > 600000) ) ESP.reset(); // we have been in AP mode for 600 sec. 
+ // if (minute() == 23) hourFlag = false; // clear all flags at a safe timeslot. 
+ // if (minute() == 43) hourFlag = false; // clear all flags at a safe timeslot.
+ // if (!monitoring && (minute() == 16 || minute() == 31 || minute() == 46)  ) monitoring = true; // kludge to make sure we keep monitoring
+
 }

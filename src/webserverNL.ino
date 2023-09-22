@@ -10,7 +10,7 @@
 
 
 void handleSetup(){
-  if (millis() > 60000) {            // if we did not get here directly, check credentials
+  if (millis() > 120000) {            // if we did not get here directly, check credentials
      debugln("indirect call");
     if (strcmp(server.arg("adminPassword").c_str(), config_data.adminPassword) != 0) {  // passwords don't match
       debugln("Error: handlesetup entered with wrong password");
@@ -103,6 +103,10 @@ void handleSetup(){
 }
 
 void handleP1(){
+            debug2("handleP1: actualElectricityPowerRet: ");
+          debug2ln(actualElectricityPowerRet);
+                      debug2("handleP1: actualElectricityPowerDeli: ");
+          debug2ln(actualElectricityPowerDeli);
   debugln("handleP1");
   String str = "";
   String eenheid, eenheid2, eenheid3;
@@ -149,17 +153,22 @@ void handleP1(){
   str += atof(electricityReturnedTariff2) - atof(log_data.dayR2);
   str += eenheid;
   str += "</div></p>";
+
+            debug2("buildpage: actualElectricityPowerRet: ");
+          debug2ln(actualElectricityPowerRet);
+                      debug2("handleP1: actualElectricityPowerDeli: ");
+          debug2ln(actualElectricityPowerDeli);
+          
+   str += "<p><div class='row'><b>Actueel verbruik</b><input type='text' class='form-control c6' value='";
+  str += actualElectricityPowerDeli;
+  str += eenheid2;
+  
+  str += "<p><div class='row'><b>Actueel retour</b><input type='text' class='form-control c6' value='";
+  str += actualElectricityPowerRet;
+  str += eenheid2;
   
 
-  str += "<p><div class='row'><b>Actueel verbruik</b><input type='text' class='form-control c6' value='";
-  str += actualElectricityPowerDelivered;
-  str += eenheid2;
-
-
- str += "<p><div class='row'><b>Actuele teruglevering</b><input type='text' class='form-control c6' value='";
-  str += actualElectricityPowerReturned;
-  str += eenheid2;
-
+  
 if (P1prot == 5){
   str += "<p><div class='row'><div class='column3'><b>Voltage: L1</b><input type='text' class='form-control c6' value='";
   str += instantaneousVoltageL1;
