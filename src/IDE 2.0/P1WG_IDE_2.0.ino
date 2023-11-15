@@ -145,7 +145,7 @@
 
 bool zapfiles = false; 
 
-String version = "1.1d – NL";
+String version = "1.1e – NL";
 #define NEDERLANDS
 #define HOSTNAME "p1meter"
 #define FSystem 1 // 0= LittleFS 1 = SPIFFS  
@@ -477,6 +477,10 @@ void readTelegram() {
     memset(telegram, 0, sizeof(telegram));
     while (Serial.available()) {
       int len = Serial.readBytesUntil('\n', telegram, MAXLINELENGTH);
+      if (len > (MAXLINELENGTH - 25)) { // approaching end of buffer. Something is wrong. Cancel current telegram
+      resetInput();
+      return;
+      }
       telegram[len] = '\n';
       telegram[len+1] = 0;
       yield();
