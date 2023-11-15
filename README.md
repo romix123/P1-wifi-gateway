@@ -38,9 +38,15 @@
    
    
      
-   versie: 1.1adc 
-   datum:  12 Feb 2023
-   auteur: Ronald Leenes
+ @file P1WG_IDE_2.ino
+ @author Ronald Leenes
+ @date 22.09.2023
+ @version 1.1e 
+   
+	1.1.e: fixed passwd length related issues (adminpass, SSID, MQTT), worked on wifi persistance, 
+			disabled wifi powermanagment, removed multilingual support for now
+    1.1d: moved codebase to IDE 2.2, small fixes, added webdebug 
+   
    
    1.1adc: implemented extensive logging
    			updated Swedish version to align with Dutch version (German and French versions lack security features on setup/update)
@@ -102,7 +108,5 @@
    functions.ino
    graph.ino
    webserver.ino
-   webserverDE.ino 
-   webserverSE.ino
    webserverNL.ino
    wifi.ino 
