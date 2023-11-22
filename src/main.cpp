@@ -142,6 +142,10 @@
 
 // to do: implement reboot when 5 mins in setup-window
 
+#include "Arduino.h"
+#include "prototypes.h"
+void readTelegram();
+
 
 bool zapfiles = false; 
 
@@ -220,9 +224,9 @@ const char* host = "P1wifi";
 
 #include <TZ.h>
 #define MYTZ TZ_Europe_Amsterdam
-#include <TimeLib.h>
+#include "TimeLib.h"
 #include <coredecls.h> // settimeofday_cb()
-#include <MyAlarm.h>
+#include "MyAlarm.h"
 
 
 #include <ESP8266WiFi.h>
@@ -273,7 +277,7 @@ WiFiEventHandler wifiDisconnectHandler;
 #include <ESP8266mDNS.h>
 
 // mqtt stuff . https://github.com/ict-one-nl/P1-Meter-ESP8266-MQTT/blob/master/P1Meter/P1Meter.ino
-#include <PubSubClient.h>
+#include "PubSubClient.h"
 WiFiClient espClient;                   // * Initiate WIFI client
 PubSubClient mqtt_client(espClient);    // * Initiate MQTT client
 
@@ -478,7 +482,7 @@ void readTelegram() {
     while (Serial.available()) {
       int len = Serial.readBytesUntil('\n', telegram, MAXLINELENGTH);
       if (len > (MAXLINELENGTH - 25)) { // approaching end of buffer. Something is wrong. Cancel current telegram
-      resetInput();
+      //resetInput();
       return;
       }
       telegram[len] = '\n';
@@ -563,4 +567,17 @@ if (millis() > EverSoOften){
     EverSoOften = millis() + 22000;
   }
   timerAlarm.update();
-}   
+}
+
+#include "p1debug.h"
+#include "decoder.h"
+#include "functions.h"
+#include "graph.h"
+#include "JSON.h"
+#include "logging.h"
+#include "MQTT.h"
+#include "newMQTT.h"
+#include "TELNET.h"
+#include "webserver.h"
+#include "webserverNL.h"
+#include "wifi.h"
