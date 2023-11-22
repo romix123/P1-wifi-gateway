@@ -1,4 +1,4 @@
- /*
+/*
  * Copyright (c) 2023 Ronald Leenes
  *
  * This program is free software: you can redistribute it and/or modify
@@ -20,11 +20,10 @@
  * @file src.ino
  * @author Ronald Leenes
  * @date 22.09.2023
- * @version 1.1e 
+ * @version 1.1e
  *
- * @brief This file is only needed for the Arduino IDE. The actual code is loaded from main.cpp
+ * @brief This file is only needed for the Arduino IDE. The actual code is
+ * loaded from main.cpp
  *
  * @see http://esp8266thingies.nl
  */
- 
-

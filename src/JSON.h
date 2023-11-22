@@ -21,7 +21,7 @@
  * @author Ronald Leenes
  * @date 28.12.2022
  *
- * @brief This file contains the JSON functions for communicating with Domoticz 
+ * @brief This file contains the JSON functions for communicating with Domoticz
  *
  * @see http://esp8266thingies.nl
  */
@@ -32,26 +32,31 @@ void doJSON() {
   UpdateGas();
 }
 
-bool DomoticzJson(char* idx, int nValue, char* sValue) {
+bool DomoticzJson(char *idx, int nValue, char *sValue) {
   WiFiClient client;
   HTTPClient http;
   bool retVal = false;
   char url[255];
   if (config_data.domoticzIP[0] != '-') {
-    sprintf(url, "http://%s:%s/json.htm?type=command&param=udevice&idx=%s&nvalue=%d&svalue=%s", config_data.domoticzIP, config_data.domoticzPort, idx, nValue, sValue);
+    sprintf(url,
+            "http://%s:%s/"
+            "json.htm?type=command&param=udevice&idx=%s&nvalue=%d&svalue=%s",
+            config_data.domoticzIP, config_data.domoticzPort, idx, nValue,
+            sValue);
     // sprintf(debugM, "[HTTP] GET... URL: %s\n", url);
-   // debug(">>JSON: ");
-   // debugln(url);
-    http.begin(client, url);  //HTTP
+    // debug(">>JSON: ");
+    // debugln(url);
+    http.begin(client, url); // HTTP
     delay(200);
     int httpCode = http.GET();
     // httpCode will be negative on error
-    if (httpCode > 0) {  // HTTP header has been sent and Server response header has been handled
-     // debugff("[HTTP] GET... code: %d\n", httpCode);
+    if (httpCode > 0) { // HTTP header has been sent and Server response header
+                        // has been handled
+                        // debugff("[HTTP] GET... code: %d\n", httpCode);
       // file found at server
       if (httpCode == HTTP_CODE_OK) {
         debugln("return httpCode == HTTP_CODE_OK");
-       // String payload = http.getString();
+        // String payload = http.getString();
         retVal = true;
         entitledToSleep = true;
         LastJReport = timestampkaal();
@@ -61,27 +66,34 @@ bool DomoticzJson(char* idx, int nValue, char* sValue) {
     }
     http.end();
     return retVal;
-  }  // we just return if there is no IP to report to.
+  } // we just return if there is no IP to report to.
   return true;
 }
 
-void UpdateGas() {  
-  // debug(gasReceived5min);   
+void UpdateGas() {
+  // debug(gasReceived5min);
   // debug(gasDomoticz);
-  // debugln(prevGAS);                                    //sends over the gas setting to server(s)
- // if (strncmp(gasReceived5min, prevGAS, sizeof(gasReceived5min)) != 0) {  // if we have a new value, report
-   if (strncmp(gasDomoticz, prevGAS, sizeof(gasDomoticz)) != 0) {  // if we have a new value, report
-   
-    DomoticzJson(config_data.domoticzGasIdx, 0, gasDomoticz);             // gasReceived5min);
+  // debugln(prevGAS);                                    //sends over the gas
+  // setting to server(s)
+  // if (strncmp(gasReceived5min, prevGAS, sizeof(gasReceived5min)) != 0) {  //
+  // if we have a new value, report
+  if (strncmp(gasDomoticz, prevGAS, sizeof(gasDomoticz)) !=
+      0) { // if we have a new value, report
+
+    DomoticzJson(config_data.domoticzGasIdx, 0,
+                 gasDomoticz); // gasReceived5min);
     debug(">> UpdateGas(): ");
     debugln(gasDomoticz);
-    strcpy(prevGAS, gasDomoticz);  // retain current value for future reference
+    strcpy(prevGAS, gasDomoticz); // retain current value for future reference
   }
 }
 
 void UpdateElectricity() {
   char sValue[300];
-  sprintf(sValue, "%s;%s;%s;%s;%s;%s", electricityUsedTariff1, electricityUsedTariff2, electricityReturnedTariff1, electricityReturnedTariff2, actualElectricityPowerDeli, actualElectricityPowerRet);
+  sprintf(sValue, "%s;%s;%s;%s;%s;%s", electricityUsedTariff1,
+          electricityUsedTariff2, electricityReturnedTariff1,
+          electricityReturnedTariff2, actualElectricityPowerDeli,
+          actualElectricityPowerRet);
   debug(">> UpdateElectricity(): ");
   debugln(sValue);
   DomoticzJson(config_data.domoticzEnergyIdx, 0, sValue);

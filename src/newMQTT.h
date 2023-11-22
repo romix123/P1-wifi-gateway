@@ -19,7 +19,8 @@
 // //     String clientId = "P1 Smart Meter – ";
 // //     clientId += String(random(0xffff), HEX);
 // //     // Attempt to connect
-// //     if (mqtt_client.connect(HOSTNAME, config_data.mqttUser, config_data.mqttPass)){
+// //     if (mqtt_client.connect(HOSTNAME, config_data.mqttUser,
+// config_data.mqttPass)){
 // //       debugln("   connected to broker");
 // //       statusMsg += "   connected to broker";
 // //       // Once connected, publish an announcement...
@@ -33,14 +34,12 @@
 // //       debug(mqtt_client.state());
 // //       debugln(" trying again later (non blocking)");
 // //       statusMsg += " trying again later (non blocking)";
-// //       nextMQTTreconnectAttempt = millis() + 15000; // try again in 15 seconds
+// //       nextMQTTreconnectAttempt = millis() + 15000; // try again in 15
+// seconds
 // //       MqttConnected = false;
 // //     }
-// //   } 
+// //   }
 // // }
-
-
-
 
 // // void callback(char* topic, byte* payload, unsigned int length) {
 // //   debug("Message arrived [");
@@ -59,9 +58,9 @@
 //     debugln("Attempting MQTT connection");
 //     // Attempt to connect
 //     boolean ret;
-  
-//     ret = mqtt_client.connect(HOSTNAME, config_data.mqttUser, config_data.mqttPass);
-//     if (ret)
+
+//     ret = mqtt_client.connect(HOSTNAME, config_data.mqttUser,
+//     config_data.mqttPass); if (ret)
 //     {
 //       debugln("Connected to MQTT");
 //       MqttConnected = true;

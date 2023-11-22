@@ -21,53 +21,53 @@
  * @author Ronald Leenes
  * @date 28.12.2022
  *
- * @brief This file contains debug functions 
+ * @brief This file contains debug functions
  *
  * @see http://esp8266thingies.nl
  */
- 
+
 void readVoltage() { // read internal VCC
   volts = ESP.getVcc();
   debugff("The internal VCC reads %1.2f volts\n", volts / 1000);
 }
 
-void PrintConfigData(){
+void PrintConfigData() {
   debug("dataSet : ");
-    debugln(config_data.dataSet);
+  debugln(config_data.dataSet);
   debug("Admin password : ");
-    debugln(config_data.adminPassword);
+  debugln(config_data.adminPassword);
   debug("SSID : ");
-    debugln(config_data.ssid);
+  debugln(config_data.ssid);
   debug("password : ");
-    debugln(config_data.password);
+  debugln(config_data.password);
   debug("DomoticxIP : ");
-    debugln(config_data.domoticzIP);
+  debugln(config_data.domoticzIP);
   debug("DomoticzPort : ");
-    debugln(config_data.domoticzPort);
+  debugln(config_data.domoticzPort);
   debug("domotixzGasIdx : ");
-   debugln(config_data.domoticzGasIdx);
+  debugln(config_data.domoticzGasIdx);
   debug("domotixzEnergyIdx : ");
-   debugln(config_data.domoticzEnergyIdx);
+  debugln(config_data.domoticzEnergyIdx);
 
   debug("mqttIP : ");
-    debugln(config_data.mqttIP);
+  debugln(config_data.mqttIP);
   debug("mqttPort : ");
-    debugln(config_data.mqttPort);
+  debugln(config_data.mqttPort);
   debug("mqttUser : ");
-    debugln(config_data.mqttUser);
+  debugln(config_data.mqttUser);
   debug("mqttPass : ");
-    debugln(config_data.mqttPass);
+  debugln(config_data.mqttPass);
   debug("mqttTopic : ");
-    debugln(config_data.mqttTopic);
+  debugln(config_data.mqttTopic);
 
   debug("interval : ");
-    debugln(config_data.interval);
+  debugln(config_data.interval);
   debug("json : ");
-    debugln(config_data.domo);
+  debugln(config_data.domo);
   debug("mqtt : ");
-    debugln(config_data.mqtt);
+  debugln(config_data.mqtt);
   debug("watt : ");
-      debugln(config_data.watt);
+  debugln(config_data.watt);
   debug("telnet : ");
-      debugln(config_data.telnet);
+  debugln(config_data.telnet);
 }
