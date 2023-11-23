@@ -205,12 +205,12 @@ void appendFile(const char *path, const char *message) {
     debug("Message appended: ");
     debugln(message);
     sprintf(payload, "Append to %s with %s succeeded: %s", path, message,
-            timestampkaal());
+            string2char(timestampkaal()));
     send_mqtt_message("p1wifi/logging", payload);
   } else {
     debugln("Append failed");
     sprintf(payload, "Append to %s with %s failed: %s", path, message,
-            timestampkaal());
+            string2char(timestampkaal()));
     send_mqtt_message("p1wifi/logging", payload);
   }
   file.flush();
@@ -393,7 +393,7 @@ void zapConfig() {
 
 void formatFS() {
   char payload[50];
-  sprintf(payload, "Formatting filesystem at %s", timestampkaal());
+  sprintf(payload, "Formatting filesystem at %s", string2char(timestampkaal()));
   if (MQTT_debug)
     send_mqtt_message("p1wifi/logging", payload);
 
@@ -402,7 +402,8 @@ void formatFS() {
   if (!FST.begin()) {
     debugln("FST mount failed AGAIN");
   } else {
-    sprintf(payload, "Filesystem formatted at %s", timestampkaal());
+    sprintf(payload, "Filesystem formatted at %s",
+            string2char(timestampkaal()));
     if (MQTT_debug)
       send_mqtt_message("p1wifi/logging", payload);
   }
@@ -605,8 +606,8 @@ void doWatchDogs() {
     ESP.reset(); // watchdog, in case we still have a memery leak
   if (millis() - LastSample > 300000) {
     Serial.flush();
-    sprintf(payload,
-            "No data in 300 sec, restarting monitoring: ", timestampkaal());
+    sprintf(payload, "No data in 300 sec, restarting monitoring: %s",
+            string2char(timestampkaal()));
     if (MQTT_debug)
       send_mqtt_message("p1wifi/logging", payload);
     hourFlag = false;
@@ -643,4 +644,12 @@ uint32_t calculateCRC32(const uint8_t *data, size_t length) {
   }
 
   return crc;
+}
+
+char *string2char(String str) {
+  if (str.length() != 0) {
+    char *p = const_cast<char *>(str.c_str());
+    return p;
+  }
+  return (char *)"";
 }

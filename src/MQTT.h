@@ -155,7 +155,7 @@ void callback(char *topic, byte *payload, unsigned int length) {
   debug("Message arrived [");
   debug(topic);
   debug("] ");
-  for (int i = 0; i < length; i++) {
+  for (unsigned int i = 0; i < length; i++) {
     debug((char)payload[i]);
   }
   debugln();
@@ -189,7 +189,6 @@ void send_metric(String name, float metric) // added *long
 }
 
 void mqtt_send_metric(String name, char *metric) {
-  char output[100];
   mtopic = String(config_data.mqttTopic) + "/" + name;
   send_mqtt_message(mtopic.c_str(), metric);
 }

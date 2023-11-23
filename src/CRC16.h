@@ -1,12 +1,6 @@
 #ifndef CRC16_H
 #define CRC16_H
 
-#if defined(ARDUINO) && ARDUINO >= 100
-#include "Arduino.h"
-#else
-#include "WProgram.h"
-#endif
-
 unsigned int CRC16(unsigned int crc, unsigned char *buf, int len) {
   for (int pos = 0; pos < len; pos++) {
     crc ^= (unsigned int)buf[pos]; // XOR byte into least sig. byte of crc
