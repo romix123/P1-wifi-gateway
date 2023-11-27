@@ -488,7 +488,6 @@ void resetGasCount() {
 
 void DirListing() {
   String str;
-  char buffer[55];
   str += F("<html>\n<head>\n");
   str += F("<title>Slimme meter</title>");
   str += F("</head><body>\n");

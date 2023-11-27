@@ -9,19 +9,11 @@ void readVoltage();
 void PrintConfigData();
 
 // decoder.h
-long getValidVal(long valNew, long valOld, long maxDiffer);
-void getValue(char *theValue, char *buffer, int maxlen, char startchar,
-              char endchar);
-void getGasValue(char *theValue, char *buffer, int maxlen, char startchar,
-                 char endchar);
-void getGas22Value(char *theValue, char *buffer, int maxlen, char startchar,
-                   char endchar);
-void getDomoticzGasValue(char *theValue, char *buffer, int maxlen,
-                         char startchar, char endchar);
-void getStr(char *theValue, char *buffer, int maxlen, char startchar,
-            char endchar);
-void getStr12(char *theValue, char *buffer, int maxlen, char startchar);
-bool decodeTelegram(int len);
+void decodeLine(int len);
+String readUntilStar(int start, int end);
+String readBetweenDoubleParenthesis(int start, int end);
+String readFirstParenthesisVal(int start, int end);
+void OBISparser(int len);
 
 // functions.h
 void alignToTelegram();
@@ -29,8 +21,7 @@ void blink(int t);
 void RTS_on();
 void RTS_off();
 bool isNumber(char *res, int len);
-int FindCharInArrayRev(char array[], char c, int len);
-int FindCharInArrayRev2(char array[], char c, int len);
+int FindCharInArray(char array[], char c, int len);
 void settime();
 String timestamp();
 String timestampkaal();
@@ -126,7 +117,7 @@ void handleSetup();
 void handleP1();
 void handleRawData();
 
-// wifi.h
+// wifi_functions.h
 int getQuality();
 void setRFPower();
 void modemSleep();

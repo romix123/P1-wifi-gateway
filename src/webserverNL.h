@@ -1,7 +1,7 @@
 #ifdef NEDERLANDS
 
 void handleSetup() {
-  if (millis() > 120000) { // if we did not get here directly, check credentials
+  if (millis() > 300000) { // if we did not get here 5 mins after startup, check credentials
     debugln("indirect call");
     if (strcmp(server.arg("adminPassword").c_str(),
                config_data.adminPassword) != 0) { // passwords don't match
@@ -146,8 +146,6 @@ void handleP1() {
   else
     eenheid2 = " W'></div></p>";
 
-  char str2[10];
-  int temp;
   addHead(str, 60);
   addIntro(str);
 

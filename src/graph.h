@@ -14,13 +14,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
- */
 
-/**
+
+
  * @file graph.ino
  * @author Ronald Leenes
- * @date 28.12.2022
- * @version 1.0u
+
  *
  * @brief This file contains the graphing functions
  *

@@ -80,17 +80,9 @@ bool isNumber(char *res, int len) {
   return true;
 }
 
-int FindCharInArrayRev(char array[], char c, int len) {
-  for (int i = len - 1; i >= 0; i--) {
+int FindCharInArray(char array[], char c, int len) {
+  for (int i = 0; i < len; i++) {
     if (array[i] == c) {
-      return i;
-    }
-  }
-  return -1;
-}
-int FindCharInArrayRev2(char array[], char c, int len) {
-  for (int i = len - 1; i >= 0; i--) {
-    if (array[i] == c && array[i + 1] == '(') {
       return i;
     }
   }
@@ -416,8 +408,11 @@ void formatFS() {
   }
 }
 
-String totalXY(const char *type, String period) {
+String totalXY(const char *typeC, String period) {
   char value[12];
+  String type;
+  type = typeC[0];
+  type += typeC[1];
   if (period == "day") {
     if (type == "E1")
       return (String)(atof(electricityUsedTariff1) - atof(log_data.dayE1));
@@ -439,7 +434,7 @@ String totalXY(const char *type, String period) {
               6, 2, value);
       return (String)value;
     }
-    if (type == "G")
+    if (type == "G0")
       return (String)(atof(gasReceived5min) - atof(log_data.dayG));
 
   } else if (period == "week") {
@@ -463,7 +458,7 @@ String totalXY(const char *type, String period) {
               6, 2, value);
       return (String)value;
     }
-    if (type == "G")
+    if (type == "G0")
       return (String)(atof(gasReceived5min) - atof(log_data.weekG));
   } else if (period == "month") {
     if (type == "E1")
@@ -488,7 +483,7 @@ String totalXY(const char *type, String period) {
               6, 2, value);
       return (String)value;
     }
-    if (type == "G")
+    if (type == "G0")
       return (String)(atof(gasReceived5min) - atof(log_data.monthG));
   } else if (period == "year") {
     return "Year not implemented yet";
@@ -497,20 +492,30 @@ String totalXY(const char *type, String period) {
 }
 
 void identifyMeter() {
-
+ if (!meternameSet){
   if (meterId.indexOf("ISK5\\2M550E-1011") != -1)
     meterName = "ISKRA AM550e-1011";
+    else
   if (meterId.indexOf("KFM5KAIFA-METER") != -1)
     meterName = "Kaifa  (MA105 of MA304)";
+    else
   if (meterId.indexOf("XMX5LGBBFG10") != -1)
     meterName = "Landis + Gyr E350";
+    else
   if (meterId.indexOf("XMX5LG") != -1)
     meterName = "Landis + Gyr";
-
+    else
   if (meterId.indexOf("Ene5\\T210-D") != -1)
     meterName = "Sagemcom T210-D";
-
+    else
+  if (meterId.indexOf("FLU5") !=-1) {
+    meterName = "Siconia";
+    countryCode = 32; // Belgium
+  } else
+  meterName = String(meterId);
+    meternameSet = true;
   debugln(meterName);
+  }
 }
 
 void initTimers() {

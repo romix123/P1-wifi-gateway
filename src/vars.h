@@ -36,6 +36,7 @@ char P1version[8];
 int P1prot; // 4 or 5 based on P1version 1-3:0.2.8
 char P1timestamp[30] = "\0";
 char equipmentId[100] = "\0";
+char equipmentId2[100] = "\0";
 char electricityUsedTariff1[12];
 char electricityUsedTariff2[12];
 char electricityReturnedTariff1[12];
@@ -188,8 +189,7 @@ long last10 = 0;
 unsigned long time_to_wake = 0;  // calculated wakeup time
 unsigned long time_to_sleep = 0; // calculated sleep time
 unsigned long lastSleeptime = 0;
-boolean entitledToSleep =
-    false; // aangezien slaapinterval en meetinterval niet synchroon lopen,
+boolean entitledToSleep =    false; // aangezien slaapinterval en meetinterval niet synchroon lopen,
            // moeten we na ontwaken eerst een telegram inlezen en afleveren
            // alvorens ModemSleep mag worden aangeroepen.
 bool monitoring = false; // are we permitted to collect P1 data? Not if in setup
@@ -203,8 +203,10 @@ char telegram[MAXLINELENGTH]; // holds a single line of the datagram
 String datagram;              // holds entire datagram for raw output
 String meterId = "";
 String meterName = "";
+bool meternameSet = false; // do we have a metername already?
 
 bool datagramValid = false; //
+int dataFailureCount = 0; //counter for CRC failures
 bool dataEnd = false; // signals that we have found the end char in the data (!)
 unsigned int currentCRC = 0; // the CRC v alue of the datagram
 bool gas22Flag = false; // flag for parsing second gas line on dsmr2.2 meters
@@ -226,6 +228,7 @@ bool gotPowerReading = false;
 bool gotGasReading = false;
 bool needToInitLogVars = false;
 bool needToInitLogVarsGas = false;
+int countryCode = 31;
 
 #define DISABLED 0
 #define WAITING 1
@@ -233,6 +236,7 @@ bool needToInitLogVarsGas = false;
 #define CHECKSUM 3
 #define DONE 4
 #define FAILURE 5
+#define FAULT 6
 int state = DISABLED;
 
 #define CONFIG 0 // getting basic Meter data to select correct parse rules

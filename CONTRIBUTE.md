@@ -17,7 +17,7 @@ Within platformIO all the configuration is stored within `platform.ini`. Therefo
  - CLion: Hit the `build` button
  - Commandline: `platformio run --environment espmxdevkit`
 
-The build is places in .pio/build/espmxdevkit/firmware.bin 
+The build is placed in .pio/build/espmxdevkit/firmware.bin
 
 ### Arduino 2
 
@@ -45,10 +45,11 @@ On the left panel in the "Board manager" install
 Search for `DOIT ESP-Mx DevKit (ESP8285)`
 
 ### Build
-Click `Sketch > verify/compile`. The binary is places in the temporary folder
+Click `Sketch > verify/compile`. The binary is placed in the temporary folder
 
 - Linux on `/tmp/arduino/sketches/`
-- Mac on ???
+- On a Mac use the 'Export compile binary' option in the Sketch menu.
+ 	the binary will be placed in the build directory in your sketch folder
 - Windows on ???
 
 # Test

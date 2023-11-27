@@ -14,20 +14,14 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
- */
 
-/**
  * @file P1WG_IDE_2.ino
  * @author Ronald Leenes
- * @date 22.09.2023
- * @version 1.1e
  *
  * @brief This file contains the main file for the P1 wifi gatewway
  *
  * @see http://esp8266thingies.nl
- */
 
-/*
  * P1 wifi gateway 2022
  *
  * Deze software brengt verschillende componenten bij elkaar in een handzaam
@@ -80,10 +74,13 @@ energieleverancier wordt betaald, maar toch). Alle kleine
  *
  *
  *
- *  versie: 1.1e
- *  datum:  11 Nov 2023
+ *  versie: 1.2
+ *  datum:  26 Nov 2023
  *  auteur: Ronald Leenes
  *
+
+    1.2: serious overhaul of decoder routine.
+
     1.1.e: fixed passwd length related issues (adminpass, SSID, MQTT), worked on
 wifi persistance, disabled wifi powermanagment
  *  1.1d: moved codebase to IDE 2.2, small fixes, added webdebug
@@ -149,25 +146,9 @@ power outages, power drops
  *  Generic ESP8285 module
 *   Flash Size: 2mb (FS: 128Kb, OTA: –960Kb)
 *
-*   needed files:
-*   this one (obv),
-*   vars.h            in the process of moving all vars here
-*   lang.h
-*   CRC16.h
-*   JSON.ino
-*   MQTT.ino
-*   TELNET.ino
-*   debug.ino
-*   decoder.ino
-*   functions.ino
-*   graph.ino
-*   webserver.ino
-*   webserverNL.ino
-*   wifi.ino
-*
+
 */
 
-// to do: implement reboot when 5 mins in setup-window
 
 #include "Arduino.h"
 #include "prototypes.h"
@@ -175,7 +156,7 @@ void readTelegram();
 
 bool zapfiles = false;
 
-String version = "1.1e – NL";
+String version = "1.2 – NL";
 #define NEDERLANDS
 #define HOSTNAME "p1meter"
 #define FSystem 1 // 0= LittleFS 1 = SPIFFS
@@ -300,6 +281,7 @@ WiFiState WiFistate;
   ==============================================================================================================
 */
 #include <EEPROM.h>
+
 #include <ESP8266WebServer.h>
 ESP8266WebServer server(80);
 
@@ -518,9 +500,6 @@ void setup() {
 
     debugln("All systems are go...");
     alignToTelegram();
-    state =
-        WAITING; // signal that we are waiting for a valid start char (aka /)
-    devicestate = CONFIG;
     nextUpdateTime = nextMQTTreconnectAttempt = EverSoOften = TenSecBeat =
         millis();
 
@@ -530,30 +509,58 @@ void setup() {
     datagram.reserve(1500);
     statusMsg.reserve(200);
   } // WL connected
+  state = WAITING; // signal that we are waiting for a valid start char (aka /)
+
 }
+
 
 void readTelegram() {
   if (Serial.available()) {
     memset(telegram, 0, sizeof(telegram));
     while (Serial.available()) {
       int len = Serial.readBytesUntil('\n', telegram, MAXLINELENGTH);
-      if (len > (MAXLINELENGTH - 25)) { // approaching end of buffer. Something
-                                        // is wrong. Cancel current telegram
-        // resetInput();
-        return;
-      }
       telegram[len] = '\n';
-      telegram[len + 1] = 0;
-      yield();
-      ToggleLED if (decodeTelegram(len + 1)) { // test for valid CRC
-        debug2ln(datagram);
-        break;
-      }
-      else { // we don't have valid data, but still may need to report to Domo
-        if (dataEnd && !CRCcheckEnabled) { // this is used for dsmr 2.2 meters
-          // yield(); //state = WAITING;
+      telegram[len+1] = 0;
+      ToggleLED
+
+      debug("STATE: ");
+      debug(state);
+      debug(" >> ");
+      for (int i = 0; i <len; i++) debug(telegram[i]);
+
+      decodeLine(len+1);
+
+      debug(" << - ");
+      debugln(state);
+
+      switch (state){
+        case DISABLED: // should not occur
           break;
-        }
+        case WAITING:
+          currentCRC = 0;
+          break;
+        case READING:
+          break;
+        case CHECKSUM:
+          break;
+        case DONE:
+          Serial.flush();
+          RTS_off();
+          break;
+        case FAILURE:
+          debugln("kicked out of decode loop (invalid CRC or no CRC!)"); // if there is no checksum, (state=Failure && dataEnd)
+          RTS_off();
+          nextUpdateTime = millis() + interval; // set trigger for next round
+          datagram = "";   // empty datagram and
+          telegram[0] = 0; // telegram (probably uncessesary beacuse Serial.ReadBytesUntil will clear telegram buffer)
+          break;
+        case FAULT:
+          debugln("FAULT");
+          statusMsg = ("FAULT in reading data");
+          state = WAITING;
+          break;
+        default:
+          break;
       }
     }
     LEDoff
@@ -564,6 +571,7 @@ void loop() {
   if ((millis() > nextUpdateTime)) { // && monitoring){
     if (!OEstate) {                  // OE is disabled  == false
       Serial.flush();
+      state = WAITING;
       RTS_on();
     }
   } // update window
@@ -595,7 +603,6 @@ void loop() {
       TelnetReporter();
     if (MQTT_debug)
       MQTT_Debug();
-
     datagramValid = false; // reset
     state = WAITING;
   }
@@ -630,6 +637,11 @@ void loop() {
     doWatchDogs();
     EverSoOften = millis() + 22000;
   }
+
+  if ((state == FAILURE) && (dataFailureCount == 10)){ // last resort if we get keeping kicked out by bad data
+    mqtt_client.disconnect();
+    ESP.restart();
+  }
   timerAlarm.update();
 }
 
@@ -644,4 +656,4 @@ void loop() {
 #include "p1debug.h"
 #include "webserver.h"
 #include "webserverNL.h"
-#include "wifi.h"
+#include "wifi_functions.h"
