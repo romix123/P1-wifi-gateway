@@ -29,7 +29,7 @@
 
 void alignToTelegram(){
   // make sure we don't drop into the middle of a telegram on boot. Read whatever is in the stream until we find the end char !
-  // then read until EOL and flsuh serial, return to loop to pick up the first complete telegram.
+  // then read until EOL and flush serial, return to loop to pick up the first complete telegram.
   
   int inByte = 0;         // incoming serial byte
   char buf[10];
@@ -41,6 +41,8 @@ void alignToTelegram(){
       Serial.readBytesUntil('\n', buf, 9);
       Serial.flush();      
   }
+  datagram = "";
+  state = WAITING;
 }
 
 void blink(int t){
@@ -68,8 +70,15 @@ void RTS_off(){           // switch off Data Request
    debug(millis());
    debug(" nextUpdateTime: ");
    debugln(nextUpdateTime);
-   
 }
+
+// void resetInput(){
+//     Serial.flush();
+//     delay(10);
+//     RTS_off();
+//     datagramValid = false;
+//     state = WAITING;
+// }
 
 bool isNumber(char* res, int len) {
   for (int i = 0; i < len; i++) {
@@ -81,17 +90,9 @@ bool isNumber(char* res, int len) {
 }
 
 
-int FindCharInArrayRev(char array[], char c, int len) {
-  for (int i = len - 1; i >= 0; i--) {
+int FindCharInArray(char array[], char c, int len) {
+  for (int i = 0; i < len; i++) {
     if (array[i] == c) {
-      return i;
-    }
-  }
-  return -1;
-}
-int FindCharInArrayRev2(char array[], char c, int len) {
-  for (int i = len - 1; i >= 0; i--) {
-    if (array[i] == c && array[i+1] == '(') {
       return i;
     }
   }
@@ -472,7 +473,10 @@ void identifyMeter(){
   if (meterId.indexOf("XMX5LG") != -1) meterName = "Landis + Gyr";
   
   if (meterId.indexOf("Ene5\\T210-D") != -1) meterName = "Sagemcom T210-D";
-
+  if (meterId.indexOf("FLU5") !=-1) {
+    meterName = "Siconia";
+    countryCode = 32; // Belgium
+  }
   debugln(meterName);
 }
 
@@ -547,7 +551,7 @@ void doWatchDogs(){
     hourFlag = false;
     nextUpdateTime = millis() + 10000;
     OEstate = false;
-    state = WAITING;
+  //  state = WAITING;
     monitoring=true;
   }
   if (softAp && (millis() - APtimer  > 600000) ) ESP.reset(); // we have been in AP mode for 600 sec. 

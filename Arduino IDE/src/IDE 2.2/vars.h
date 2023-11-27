@@ -37,6 +37,8 @@ char P1version[8];
 int P1prot;             // 4 or 5 based on P1version 1-3:0.2.8 
 char P1timestamp[30]  = "\0";
 char equipmentId[100] = "\0";
+char equipmentId2[100] = "\0";
+
 char electricityUsedTariff1[12];
 char electricityUsedTariff2[12];
 char electricityReturnedTariff1[12];
@@ -196,8 +198,12 @@ bool atsleep = true;
 #define MAXLINELENGTH 2048        // 0-0:96.13.0 has a maximum lenght of 1024 chars + 11 of its identifier
 char telegram[MAXLINELENGTH];     // holds a single line of the datagram 
 String datagram;                  // holds entire datagram for raw output  
-String meterId ="";
-String meterName ="";
+String meterId = "";
+String meterName = "";
+bool meternameSet = false; // do we have a metername already?
+
+int countryCode = 31; //NL will be set by decoder on the basis of meterName
+int dataFailureCount = 0; //counter for CRC failures
 
 bool datagramValid = false;    //
 bool dataEnd = false;             // signals that we have found the end char in the data (!)
@@ -225,7 +231,8 @@ bool needToInitLogVarsGas = false;
 #define CHECKSUM 3
 #define DONE 4
 #define FAILURE 5
-int state = DISABLED;
+#define FAULT 6
+int state = WAITING;
 
 #define CONFIG  0   // getting basic Meter data to select correct parse rules
 #define GOTMETER 1

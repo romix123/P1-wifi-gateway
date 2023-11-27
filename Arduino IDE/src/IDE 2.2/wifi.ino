@@ -182,7 +182,7 @@ void stop_services(){
 void onWifiConnect(const WiFiEventStationModeGotIP& event) {
   debugln("Connected to Wi-Fi sucessfully.");
   debug("IP address: ");
-  debugln(WiFi.localIP());
+  debugln(WiFi.localIP().toString());
 }
 
 void onWifiDisconnect(const WiFiEventStationModeDisconnected& event) {

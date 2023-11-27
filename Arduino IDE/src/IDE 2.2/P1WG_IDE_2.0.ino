@@ -19,15 +19,12 @@
 /**
  * @file P1WG_IDE_2.ino
  * @author Ronald Leenes
- * @date 22.09.2023
- * @version 1.1e 
+
  *
  * @brief This file contains the main file for the P1 wifi gatewway
  *
  * @see http://esp8266thingies.nl
- */
  
-/*
  * P1 wifi gateway 2022
  * 
  * Deze software brengt verschillende componenten bij elkaar in een handzaam pakket.
@@ -60,12 +57,10 @@
  *
  *  informatie, vragen, suggesties ed richten aan romix@macuser.nl 
  *  
- *  
- *    
- *  versie: 1.1e 
- *  datum:  11 Nov 2023
- *  auteur: Ronald Leenes
- *  
+ 
+
+    1.2: major overhaul of OBIS decoder
+
     1.1.e: fixed passwd length related issues (adminpass, SSID, MQTT), worked on wifi persistance, disabled wifi powermanagment
  *  1.1d: moved codebase to IDE 2.2, small fixes, added webdebug 
 
@@ -145,14 +140,14 @@
 
 bool zapfiles = false; 
 
-String version = "1.1e – NL";
+String version = "1.2 – NL";
 #define NEDERLANDS
 #define HOSTNAME "p1meter"
 #define FSystem 1 // 0= LittleFS 1 = SPIFFS  
 
 #define GRAPH 1
 #define V3
-#define DEBUG 0//2//1//0 1 is on serial only, 2 is serial + telnet, 
+#define DEBUG 1//2//0//2//1//0 1 is on serial only, 2 is serial + telnet, 
 #define DEBUG2 0
 #define WIFIPOWERSAFE 0
 
@@ -330,8 +325,8 @@ void setup() {
     debugln("Booting");
     debugln("Done with Cap charging … ");
     debugln("Let's go …");
-   // Start connection WiFi
-  //Switch Radio back On
+    // Start connection WiFi
+    //Switch Radio back On
   WiFi.forceSleepWake();
   delay( 1 );
 
@@ -461,8 +456,6 @@ Telnet = true;
 
  debugln("All systems are go...");
   alignToTelegram();
-  state = WAITING;    // signal that we are waiting for a valid start char (aka /)
-  devicestate = CONFIG;
   nextUpdateTime = nextMQTTreconnectAttempt = EverSoOften = TenSecBeat = millis();
    
   monitoring = true; // start monitoring data
@@ -470,6 +463,8 @@ Telnet = true;
   datagram.reserve(1500);
   statusMsg.reserve(200);
    } // WL connected
+
+  state = WAITING;    // signal that we are waiting for a valid start char (aka /)
 }
 
 void readTelegram() {
@@ -477,22 +472,48 @@ void readTelegram() {
     memset(telegram, 0, sizeof(telegram));
     while (Serial.available()) {
       int len = Serial.readBytesUntil('\n', telegram, MAXLINELENGTH);
-      if (len > (MAXLINELENGTH - 25)) { // approaching end of buffer. Something is wrong. Cancel current telegram
-      resetInput();
-      return;
-      }
       telegram[len] = '\n';
       telegram[len+1] = 0;
-      yield();
       ToggleLED      
-      if(decodeTelegram(len+1)){     // test for valid CRC
-        debug2ln(datagram);
+
+      debug("STATE: ");
+      debug(state);
+      debug(" >> ");
+      for (int i = 0; i <len; i++) debug(telegram[i]);
+
+      decodeLine(len+1);
+
+      debug(" << - ");
+      debugln(state);
+
+      switch (state){
+        case DISABLED: // should not occur
           break;
-      } else { // we don't have valid data, but still may need to report to Domo
-        if (dataEnd && !CRCcheckEnabled) { //this is used for dsmr 2.2 meters
-         // yield(); //state = WAITING;
-         break; 
-        }
+        case WAITING:
+          currentCRC = 0;
+          break;
+        case READING:
+          break;
+        case CHECKSUM:
+          break;
+        case DONE:
+          Serial.flush();
+          RTS_off();
+          break;
+        case FAILURE:
+          debugln("kicked out of decode loop (invalid CRC or no CRC!)"); // if there is no checksum, (state=Failure && dataEnd)
+          RTS_off();
+          nextUpdateTime = millis() + interval; // set trigger for next round
+          datagram = "";   // empty datagram and
+          telegram[0] = 0; // telegram (probably uncessesary beacuse Serial.ReadBytesUntil will clear telegram buffer)
+          break;
+        case FAULT:
+          debugln("FAULT");
+          statusMsg = ("FAULT in reading data");
+          state = WAITING;
+          break;
+        default:
+          break;
       }
     }
     LEDoff
@@ -504,8 +525,10 @@ void loop() {
     if (!OEstate) { // OE is disabled  == false
        Serial.flush();
        RTS_on();
+       state = WAITING;
     }
   } // update window  
+
   if (OEstate) readTelegram();
 
 #ifdef SLEEP_ENABLED
@@ -518,12 +541,7 @@ void loop() {
 #endif
   
   if (datagramValid && (state == DONE) && (WiFi.status() == WL_CONNECTED)){ 
-      if (Mqtt) {
-        doMQTT();
-        // if (MqttDelivered) {
-        //    MqttDelivered = false;  // reset
-        // }
-      }
+      if (Mqtt)       doMQTT();
       if (Json)       doJSON();
       if (Telnet)     TelnetReporter();
       if (MQTT_debug) MQTT_Debug();
@@ -532,6 +550,10 @@ void loop() {
       state = WAITING;
      }
 
+  if (state==FAILURE && dataEnd) { //dsmr2.2 meter?
+      if (Telnet)     TelnetReporter();
+      if (Mqtt)       doMQTT();
+  }
 
   if (softAp || (WiFi.status() == WL_CONNECTED)) {
         server.handleClient(); //handle web requests
@@ -540,6 +562,7 @@ void loop() {
   }
 
 if (millis() > FiveSecBeat){
+  blink(1);
   if (Telnet && wifiSta) telnetloop();
   FiveSecBeat = millis() + 5000;
   switch (WiFi.status()){
@@ -562,5 +585,18 @@ if (millis() > EverSoOften){
     doWatchDogs();
     EverSoOften = millis() + 22000;
   }
+ 
+ if ((millis() > 14400000 ) && (countryCode == 32)) {
+            delay(1000); //To make sure serial and mqtt messages are delivered
+            mqtt_client.disconnect();
+            ESP.restart();
+             // periodic reboot for Belgian meter
+ }
+
+  if ((state == FAILURE) && (dataFailureCount == 10)){ // last resort if we get keeping kicked out by bad data
+    mqtt_client.disconnect();
+    ESP.restart();
+  }
+
   timerAlarm.update();
 }   
