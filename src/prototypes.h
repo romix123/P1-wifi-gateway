@@ -46,6 +46,7 @@ void checkCounters();
 void resetFlags();
 void doWatchDogs();
 uint32_t calculateCRC32(const uint8_t *data, size_t length);
+char* string2char(String str);
 
 // graph.h
 void handleGraphMenu();

@@ -63,7 +63,7 @@ void telnetloop() {
     while (telnetClients[i].available() &&
            telnetClients[i].availableForWrite() > 0) {
       char buf[50];
-      size_t tcp_got = telnetClients[i].read(buf, 100);
+      telnetClients[i].read(buf, 100);
       if (strncmp(buf, "debug", 5) == 0) {
         telnetDebugClient = i; // we have found a debug client
         debugln("debug port request");
@@ -119,7 +119,7 @@ void TelnetReporter() {
         telnetClients[i].stop();
       }
     }
-  int len = datagram.length();
+  unsigned int len = datagram.length();
   for (i = 0; i < MAX_SRV_CLIENTS; i++) {
     debug(">>>>> Client ");
     debug(String(i));

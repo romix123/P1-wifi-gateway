@@ -72,7 +72,7 @@
          return;
        }
 
-     validCRCFound = (strtol(messageCRC, NULL, 16) == currentCRC);
+     validCRCFound = (strtoul(messageCRC, NULL, 16) == currentCRC);
 
        if(validCRCFound) {
          debugln("\nVALID CRC FOUND!");
@@ -160,7 +160,6 @@ String readFirstParenthesisVal(int start, int end){
       case 0:
         break;
       case 13028: // device type
-        char buf[2];
         readFirstParenthesisVal(i, len).toCharArray(P1version, sizeof(P1version));
                 if (P1version[0] =='4') P1prot = 4; else P1prot = 5;
         break;

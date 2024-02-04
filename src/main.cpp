@@ -159,7 +159,7 @@ bool zapfiles = false;
 String version = "1.2 – NL";
 #define NEDERLANDS
 #define HOSTNAME "p1meter"
-#define FSystem 1 // 0= LittleFS 1 = SPIFFS
+#define FSystem 0 // 0= LittleFS 1 = SPIFFS
 
 #define GRAPH 1
 #define V3
@@ -626,6 +626,24 @@ void loop() {
       break;
     case WL_CONNECT_FAILED:
       wifiStatus = "Connection failed: ";
+      break;
+    case WL_NO_SHIELD:
+      wifiStatus = "No WiFi shield is present: ";
+      break;
+    case WL_IDLE_STATUS:
+      wifiStatus = "WiFi connecting...: ";
+      break;
+    case WL_SCAN_COMPLETED:
+      wifiStatus = "Scan networks is completed: ";
+      break;
+    case WL_CONNECTION_LOST:
+      wifiStatus = "Connection lost: ";
+      break;
+    case WL_WRONG_PASSWORD:
+      wifiStatus = "Wrong WiFi password: ";
+      break;
+    case WL_DISCONNECTED:
+      wifiStatus = "WiFi disconnected: ";
       break;
     }
     wifiStatus += timestampkaal();

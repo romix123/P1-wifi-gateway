@@ -147,8 +147,6 @@ void theGraph(const char *type1, const char *type2, String title1,
   char buffer[64];
   char path1[20];
   char path2[20];
-  char totaal1[12];
-  char totaal2[12];
   String pageTitle = "";
 
   if (period == "day") {
@@ -218,7 +216,7 @@ void theGraph(const char *type1, const char *type2, String title1,
    debug("value :");
    debugln(startval1);
   //target2 = (int*)&log_data + offset * 84 + measure2 * 12; //
-  /*
+
    int *p;
     // take address of displayDefault and assign to the pointer
     p = (int*)&displayDefault;
