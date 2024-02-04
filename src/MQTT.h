@@ -43,14 +43,14 @@
 // void mqtt_connect(){
 //   if (!mqtt_client.connected()) {
 //      MqttConnected = false;
-//      debugln("Reconnecting to mqtt broker …");
+//      Log.verboseln("Reconnecting to mqtt broker …");
 //      mqtt_reconnect();
 //   } else MqttConnected = true;
 // }
 
 // void mqtt_reconnect(){
 //   if (millis() > nextMQTTreconnectAttempt) {
-//     debugln("Attempting MQTT connection...");
+//     Log.verboseln("Attempting MQTT connection...");
 //     statusMsg = "Attempting MQTT connection...";
 //     // Create a random client ID
 //     String clientId = "P1 Smart Meter – ";
@@ -58,7 +58,7 @@
 //     // Attempt to connect
 //     if (mqtt_client.connect(HOSTNAME, config_data.mqttUser,
 //     config_data.mqttPass)){
-//       debugln("   connected to broker");
+//       Log.verboseln("   connected to broker");
 //       statusMsg += "   connected to broker";
 //       // Once connected, publish an announcement...
 //       mqtt_client.publish("outTopic", "p1 gateway running");
@@ -66,10 +66,10 @@
 //       mqtt_client.subscribe("inTopic");
 //       MqttConnected = true;
 //     } else {
-//       debug("failed, rc=");
+//       Log.verbose("failed, rc=");
 //       statusMsg += "failed, rc=";
-//       debug(mqtt_client.state());
-//       debugln(" trying again later (non blocking)");
+//       Log.verbose(mqtt_client.state());
+//       Log.verboseln(" trying again later (non blocking)");
 //       statusMsg += " trying again later (non blocking)";
 //       nextMQTTreconnectAttempt = millis() + 15000; // try again in 15 seconds
 //       MqttConnected = false;
@@ -87,63 +87,63 @@ bool mqtt_connect() {
   mqtt_client.setCallback(callback);
   byte i = 0;
   while (!mqtt_client.connected() && (i < 3)) {
-    debugln("Attempting MQTT connection");
+    Log.verboseln("Attempting MQTT connection");
     // Attempt to connect
     boolean ret;
 
     ret = mqtt_client.connect(HOSTNAME, config_data.mqttUser,
                               config_data.mqttPass);
     if (ret) {
-      debugln("Connected to MQTT");
+      Log.verboseln("Connected to MQTT");
       MqttConnected = true;
       mqtt_client.publish("outTopic", "P1 gateway");
       mqtt_client.subscribe("inTopic");
       return true;
     } else {
       MqttConnected = false;
-      debug("Failed MQTT connection, return code:");
+      Log.verbose("Failed MQTT connection, return code:");
 
       int Status = mqtt_client.state();
 
       switch (Status) {
       case -4:
-        debugln("Connection timeout");
+        Log.verboseln("Connection timeout");
         break;
 
       case -3:
-        debugln("Connection lost");
+        Log.verboseln("Connection lost");
         break;
 
       case -2:
-        debugln("Connect failed");
+        Log.verboseln("Connect failed");
         break;
 
       case -1:
-        debugln("Disconnected");
+        Log.verboseln("Disconnected");
         break;
 
       case 1:
-        debugln("Bad protocol");
+        Log.verboseln("Bad protocol");
         break;
 
       case 2:
-        debugln("Bad client ID");
+        Log.verboseln("Bad client ID");
         break;
 
       case 3:
-        debugln("Unavailable");
+        Log.verboseln("Unavailable");
         break;
 
       case 4:
-        debugln("Bad credentials");
+        Log.verboseln("Bad credentials");
         break;
 
       case 5:
-        debugln("Unauthorized");
+        Log.verboseln("Unauthorized");
         break;
       }
       if (i == 2)
-        debugln("Retrying MQTT connection next cycle");
+        Log.verboseln("Retrying MQTT connection next cycle");
       i++;
       delay(1000);
     }
@@ -152,29 +152,29 @@ bool mqtt_connect() {
 }
 
 void callback(char *topic, byte *payload, unsigned int length) {
-  debug("Message arrived [");
-  debug(topic);
-  debug("] ");
+  Log.verbose("Message arrived [");
+  Log.verbose(topic);
+  Log.verbose("] ");
   for (unsigned int i = 0; i < length; i++) {
-    debug((char)payload[i]);
+    Log.verbose("%s", (char)payload[i]);
   }
-  debugln();
+  Log.verboseln("");
 }
 
 // * Send a message to a broker topic
 void send_mqtt_message(const char *topic, char *payload) {
   if (payload[0] == 0)
     return; // nothing to report
-  debug("MQTT Outgoing on > ");
-  debug(topic);
-  debug(" > ");
-  debugln(payload);
+  Log.verbose("MQTT Outgoing on > ");
+  Log.verbose(topic);
+  Log.verbose(" > ");
+  Log.verboseln(payload);
   bool result = mqtt_client.publish(topic, payload, false);
 
   if (!result) {
-    debug("MQTT publish to topic: ");
-    debug(topic);
-    debugln(" failed.");
+    Log.verbose("MQTT publish to topic: ");
+    Log.verbose(topic);
+    Log.verboseln(" failed.");
   }
 }
 
@@ -195,8 +195,8 @@ void mqtt_send_metric(String name, char *metric) {
 
 void MQTT_reporter() {
 #ifdef NEDERLANDS
-  debug2("MQTT reporter: ");
-  debug2ln(actualElectricityPowerRet);
+  Log.verbose("MQTT reporter: ");
+  Log.verboseln(actualElectricityPowerRet);
   if (mqtt_dsmr) {
     mqtt_send_metric("equipmentID", equipmentId);
 

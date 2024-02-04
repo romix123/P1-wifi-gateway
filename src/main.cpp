@@ -149,7 +149,6 @@ power outages, power drops
 
 */
 
-
 #include "Arduino.h"
 #include "prototypes.h"
 void readTelegram();
@@ -163,8 +162,7 @@ String version = "1.2 – NL";
 
 #define GRAPH 1
 #define V3
-#define DEBUG 0 // 2//1//0 1 is on serial only, 2 is serial + telnet,
-#define DEBUG2 0
+#define DEBUG 0 // 2//1//0 1 is on serial only, 2 is telnet,
 #define WIFIPOWERSAFE 0
 
 #define ESMR5 1
@@ -173,57 +171,29 @@ String version = "1.2 – NL";
 const uint32_t wakeTime = 90000;  // stay awake wakeTime millisecs
 const uint32_t sleepTime = 15000; // sleep sleepTime millisecs
 
-#if DEBUG2 == 1
-#define debug2(x) Serial.print(x)
-#define debug2ln(x) Serial.println(x)
-#else
-#define debug2(x)
-#define debug2ln(x)
-#endif
-
 #if DEBUG == 1
 const char *host = "P1test";
 #define BLED LED_BUILTIN
-#define debug(x) Serial.print(x)
-#define debugf(x) Serial.printf(x)
-#define debugff(x, y) Serial.printf(x, y)
-#define debugfff(x, y, z) Serial.printf(x, y, z)
-#define debugln(x) Serial.println(x)
+#define PRINTER LOG_PRINTER_SERIAL
 #elif DEBUG == 2
 const char *host = "P1test";
 #define BLED LED_BUILTIN
-#define debug(x)                                                               \
-  Serial.print(x);                                                             \
-  if (telnetDebugConnected)                                                    \
-  telnetD(String(x))
-#define debugf(x) Serial.printf(x)
-#define debugff(x, y) Serial.printf(x, y)
-#define debugfff(x, y, z) Serial.printf(x, y, z)
-#define debugln(x)                                                             \
-  Serial.println(x);                                                           \
-  if (telnetDebugConnected)                                                    \
-  telnetDLn(String(x))
+#define PRINTER LOG_PRINTER_TELNET
 #elif DEBUG == 3
 const char *host = "P1home";
 #define BLED LED_BUILTIN
-#define debug(x)
-#define debugln(x)
-#define debugf(x)
-#define debugff(x, y)
-#define debugfff(x, y, z)
+#define DISABLE_LOGGING
+#define PRINTER LOG_PRINTER_NULL
 #else
 const char *host = "P1wifi";
 #define BLED LED_BUILTIN
-#define debug(x)
-#define debugln(x)
-#define debugf(x)
-#define debugff(x, y)
-#define debugfff(x, y, z)
+#define DISABLE_LOGGING
+#define PRINTER LOG_PRINTER_NULL
 #endif
 
 #define errorHalt(msg)                                                         \
   {                                                                            \
-    debugln(F(msg));                                                           \
+    Log.verboseln(F(msg));                                                     \
     return;                                                                    \
   }
 
@@ -240,6 +210,7 @@ const char *host = "P1wifi";
 #include "lang.h"
 #include "vars.h"
 
+#include <ArduinoLog.h>
 #include <TZ.h>
 #define MYTZ TZ_Europe_Amsterdam
 #include "MyAlarm.h"
@@ -305,7 +276,14 @@ WiFiClient telnetClients[MAX_SRV_CLIENTS];
 
 ADC_MODE(ADC_VCC); // allows you to monitor the internal VCC level;
 
+#include "logger.h"
+
 void setup() {
+  // Configure logger
+  LogPrinterCreator *logPrinterCreator = new LogPrinterCreator();
+  Print *logPrinter = logPrinterCreator->createLogPrinter();
+  Log.begin(LOG_LEVEL_VERBOSE, logPrinter);
+  // delete logPrinterCreator;
 
   wifiConnectHandler = WiFi.onStationModeGotIP(onWifiConnect);
   wifiDisconnectHandler = WiFi.onStationModeDisconnected(onWifiDisconnect);
@@ -315,8 +293,8 @@ void setup() {
   delay(1);
   pinMode(BLED, OUTPUT);
   Serial.begin(115200);
-  debugln("Serial.begin(115200);");
-  debugln("wifi uit");
+  Log.verboseln("Serial.begin(115200);");
+  Log.verboseln("wifi uit");
   FlashSize = ESP.getFlashChipRealSize();
 
   // Try to read WiFi settings from RTC memory
@@ -343,9 +321,9 @@ void setup() {
                LOW); //  DR low (only goes high when we want to receive data)
 
   blink(2);
-  debugln("Booting");
-  debugln("Done with Cap charging … ");
-  debugln("Let's go …");
+  Log.verboseln("Booting");
+  Log.verboseln("Done with Cap charging … ");
+  Log.verboseln("Let's go …");
   // Start connection WiFi
   // Switch Radio back On
   WiFi.forceSleepWake();
@@ -392,36 +370,36 @@ void setup() {
     // reportInDecimals = false;
   }
 
-  debugln("EEprom read: done");
+  Log.verboseln("EEprom read: done");
   PrintConfigData();
 
   interval = atoi(config_data.interval) * 1000;
-  debug("interval: ");
-  debugln(String(interval));
+  Log.verbose("interval: ");
+  Log.verbose("%d", interval);
 
-  debugln("Trying to connect to your wifi network:");
+  Log.verboseln("Trying to connect to your wifi network:");
   WiFi.mode(WIFI_STA);
   WiFi.begin(config_data.ssid, config_data.password);
   //-----------Now we replace the normally used "WiFi.begin();" with a precedure
-  //using connection data stored by us
+  // using connection data stored by us
   if (rtcValid) {
     // The RTC data was good, make a quick connection
     WiFi.begin(config_data.ssid, config_data.password, rtcData.channel,
                rtcData.ap_mac, true);
-    debugln("RTC wifi quick start.");
+    Log.verboseln("RTC wifi quick start.");
   } else {
     // The RTC data was not valid, so make a regular connection
     WiFi.begin(config_data.ssid, config_data.password);
-    debugln("Regular wifi start.");
+    Log.verboseln("Regular wifi start.");
   }
 
   byte tries = 0;
   while (WiFi.status() != WL_CONNECTED) {
     ToggleLED delay(300);
-    debug("o");
+    Log.verbose("o");
     if (tries++ > 30) {
-      debugln("");
-      debugln("Setting up Captive Portal by the name 'P1_setup'");
+      Log.verboseln("");
+      Log.verboseln("Setting up Captive Portal by the name 'P1_setup'");
       LEDon WiFi.mode(WIFI_AP);
       softAp = WiFi.softAP("P1_Setup", "");
       APtimer = millis();
@@ -429,10 +407,10 @@ void setup() {
       break;
     }
   }
-  debugln("");
-  debugln("Set up wifi, either in STA or AP mode");
+  Log.verboseln("");
+  Log.verboseln("Set up wifi, either in STA or AP mode");
   if (softAp) {
-    debugln("running in AP mode, all handles will be initiated");
+    Log.verboseln("running in AP mode, all handles will be initiated");
     start_webservices();
   }
 
@@ -448,14 +426,14 @@ void setup() {
 
     WiFi.setAutoReconnect(true);
     WiFi.persistent(true);
-    debugln("HTTP server running.");
-    debug("IP address: ");
-    // debugln(WiFi.localIP());
+    Log.verboseln("HTTP server running.");
+    Log.verbose("IP address: ");
+    // Log.verboseln(WiFi.localIP());
 #if WIFIPOWERSAFE == 1
     setRFPower();
 #endif
     wifiSta = true;
-    debugln("wifi running in Sta (normal) mode");
+    Log.verboseln("wifi running in Sta (normal) mode");
     LEDoff
 #ifdef SLEEP_ENABLED
     modemSleep();
@@ -465,40 +443,40 @@ void setup() {
 #endif
 
     // handle Files
-    debug("Mounting file system ... ");
+    Log.verbose("Mounting file system ... ");
     if (!FST.begin()) {
-      debugln("FST mount failed");
-      debug("Formatting file system ... ");
+      Log.verboseln("FST mount failed");
+      Log.verbose("Formatting file system ... ");
       FST.format();
       if (!FST.begin()) {
-        debugln("FST mount failed AGAIN");
+        Log.verboseln("FST mount failed AGAIN");
       } else {
-        debugln("done.");
+        Log.verboseln("done.");
         if (zapfiles)
           zapFiles();
       }
     } else
-      debugln("done.");
+      Log.verboseln("done.");
 
-    debugln("Reading logdata:");
+    Log.verboseln("Reading logdata:");
     File logData = FST.open("/logData.txt", "r");
     if (logData) {
       logData.read((byte *)&log_data, sizeof(log_data) / sizeof(byte));
       logData.close();
     } else {
-      debugln("Failed to open logData.txt for reading");
+      Log.verboseln("Failed to open logData.txt for reading");
       needToInitLogVars = true;
       needToInitLogVarsGas = true;
     }
     if (zapfiles)
       zapFiles();
 
-    // debugln("Something is terribly wrong, no network connection");
+    // Log.verboseln("Something is terribly wrong, no network connection");
     timerAlarm.stopService();
     settimeofday_cb(timeIsSet_cb);
     configTime(MYTZ, "pool.ntp.org");
 
-    debugln("All systems are go...");
+    Log.verboseln("All systems are go...");
     alignToTelegram();
     nextUpdateTime = nextMQTTreconnectAttempt = EverSoOften = TenSecBeat =
         millis();
@@ -508,11 +486,9 @@ void setup() {
         millis() + wakeTime; // we go to sleep wakeTime seconds from now
     datagram.reserve(1500);
     statusMsg.reserve(200);
-  } // WL connected
+  }                // WL connected
   state = WAITING; // signal that we are waiting for a valid start char (aka /)
-
 }
-
 
 void readTelegram() {
   if (Serial.available()) {
@@ -520,47 +496,55 @@ void readTelegram() {
     while (Serial.available()) {
       int len = Serial.readBytesUntil('\n', telegram, MAXLINELENGTH);
       telegram[len] = '\n';
-      telegram[len+1] = 0;
+      telegram[len + 1] = 0;
       ToggleLED
 
-      debug("STATE: ");
-      debug(state);
-      debug(" >> ");
-      for (int i = 0; i <len; i++) debug(telegram[i]);
+          Log.verbose("STATE: ");
+      Log.verbose("%d", state);
+      Log.verbose(" >> ");
+      for (int i = 0; i < len; i++)
+        Log.verbose("%s", telegram[i]);
 
-      decodeLine(len+1);
+      decodeLine(len + 1);
 
-      debug(" << - ");
-      debugln(state);
+      Log.verbose(" << - ");
+      Log.verbose("%d\n", state);
 
-      switch (state){
-        case DISABLED: // should not occur
-          break;
-        case WAITING:
-          currentCRC = 0;
-          break;
-        case READING:
-          break;
-        case CHECKSUM:
-          break;
-        case DONE:
-          Serial.flush();
-          RTS_off();
-          break;
-        case FAILURE:
-          debugln("kicked out of decode loop (invalid CRC or no CRC!)"); // if there is no checksum, (state=Failure && dataEnd)
-          RTS_off();
-          nextUpdateTime = millis() + interval; // set trigger for next round
-          datagram = "";   // empty datagram and
-          telegram[0] = 0; // telegram (probably uncessesary beacuse Serial.ReadBytesUntil will clear telegram buffer)
-          break;
-        case FAULT:
-          debugln("FAULT");
-          statusMsg = ("FAULT in reading data");
-          state = WAITING;
-          break;
-        default:
-          break;
+      switch (state) {
+      case DISABLED: // should not occur
+        break;
+      case WAITING:
+        currentCRC = 0;
+        break;
+      case READING:
+        break;
+      case CHECKSUM:
+        break;
+      case DONE:
+        Serial.flush();
+        RTS_off();
+        break;
+      case FAILURE:
+        Log.verboseln(
+            "kicked out of decode loop (invalid CRC or no CRC!)"); // if there
+                                                                   // is no
+                                                                   // checksum,
+                                                                   // (state=Failure
+                                                                   // &&
+                                                                   // dataEnd)
+        RTS_off();
+        nextUpdateTime = millis() + interval; // set trigger for next round
+        datagram = "";                        // empty datagram and
+        telegram[0] = 0; // telegram (probably uncessesary beacuse
+                         // Serial.ReadBytesUntil will clear telegram buffer)
+        break;
+      case FAULT:
+        Log.verboseln("FAULT");
+        statusMsg = ("FAULT in reading data");
+        state = WAITING;
+        break;
+      default:
+        break;
       }
     }
     LEDoff
@@ -656,11 +640,17 @@ void loop() {
     EverSoOften = millis() + 22000;
   }
 
-  if ((state == FAILURE) && (dataFailureCount == 10)){ // last resort if we get keeping kicked out by bad data
+  if ((state == FAILURE) &&
+      (dataFailureCount ==
+       10)) { // last resort if we get keeping kicked out by bad data
     mqtt_client.disconnect();
     ESP.restart();
   }
   timerAlarm.update();
+
+#if PRINTER == LOG_PRINTER_TELNET
+  logPrinterTelnetloop();
+#endif
 }
 
 #include "JSON.h"

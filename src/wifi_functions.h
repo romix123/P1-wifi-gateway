@@ -29,8 +29,8 @@ void setRFPower() {
 }
 
 void modemSleep() {
-  debug("modemSleep: ");
-  debugln(millis() / 1000);
+  Log.verbose("modemSleep: ");
+  Log.verbose("%d\n", millis() / 1000);
   //  stop_services();
   WiFi.shutdown(WiFistate);
   ESP.rtcUserMemoryWrite(RTC_config_data_SLOT_WIFI_STATE,
@@ -44,8 +44,8 @@ void modemSleep() {
 }
 
 void modemWake() {
-  debug("modemWake: ");
-  debugln(millis() / 1000);
+  Log.verbose("modemWake: ");
+  Log.verbose("%d\n", millis() / 1000);
   ESP.rtcUserMemoryRead(RTC_config_data_SLOT_WIFI_STATE,
                         reinterpret_cast<uint32_t *>(&WiFistate),
                         sizeof(WiFistate));
@@ -55,7 +55,7 @@ void modemWake() {
     WiFi.persistent(false);
     wifiReconnect();
   } else {
-    debugln("RTC wakeup.");
+    Log.verboseln("RTC wakeup.");
   }
   wifiSta = true;
   webstate = NONE;
@@ -65,16 +65,16 @@ void modemWake() {
 }
 
 void wifiReconnect() {
-  debugln("Trying to connect to your wifi network:");
+  Log.verboseln("Trying to connect to your wifi network:");
   WiFi.mode(WIFI_STA);
   WiFi.begin(config_data.ssid, config_data.password);
   byte tries = 0;
   while (WiFi.status() != WL_CONNECTED) {
     ToggleLED delay(500);
-    debug("o");
+    Log.verbose("o");
     if (tries++ > 30) {
-      debugln("");
-      debugln("Something is terribly wrong, can't connect to wifi (anymore).");
+      Log.verboseln("");
+      Log.verboseln("Something is terribly wrong, can't connect to wifi (anymore).");
       LEDon delay(60000);
       ESP.reset();
     }
@@ -112,15 +112,15 @@ void start_webservices() {
 #endif
 
   server.on("/update", HTTP_GET, []() {
-    debugln("Index");
+    Log.verboseln("Index");
     handleUpdateLogin();
   });
   server.on(
       "/update", HTTP_POST,
       []() {
         if (AdminAuthenticated) {
-          debugln("Connection close part");
-          // debugln("Error: handleUpdateLogin entered with wrong password");
+          Log.verboseln("Connection close part");
+          // Log.verboseln("Error: handleUpdateLogin entered with wrong password");
           server.sendHeader("Connection", "close");
           server.send(200, "text/plain", (Update.hasError()) ? "FAIL" : "OK");
           //  ESP.restart();
@@ -129,11 +129,11 @@ void start_webservices() {
       []() {
         if (AdminAuthenticated) {
           HTTPUpload &upload = server.upload();
-          debugln("Upload part");
+          Log.verboseln("Upload part");
           if (upload.status == UPLOAD_FILE_START) {
             Serial.setDebugOutput(true);
             WiFiUDP::stopAll();
-            debugff("Update: %s\n", upload.filename.c_str());
+            Log.verbose("Update: %s\n", upload.filename.c_str());
             uint32_t maxSketchSpace =
                 (ESP.getFreeSketchSpace() - 0x1000) & 0xFFFFF000;
             if (!Update.begin(maxSketchSpace)) { // start with max available
@@ -148,7 +148,7 @@ void start_webservices() {
           } else if (upload.status == UPLOAD_FILE_END) {
             if (Update.end(
                     true)) { // true to set the size to the current progress
-              debugff("Update Success: %u\nRebooting...\n", upload.totalSize);
+              Log.verbose("Update Success: %u\nRebooting...\n", upload.totalSize);
               successResponse();
               ESP.restart();
             } else {
@@ -159,28 +159,28 @@ void start_webservices() {
           yield();
         } // AdminAuthenticated
       });
-  debugln("   … HTTPupdater");
+  Log.verboseln("   … HTTPupdater");
   server.begin();
-  debugln("   … webserver");
+  Log.verboseln("   … webserver");
 }
 
 void start_services() {
-  debugln("Starting services");
+  Log.verboseln("Starting services");
   start_webservices();
   MDNS.begin(host);
   MDNS.addService("http", "tcp", 80);
-  debugln("   … MDNS");
+  Log.verboseln("   … MDNS");
 
   if (Mqtt) {
     mqtt_client.setServer(config_data.mqttIP, atoi(config_data.mqttPort));
-    debugln("MQTT server assigned.");
+    Log.verboseln("MQTT server assigned.");
     // mqtt_reconnect();
-    debugln("   … MQTT");
+    Log.verboseln("   … MQTT");
   }
   if (Telnet) {
     setupTelnet();
     Telnet = true;
-    debugln("   … telnet");
+    Log.verboseln("   … telnet");
   }
 }
 
@@ -191,13 +191,13 @@ void stop_services() {
 }
 
 void onWifiConnect(const WiFiEventStationModeGotIP &event) {
-  debugln("Connected to Wi-Fi sucessfully.");
-  debug("IP address: ");
-  debugln(WiFi.localIP());
+  Log.verboseln("Connected to Wi-Fi sucessfully.");
+  Log.verbose("IP address: ");
+  Log.verboseln(WiFi.localIP());
 }
 
 void onWifiDisconnect(const WiFiEventStationModeDisconnected &event) {
-  debugln("Disconnected from Wi-Fi, trying to connect...");
+  Log.verboseln("Disconnected from Wi-Fi, trying to connect...");
   WiFi.disconnect();
   if (rtcValid)
     WiFi.begin(config_data.ssid, config_data.password, rtcData.channel,
@@ -228,6 +228,6 @@ void calcSleeptime() {
     time_to_sleep = millis() + wakeTime;
     break;
   }
-  debug("Scheduled shutdown at: ");
-  debugln(time_to_sleep);
+  Log.verbose("Scheduled shutdown at: ");
+  Log.verbose("%d\n", time_to_sleep);
 }
