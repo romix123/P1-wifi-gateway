@@ -191,7 +191,7 @@ void writeFile(const char *path, const char *message) {
 
 void appendFile(const char *path, const char *message) {
 
-  Log.verbose("Appending to file: %s time: %s\n", path, (String)millis());
+  Log.verboseln("Appending to file: %s time: %d", path, millis());
   char payload[50];
 
   File file = FST.open(path, "a");

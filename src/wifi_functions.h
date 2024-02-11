@@ -29,8 +29,7 @@ void setRFPower() {
 }
 
 void modemSleep() {
-  Log.verbose("modemSleep: ");
-  Log.verbose("%d\n", millis() / 1000);
+  Log.infoln("modemSleep: %d", millis() / 1000);
   //  stop_services();
   WiFi.shutdown(WiFistate);
   ESP.rtcUserMemoryWrite(RTC_config_data_SLOT_WIFI_STATE,
@@ -44,14 +43,13 @@ void modemSleep() {
 }
 
 void modemWake() {
-  Log.verbose("modemWake: ");
-  Log.verbose("%d\n", millis() / 1000);
+  Log.infoln("modemWake: %d", millis() / 1000);
   ESP.rtcUserMemoryRead(RTC_config_data_SLOT_WIFI_STATE,
                         reinterpret_cast<uint32_t *>(&WiFistate),
                         sizeof(WiFistate));
   if (!WiFi.resumeFromShutdown(WiFistate) ||
       (WiFi.waitForConnectResult(10000) != WL_CONNECTED)) {
-    Serial.println("Cannot resume WiFi connection, connecting via begin...");
+    Log.warningln("Cannot resume WiFi connection, connecting via begin...");
     WiFi.persistent(false);
     wifiReconnect();
   } else {
@@ -65,13 +63,13 @@ void modemWake() {
 }
 
 void wifiReconnect() {
-  Log.verboseln("Trying to connect to your wifi network:");
+  Log.verbose("Trying to connect to your wifi network: ");
   WiFi.mode(WIFI_STA);
   WiFi.begin(config_data.ssid, config_data.password);
   byte tries = 0;
   while (WiFi.status() != WL_CONNECTED) {
     ToggleLED delay(500);
-    Log.verbose("o");
+    Log.verbose(".");
     if (tries++ > 30) {
       Log.verboseln("");
       Log.verboseln("Something is terribly wrong, can't connect to wifi (anymore).");
@@ -79,6 +77,7 @@ void wifiReconnect() {
       ESP.reset();
     }
   }
+  Log.verboseln("");
 }
 
 const char *serverIndex =
@@ -191,13 +190,12 @@ void stop_services() {
 }
 
 void onWifiConnect(const WiFiEventStationModeGotIP &event) {
-  Log.verboseln("Connected to Wi-Fi sucessfully.");
-  Log.verbose("IP address: ");
-  Log.verboseln(WiFi.localIP());
+  Log.infoln("Connected to Wi-Fi sucessfully.");
+  Log.infoln("IP address: %p", WiFi.localIP());
 }
 
 void onWifiDisconnect(const WiFiEventStationModeDisconnected &event) {
-  Log.verboseln("Disconnected from Wi-Fi, trying to connect...");
+  Log.infoln("Disconnected from Wi-Fi, trying to connect...");
   WiFi.disconnect();
   if (rtcValid)
     WiFi.begin(config_data.ssid, config_data.password, rtcData.channel,
@@ -228,6 +226,5 @@ void calcSleeptime() {
     time_to_sleep = millis() + wakeTime;
     break;
   }
-  Log.verbose("Scheduled shutdown at: ");
-  Log.verbose("%d\n", time_to_sleep);
+  Log.verboseln("Scheduled shutdown at: %d", time_to_sleep);
 }

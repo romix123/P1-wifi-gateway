@@ -282,7 +282,7 @@ void setup() {
   // Configure logger
   LogPrinterCreator *logPrinterCreator = new LogPrinterCreator();
   Print *logPrinter = logPrinterCreator->createLogPrinter();
-  Log.begin(LOG_LEVEL_VERBOSE, logPrinter);
+  Log.begin(LOG_LEVEL_VERBOSE, logPrinter, false);
   // delete logPrinterCreator;
 
   wifiConnectHandler = WiFi.onStationModeGotIP(onWifiConnect);
@@ -321,7 +321,13 @@ void setup() {
                LOW); //  DR low (only goes high when we want to receive data)
 
   blink(2);
-  Log.verboseln("Booting");
+  Log.infoln("Booting");
+  Log.verboseln("Verbose....");
+  Log.traceln("Trace....");
+  Log.infoln("Info....");
+  Log.warningln("Warning....");
+  Log.errorln("Error....");
+  Log.fatalln("Fatal....");
   Log.verboseln("Done with Cap charging … ");
   Log.verboseln("Let's go …");
   // Start connection WiFi
@@ -374,8 +380,7 @@ void setup() {
   PrintConfigData();
 
   interval = atoi(config_data.interval) * 1000;
-  Log.verbose("interval: ");
-  Log.verbose("%d", interval);
+  Log.verboseln("interval: %d", interval);
 
   Log.verboseln("Trying to connect to your wifi network:");
   WiFi.mode(WIFI_STA);
@@ -396,7 +401,7 @@ void setup() {
   byte tries = 0;
   while (WiFi.status() != WL_CONNECTED) {
     ToggleLED delay(300);
-    Log.verbose("o");
+    Log.verbose(".");
     if (tries++ > 30) {
       Log.verboseln("");
       Log.verboseln("Setting up Captive Portal by the name 'P1_setup'");
@@ -427,8 +432,7 @@ void setup() {
     WiFi.setAutoReconnect(true);
     WiFi.persistent(true);
     Log.verboseln("HTTP server running.");
-    Log.verbose("IP address: ");
-    // Log.verboseln(WiFi.localIP());
+    Log.verboseln("IP address: %p", WiFi.localIP());
 #if WIFIPOWERSAFE == 1
     setRFPower();
 #endif
@@ -443,10 +447,10 @@ void setup() {
 #endif
 
     // handle Files
-    Log.verbose("Mounting file system ... ");
+    Log.verboseln("Mounting file system ... ");
     if (!FST.begin()) {
       Log.verboseln("FST mount failed");
-      Log.verbose("Formatting file system ... ");
+      Log.verboseln("Formatting file system ... ");
       FST.format();
       if (!FST.begin()) {
         Log.verboseln("FST mount failed AGAIN");
