@@ -2,19 +2,19 @@
 
 void handleSetup() {
   if (millis() > 300000) { // if we did not get here 5 mins after startup, check credentials
-    debugln("indirect call");
+    Log.verboseln("indirect call");
     if (strcmp(server.arg("adminPassword").c_str(),
                config_data.adminPassword) != 0) { // passwords don't match
-      debugln("Error: handlesetup entered with wrong password");
+      Log.verboseln("Error: handlesetup entered with wrong password");
       errorLogin("Setup");
       return;
     }
   }
-  debugln("direct call");
+  Log.verboseln("direct call");
   // monitoring = false; // stop monitoring data
 
   String str = "";
-  debugln("handleSetupForm");
+  Log.verboseln("handleSetupForm");
 
   addHead(str, 0);
   addIntro(str);
@@ -128,11 +128,11 @@ void handleSetup() {
 }
 
 void handleP1() {
-  debug2("handleP1: actualElectricityPowerRet: ");
-  debug2ln(actualElectricityPowerRet);
-  debug2("handleP1: actualElectricityPowerDeli: ");
-  debug2ln(actualElectricityPowerDeli);
-  debugln("handleP1");
+  Log.verbose("handleP1: actualElectricityPowerRet: ");
+  Log.verboseln(actualElectricityPowerRet);
+  Log.verbose("handleP1: actualElectricityPowerDeli: ");
+  Log.verboseln(actualElectricityPowerDeli);
+  Log.verboseln("handleP1");
   String str = "";
   String eenheid, eenheid2, eenheid3;
   if (reportInDecimals)
@@ -191,10 +191,10 @@ void handleP1() {
   str += eenheid;
   str += "</div></p>";
 
-  debug2("buildpage: actualElectricityPowerRet: ");
-  debug2ln(actualElectricityPowerRet);
-  debug2("handleP1: actualElectricityPowerDeli: ");
-  debug2ln(actualElectricityPowerDeli);
+  Log.verbose("buildpage: actualElectricityPowerRet: ");
+  Log.verboseln(actualElectricityPowerRet);
+  Log.verbose("handleP1: actualElectricityPowerDeli: ");
+  Log.verboseln(actualElectricityPowerDeli);
 
   str += "<p><div class='row'><b>Actueel verbruik</b><input type='text' "
          "class='form-control c6' value='";
@@ -288,13 +288,13 @@ void handleP1() {
 
 void handleRawData() {
   String str;
-  debugln("Raw data requested. Here you go.");
+  Log.verboseln("Raw data requested. Here you go.");
   str = "<html><head></head><body>";
   str += datagram;
   str += "</body></html>";
   if (dataEnd) {
     server.send(200, "text/html", str);
-    debugln(datagram);
+    Log.verbose("%s\n", datagram);
   }
 }
 

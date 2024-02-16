@@ -93,8 +93,6 @@ void setupTelnet();
 void telnetloop();
 bool telnetStillRunning();
 void TelnetReporter();
-void telnetD(String x);
-void telnetDLn(String x);
 
 // webserver.h
 void addHead(String &str, int refresh);

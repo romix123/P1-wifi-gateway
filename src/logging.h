@@ -50,7 +50,7 @@
 void doInitLogVars() {
   char value[12];
   // init all vars on current (first) reading
-  debug("Initialising log vars ... ");
+  Log.verbose("Initialising log vars ... ");
   strcpy(log_data.hourE1, electricityUsedTariff1);
   strcpy(log_data.dayE1, electricityUsedTariff1);
   strcpy(log_data.weekE1, electricityUsedTariff1);
@@ -90,11 +90,11 @@ void doInitLogVars() {
   strcpy(log_data.yearTR, value);
 
   needToInitLogVars = false;
-  debugln("done.");
+  Log.verboseln("done.");
 }
 
 void doInitLogVarsGas() {
-  debugln("Initialising log GAS vars ... ");
+  Log.verboseln("Initialising log GAS vars ... ");
 
   strcpy(log_data.hourG, gasReceived5min);
   strcpy(log_data.dayG, gasReceived5min);
@@ -102,7 +102,7 @@ void doInitLogVarsGas() {
   strcpy(log_data.monthG, gasReceived5min);
   strcpy(log_data.yearG, gasReceived5min);
   needToInitLogVarsGas = false;
-  debugln("done.");
+  Log.verboseln("done.");
 }
 
 void doMinutelyLog() {
@@ -128,7 +128,7 @@ void doHourlyLog() {
   // if (hourFlag) return;
   FST.begin();
 
-  debugff("Hourly log started at %s ... ", timestampkaal());
+  Log.verbose("Hourly log started at %s ... ", timestampkaal());
   char buffer[60];
   char value[13];
 
@@ -178,8 +178,8 @@ void doHourlyLog() {
 
   FST.end();
   hourFlag = true;
-  debugff("completed at %s.", timestampkaal());
-  debugln();
+  Log.verbose("completed at %s.", timestampkaal());
+  Log.verboseln("");
   checkMinute = minute();
   if (MountFS()) {
     char payload[50];
@@ -200,7 +200,7 @@ void doDailyLog() {
    * set flag
    */
   monitoring = false;
-  debug("Dayly log started ... ");
+  Log.verbose("Dayly log started ... ");
 
   String str = "";
   char buffer[60];
@@ -285,7 +285,7 @@ void doDailyLog() {
   deleteFile("/HourG.log");
 
   dayFlag = true;
-  debugln("completed.");
+  Log.verboseln("completed.");
   monitoring = true;
 }
 
@@ -295,7 +295,7 @@ void doWeeklyLog() {
    *   week cur
    *   set flag
    */
-  debug("Weekly log started. It was a Sunday evening ... ");
+  Log.verbose("Weekly log started. It was a Sunday evening ... ");
   String str = "";
   char buffer[55];
   char value[12];
@@ -363,7 +363,7 @@ void doWeeklyLog() {
   strcpy(log_data.weekG, value);
 
   weekFlag = true;
-  debugln("completed.");
+  Log.verboseln("completed.");
 }
 
 void doMonthlyLog() {
@@ -373,7 +373,7 @@ void doMonthlyLog() {
    * set flag
    */
 
-  debug("Monthlyly log started ... ");
+  Log.verbose("Monthlyly log started ... ");
   String str = "";
   char buffer[55];
   char value[12];
@@ -441,7 +441,7 @@ void doMonthlyLog() {
   strcpy(log_data.monthG, value);
 
   monthFlag = true;
-  debugln("completed.");
+  Log.verboseln("completed.");
 }
 
 void doYearlyLog() {
