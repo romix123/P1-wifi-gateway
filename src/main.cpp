@@ -201,14 +201,13 @@ const char *host = "P1wifi";
   ((P1timestamp[(off)] - '0') *                                                \
    (mult)) // macro for getting time out of timestamp, see decoder
 
-#define ToggleLED digitalWrite(BLED, !digitalRead(BLED));
-#define LEDoff digitalWrite(BLED, HIGH);
-#define LEDon digitalWrite(BLED, LOW);
 #define OE 16 // IO16 OE on the 74AHCT1G125
 #define DR 4  // IO4 is Data Request
 
 #include "lang.h"
 #include "vars.h"
+#include "led.h"
+#include "CRC32.h"
 
 #include <ArduinoLog.h>
 #include <TZ.h>
@@ -279,26 +278,40 @@ ADC_MODE(ADC_VCC); // allows you to monitor the internal VCC level;
 #include "logger.h"
 
 void setup() {
+  // Configure PINS
+  pinMode(OE, OUTPUT);    // IO16 OE on the 74AHCT1G125
+  digitalWrite(OE, HIGH); // Put(Keep) OE in Tristate mode
+  pinMode(DR, OUTPUT);    // IO4 Data Request
+  digitalWrite(DR, LOW);  // DR low (only goes high when we want to receive data)
+  pinMode(BLED, OUTPUT);
+  
+  // Configure Serial
+  Serial.begin(115200);
+
   // Configure logger
   LogPrinterCreator *logPrinterCreator = new LogPrinterCreator();
   Print *logPrinter = logPrinterCreator->createLogPrinter();
   Log.begin(LOG_LEVEL_VERBOSE, logPrinter, false);
   // delete logPrinterCreator;
 
+  Log.infoln("Booting");
+  Log.verboseln("Serial.begin(115200);");
+  Log.verboseln("Done with Cap charging … ");
+  Log.verboseln("Let's go …");
+  logPrinterCreator->testPrinter();
+  
+  // Wifi stuff
   wifiConnectHandler = WiFi.onStationModeGotIP(onWifiConnect);
   wifiDisconnectHandler = WiFi.onStationModeDisconnected(onWifiDisconnect);
 
+  Log.verboseln("wifi uit");
   WiFi.mode(WIFI_OFF);
   WiFi.forceSleepBegin();
   delay(1);
-  pinMode(BLED, OUTPUT);
-  Serial.begin(115200);
-  Log.verboseln("Serial.begin(115200);");
-  Log.verboseln("wifi uit");
+  
   FlashSize = ESP.getFlashChipRealSize();
 
   // Try to read WiFi settings from RTC memory
-
   if (ESP.rtcUserMemoryRead(0, (uint32_t *)&rtcData, sizeof(rtcData))) {
     // Calculate the CRC of what we just read from RTC memory, but skip the
     // first 4 bytes as that's the checksum itself.
@@ -313,23 +326,8 @@ void setup() {
   // your delay delay(10); // it doesn't always go to sleep unless you
   // delay(10); yield() wasn't reliable delay(sleepTime); //Hang out at 15mA for
   // (sleeptime) seconds WiFi.forceSleepWake(); // Wifi on
-
-  pinMode(OE, OUTPUT);    // IO16 OE on the 74AHCT1G125
-  digitalWrite(OE, HIGH); //  Put(Keep) OE in Tristate mode
-  pinMode(DR, OUTPUT);    // IO4 Data Request
-  digitalWrite(DR,
-               LOW); //  DR low (only goes high when we want to receive data)
-
   blink(2);
-  Log.infoln("Booting");
-  Log.verboseln("Verbose....");
-  Log.traceln("Trace....");
-  Log.infoln("Info....");
-  Log.warningln("Warning....");
-  Log.errorln("Error....");
-  Log.fatalln("Fatal....");
-  Log.verboseln("Done with Cap charging … ");
-  Log.verboseln("Let's go …");
+  
   // Start connection WiFi
   // Switch Radio back On
   WiFi.forceSleepWake();

@@ -26,16 +26,16 @@
 
 static struct TerminalColors {
   // https://en.wikipedia.org/wiki/ANSI_escape_code
-  const char *RESET = "\033[0m"; // Reset or normal 
-  
-  // 1-9 Font styles
-  const char *STYLE_BOLD = "\033[1m"; // Bold or increased intensity
-  const char *STYLE_FAINT = "\033[2m"; // Faint, decreased intensity, or dim 
-  const char *STYLE_ITALIC = "\033[2m"; // Not widely supported. Sometimes treated as inverse or blink.[25]
-  
-  const char *FONT_DEFAULT = "\033[10m"; // Primary (default) font 
+  const char *RESET = "\033[0m"; // Reset or normal
 
-  // 30–37 Set foreground color 
+  // 1-9 Font styles
+  const char *STYLE_BOLD = "\033[1m";   // Bold or increased intensity
+  const char *STYLE_FAINT = "\033[2m";  // Faint, decreased intensity, or dim
+  const char *STYLE_ITALIC = "\033[2m"; // Not widely supported.
+
+  const char *FONT_DEFAULT = "\033[10m"; // Primary (default) font
+
+  // 30–37 Set foreground color
   const char *TEXT_BLACK = "\033[30m";
   const char *TEXT_RED = "\033[31m";
   const char *TEXT_GREEN = "\033[32m";
@@ -46,7 +46,7 @@ static struct TerminalColors {
   const char *TEXT_WHITE = "\033[37m";
   const char *TEXT_DEFAULT = "\033[39m"; // DEFAULT
 
-  // 40–47 Set background color 
+  // 40–47 Set background color
   const char *BACK_BLACK = "\033[40m";
   const char *BACK_RED = "\033[41m";
   const char *BACK_GREEN = "\033[42m";
@@ -55,9 +55,9 @@ static struct TerminalColors {
   const char *BACK_MAGENTA = "\033[45m";
   const char *BACK_CYAN = "\033[46m";
   const char *BACK_WHITE = "\033[47m";
-  const char *BACK_DEFAUKLT= "\033[49m"; // DEFAULT
+  const char *BACK_DEFAULT = "\033[49m"; // DEFAULT
 
-  // 90–97  Set bright foreground color 
+  // 90–97  Set bright foreground color
   const char *TEXT_ALT_BLACK = "\033[90m";
   const char *TEXT_ALT_RED = "\033[91m";
   const char *TEXT_ALT_GREEN = "\033[92m";
@@ -68,14 +68,11 @@ static struct TerminalColors {
   const char *TEXT_ALT_WHITE = "\033[97m";
 
   const char *FATAL = "\033[41m\033[37m"; // BACK_RED + TEXT_WHITE;
-  
+
   std::map<int, const char *> logLevelToColor{
-      {LOG_LEVEL_SILENT, ""},
-      {LOG_LEVEL_FATAL, FATAL},
-      {LOG_LEVEL_ERROR, TEXT_ALT_RED},
-      {LOG_LEVEL_WARNING, TEXT_ALT_YELLOW},
-      {LOG_LEVEL_INFO, TEXT_ALT_BLUE},
-      {LOG_LEVEL_TRACE, TEXT_ALT_WHITE},
+      {LOG_LEVEL_SILENT, ""},          {LOG_LEVEL_FATAL, FATAL},
+      {LOG_LEVEL_ERROR, TEXT_ALT_RED}, {LOG_LEVEL_WARNING, TEXT_ALT_YELLOW},
+      {LOG_LEVEL_INFO, TEXT_ALT_BLUE}, {LOG_LEVEL_TRACE, TEXT_ALT_WHITE},
       {LOG_LEVEL_VERBOSE, ""}};
 
   const char *getColorFromLogLevel(int logLevel) {
@@ -83,6 +80,7 @@ static struct TerminalColors {
   }
 } terminalColors;
 
+#if PRINTER == LOG_PRINTER_SERIAL
 static void printPrefix(Print *_logOutput, int logLevel) {
   _logOutput->print(terminalColors.getColorFromLogLevel(logLevel));
 }
@@ -90,6 +88,7 @@ static void printPrefix(Print *_logOutput, int logLevel) {
 static void printSuffix(Print *_logOutput, int logLevel) {
   _logOutput->print(terminalColors.RESET);
 }
+#endif
 
 class LogPrinterCreator {
 public:
@@ -113,6 +112,15 @@ public:
 #endif
     return mLogPrinter;
   };
+
+  void testPrinter() {
+    Log.verboseln("Verbose....");
+    Log.traceln("Trace....");
+    Log.infoln("Info....");
+    Log.warningln("Warning....");
+    Log.errorln("Error....");
+    Log.fatalln("Fatal....");
+  }
 
 private:
   Print *mLogPrinter;
