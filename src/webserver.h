@@ -152,7 +152,6 @@ void handleRoot() {
   addUptime(str);
   addFoot(str);
   server.send(200, "text/html", str);
-  webstate = MAIN;
   monitoring = true;
   // nextUpdateTime = millis() + 2000;
 }
@@ -350,7 +349,6 @@ void handleUploadForm() {
   str += F("<form action='/' method='POST'><button class='button "
            "bhome'>Menu</button></form>");
   addFootBare(str);
-  webstate = UPDATE;
   server.send(200, "text/html", str);
 }
 
@@ -440,7 +438,7 @@ void addFoot(String &str) {
   // if (weekFlag) str += F("W"); else str += F("w");
   // str += F("] ");
 
-  str += wifiStatus;
+  str += wifiManager->getWifiStatusText();
   str += "; ";
   if (Mqtt) {
     if (MqttConnected)

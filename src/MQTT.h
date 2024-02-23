@@ -453,7 +453,4 @@ void MQTT_Debug() {
 
   //     dtostrf(WiFi.RSSI(), 10,0, outstr);
   //     send_mqtt_message("p1wifi/RSSI", outstr);
-
-  dtostrf(RFpower, 10, 0, outstr);
-  send_mqtt_message("p1wifi/RF power", outstr);
 }

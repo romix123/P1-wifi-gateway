@@ -124,7 +124,6 @@ void handleSetup() {
            "bhome'>Menu</button></form></p>");
   addFoot(str);
   server.send(200, "text/html", str);
-  webstate = CONFIG;
 }
 
 void handleP1() {
@@ -283,7 +282,6 @@ void handleP1() {
   addUptime(str);
   addFoot(str);
   server.send(200, "text/html", str);
-  webstate = DATA;
 }
 
 void handleRawData() {

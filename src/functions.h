@@ -581,8 +581,10 @@ void resetFlags() {
 
 void doWatchDogs() {
   char payload[60];
-  if (ESP.getFreeHeap() < 2000)
+  if (ESP.getFreeHeap() < 2000) {
+    Log.errorln("Rebooting because of memory leak. Free heap: %d", ESP.getFreeHeap());
     ESP.reset(); // watchdog, in case we still have a memery leak
+  }
   if (millis() - LastSample > 300000) {
     DataSerial.flush();
     sprintf(payload, "No data in 300 sec, restarting monitoring: %s",
@@ -595,8 +597,6 @@ void doWatchDogs() {
     state = WAITING;
     monitoring = true;
   }
-  if (softAp && (millis() - APtimer > 600000))
-    ESP.reset(); // we have been in AP mode for 600 sec.
   // if (minute() == 23) hourFlag = false; // clear all flags at a safe
   // timeslot. if (minute() == 43) hourFlag = false; // clear all flags at a
   // safe timeslot. if (!monitoring && (minute() == 16 || minute() == 31 ||

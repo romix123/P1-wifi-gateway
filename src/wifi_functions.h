@@ -1,90 +1,12 @@
 /*
  * everything related to WIFI
  */
-
-/*
-   Return the quality (Received Signal Strength Indicator)
-   of the WiFi network.
-   Returns a number between 0 and 100 if WiFi is connected.
-   Returns -1 if WiFi is disconnected.
-*/
-int getQuality() {
-  if (WiFi.status() != WL_CONNECTED)
-    return -1;
-  int dBm = WiFi.RSSI();
-  if (dBm <= -100)
-    return 0;
-  if (dBm >= -50)
-    return 100;
-  return 2 * (dBm + 100);
-}
-
-void setRFPower() {
-  RFpower = roundf(20 - (getQuality() / 5)) + 2;
-  if (RFpower >= 21)
-    RFpower = 20.5;
-  if (RFpower < 0)
-    RFpower = 1;
-  WiFi.setOutputPower(RFpower);
-}
-
-// void modemSleep() {
-//   Log.infoln("modemSleep: %d", millis() / 1000);
-//   //  stop_services();
-//   WiFi.shutdown(WiFistate);
-//   ESP.rtcUserMemoryWrite(RTC_config_data_SLOT_WIFI_STATE,
-//                          reinterpret_cast<uint32_t *>(&WiFistate),
-//                          sizeof(WiFistate));
-//   time_to_wake = millis() + sleepTime; // set alarm for next wakeup
-//   atsleep = true;
-//   // blink(1);
-//   lastSleeptime = millis();
-//   // wifiSta = false;
-// }
-//
-// void modemWake() {
-//   Log.infoln("modemWake: %d", millis() / 1000);
-//   ESP.rtcUserMemoryRead(RTC_config_data_SLOT_WIFI_STATE,
-//                         reinterpret_cast<uint32_t *>(&WiFistate),
-//                         sizeof(WiFistate));
-//   if (!WiFi.resumeFromShutdown(WiFistate) ||
-//       (WiFi.waitForConnectResult(10000) != WL_CONNECTED)) {
-//     Log.warningln("Cannot resume WiFi connection, connecting via begin...");
-//     WiFi.persistent(false);
-//     wifiReconnect();
-//   } else {
-//     Log.verboseln("RTC wakeup.");
-//   }
-//   wifiSta = true;
-//   webstate = NONE;
-//   atsleep = false;
-//   start_services();
-//   calcSleeptime(); // when do we go to sleep again?
-// }
-
-void wifiReconnect() {
-  Log.verbose("Trying to connect to your wifi network: ");
-  WiFi.mode(WIFI_STA);
-  WiFi.begin(config_data.ssid, config_data.password);
-  byte tries = 0;
-  while (WiFi.status() != WL_CONNECTED) {
-    ToggleLED delay(500);
-    Log.verbose(".");
-    if (tries++ > 30) {
-      Log.verboseln("");
-      Log.verboseln("Something is terribly wrong, can't connect to wifi (anymore).");
-      LEDon delay(60000);
-      ESP.reset();
-    }
-  }
-  Log.verboseln("");
-}
-
 const char *serverIndex =
     "<form method='POST' action='/update' enctype='multipart/form-data'><input "
     "type='file' name='update'><input type='submit' value='Update'></form>";
 
 void start_webservices() {
+  Log.verboseln("Starting Webservices");
   //  String str = "";
   server.on("/", handleRoot);
   server.on("/Setup", handleLogin); // handleSetup
@@ -183,48 +105,20 @@ void start_services() {
   }
 }
 
-void stop_services() {
-  //  server.stop();
-  if (Telnet)
-    telnet.stop();
-}
-
-void onWifiConnect(const WiFiEventStationModeGotIP &event) {
-  Log.infoln("Connected to Wi-Fi sucessfully.");
+void onStationModeGotIP(const WiFiEventStationModeGotIP &event) {
+  Log.infoln("WiFi running in Station (normal) mode");
   Log.infoln("IP address: %p", WiFi.localIP());
+  start_services();
 }
 
-void onWifiDisconnect(const WiFiEventStationModeDisconnected &event) {
-  Log.infoln("Disconnected from Wi-Fi, trying to connect...");
-  WiFi.disconnect();
-  if (rtcValid)
-    WiFi.begin(config_data.ssid, config_data.password, rtcData.channel,
-               rtcData.ap_mac, true);
-  else
-    WiFi.begin(config_data.ssid, config_data.password);
+void onWiFiModeChange(const WiFiEventModeChange &event) {
+  if (event.newMode == WIFI_AP) {
+    Log.infoln("WiFi running in AP mode");
+    start_webservices();
+  }
 }
 
-// void calcSleeptime() {
-//   switch (webstate) {
-//   case NONE:
-//     time_to_sleep = millis() + wakeTime;
-//     break;
-//   case MAIN:
-//     time_to_sleep = millis() + 5000;
-//     break;
-//   case WCONFIG:
-//     time_to_sleep = millis() + wakeTime + 10000;
-//     break;
-//   case DATA:
-//     time_to_sleep = millis() + 1000;
-//     break;
-//   case UPDATE:
-//     time_to_sleep =
-//         millis() + 99000; // allow sufficient time to upload firmware
-//     break;
-//   default:
-//     time_to_sleep = millis() + wakeTime;
-//     break;
-//   }
-//   Log.verboseln("Scheduled shutdown at: %d", time_to_sleep);
-// }
+void initWifiHandlers() {
+  stationModeGotIPHandler = WiFi.onStationModeGotIP(onStationModeGotIP);
+  wiFiModeChangeHandler = WiFi.onWiFiModeChange(onWiFiModeChange);
+}
