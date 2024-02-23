@@ -17,7 +17,6 @@ void OBISparser(int len);
 
 // functions.h
 void alignToTelegram();
-void blink(int t);
 void RTS_on();
 void RTS_off();
 bool isNumber(char *res, int len);
@@ -45,7 +44,6 @@ void initTimers();
 void checkCounters();
 void resetFlags();
 void doWatchDogs();
-uint32_t calculateCRC32(const uint8_t *data, size_t length);
 char* string2char(String str);
 
 // graph.h
