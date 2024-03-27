@@ -27,7 +27,7 @@
  */
 
 void doJSON() {
-  debugln("doJSON>>>");
+  Log.verboseln("doJSON>>>");
   UpdateElectricity();
   UpdateGas();
 }
@@ -44,25 +44,25 @@ bool DomoticzJson(char *idx, int nValue, char *sValue) {
             config_data.domoticzIP, config_data.domoticzPort, idx, nValue,
             sValue);
     // sprintf(debugM, "[HTTP] GET... URL: %s\n", url);
-    // debug(">>JSON: ");
-    // debugln(url);
+    // Log.verbose(">>JSON: ");
+    // Log.verboseln(url);
     http.begin(client, url); // HTTP
     delay(200);
     int httpCode = http.GET();
     // httpCode will be negative on error
     if (httpCode > 0) { // HTTP header has been sent and Server response header
                         // has been handled
-                        // debugff("[HTTP] GET... code: %d\n", httpCode);
+                        // Log.verbose("[HTTP] GET... code: %d\n", httpCode);
       // file found at server
       if (httpCode == HTTP_CODE_OK) {
-        debugln("return httpCode == HTTP_CODE_OK");
+        Log.verboseln("return httpCode == HTTP_CODE_OK");
         // String payload = http.getString();
         retVal = true;
         entitledToSleep = true;
         LastJReport = timestampkaal();
       }
     } else {
-      debugln("return httpCode == ERR");
+      Log.verboseln("return httpCode == ERR");
     }
     http.end();
     return retVal;
@@ -71,9 +71,9 @@ bool DomoticzJson(char *idx, int nValue, char *sValue) {
 }
 
 void UpdateGas() {
-  // debug(gasReceived5min);
-  // debug(gasDomoticz);
-  // debugln(prevGAS);                                    //sends over the gas
+  // Log.verbose(gasReceived5min);
+  // Log.verbose(gasDomoticz);
+  // Log.verboseln(prevGAS);                                    //sends over the gas
   // setting to server(s)
   // if (strncmp(gasReceived5min, prevGAS, sizeof(gasReceived5min)) != 0) {  //
   // if we have a new value, report
@@ -82,8 +82,8 @@ void UpdateGas() {
 
     DomoticzJson(config_data.domoticzGasIdx, 0,
                  gasDomoticz); // gasReceived5min);
-    debug(">> UpdateGas(): ");
-    debugln(gasDomoticz);
+    Log.verbose(">> UpdateGas(): ");
+    Log.verboseln(gasDomoticz);
     strcpy(prevGAS, gasDomoticz); // retain current value for future reference
   }
 }
@@ -94,7 +94,7 @@ void UpdateElectricity() {
           electricityUsedTariff2, electricityReturnedTariff1,
           electricityReturnedTariff2, actualElectricityPowerDeli,
           actualElectricityPowerRet);
-  debug(">> UpdateElectricity(): ");
-  debugln(sValue);
+  Log.verbose(">> UpdateElectricity(): ");
+  Log.verboseln(sValue);
   DomoticzJson(config_data.domoticzEnergyIdx, 0, sValue);
 }

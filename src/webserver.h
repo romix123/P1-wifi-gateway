@@ -132,7 +132,7 @@ void addUptime(String &str) {
 }
 
 void handleRoot() {
-  debugln("handleRoot");
+  Log.verboseln("handleRoot");
   String str = "";
   addHead(str, 0);
   addIntro(str);
@@ -158,15 +158,15 @@ void handleRoot() {
 }
 
 void handleSetupSave() {
-  debugln("handleSetupSave");
-  debug("Server args: ");
-  debugln(server.args());
-  debugln(server.arg("plain"));
+  Log.verboseln("handleSetupSave");
+  Log.verbose("Server args: ");
+  Log.verbose("%d\n", server.args());
+  Log.verbose("%d\n", server.arg("plain"));
 
   if (server.args() == 0) {
-    debugln("lege submit, dus redirect naar handleRoot");
+    Log.verboseln("lege submit, dus redirect naar handleRoot");
     handleRoot();
-    debugln("En terug naar mainloop");
+    Log.verboseln("En terug naar mainloop");
     return;
   }
 
@@ -174,10 +174,10 @@ void handleSetupSave() {
 
   if (server.method() == HTTP_POST) {
     if (strncmp(setupToken, server.arg("setuptoken").c_str(), 16) != 0) {
-      debug("Error: non matching tokens: ");
-      debug(setupToken);
-      debug(" -> returned: ");
-      debugln(server.arg("setuptoken"));
+      Log.verbose("Error: non matching tokens: ");
+      Log.verbose("%s", setupToken);
+      Log.verbose(" -> returned: ");
+      Log.verbose("%s\n", server.arg("setuptoken"));
       return;
     }
 
@@ -282,11 +282,11 @@ void handleSetupSave() {
 
 void handleLogin() {
   createToken();
-  debugln("handleLogin");
+  Log.verboseln("handleLogin");
 
   if (millis() < 120000) {
-    debug(millis());
-    debugln(" – You made it within the timeframe, go to setup without login.");
+    Log.verbose("%d", millis());
+    Log.verboseln(" – You made it within the timeframe, go to setup without login.");
     bootSetup = true; // our ticket to handleSetup
     handleSetup();
   }
@@ -309,7 +309,7 @@ void handleLogin() {
 
 void handleUpdateLogin() {
   createToken();
-  debugln("handleUpdateLogin");
+  Log.verboseln("handleUpdateLogin");
 
   String str = "";
   addHead(str, 0);
@@ -331,7 +331,7 @@ void handleUpdateLogin() {
 void handleUploadForm() {
   if (strcmp(server.arg("adminPassword").c_str(), config_data.adminPassword) !=
       0) { // passwords don't match
-    debugln("Error: update entered with wrong password");
+    Log.verboseln("Error: update entered with wrong password");
     errorLogin("Update");
     return;
   } else
@@ -355,7 +355,7 @@ void handleUploadForm() {
 }
 
 void errorLogin(String returnpage) {
-  debugln("errorLogin");
+  Log.verboseln("errorLogin");
   String str = "";
   addHead(str, 0);
   addIntro(str);

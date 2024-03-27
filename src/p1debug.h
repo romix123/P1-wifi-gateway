@@ -28,46 +28,46 @@
 
 void readVoltage() { // read internal VCC
   volts = ESP.getVcc();
-  debugff("The internal VCC reads %1.2f volts\n", volts / 1000);
+  Log.verbose("The internal VCC reads %1.2f volts\n", volts / 1000);
 }
 
 void PrintConfigData() {
-  debug("dataSet : ");
-  debugln(config_data.dataSet);
-  debug("Admin password : ");
-  debugln(config_data.adminPassword);
-  debug("SSID : ");
-  debugln(config_data.ssid);
-  debug("password : ");
-  debugln(config_data.password);
-  debug("DomoticxIP : ");
-  debugln(config_data.domoticzIP);
-  debug("DomoticzPort : ");
-  debugln(config_data.domoticzPort);
-  debug("domotixzGasIdx : ");
-  debugln(config_data.domoticzGasIdx);
-  debug("domotixzEnergyIdx : ");
-  debugln(config_data.domoticzEnergyIdx);
+  Log.verbose("dataSet : ");
+  Log.verboseln(config_data.dataSet);
+  Log.verbose("Admin password : ");
+  Log.verboseln(config_data.adminPassword);
+  Log.verbose("SSID : ");
+  Log.verboseln(config_data.ssid);
+  Log.verbose("password : ");
+  Log.verboseln(config_data.password);
+  Log.verbose("DomoticxIP : ");
+  Log.verboseln(config_data.domoticzIP);
+  Log.verbose("DomoticzPort : ");
+  Log.verboseln(config_data.domoticzPort);
+  Log.verbose("domotixzGasIdx : ");
+  Log.verboseln(config_data.domoticzGasIdx);
+  Log.verbose("domotixzEnergyIdx : ");
+  Log.verboseln(config_data.domoticzEnergyIdx);
 
-  debug("mqttIP : ");
-  debugln(config_data.mqttIP);
-  debug("mqttPort : ");
-  debugln(config_data.mqttPort);
-  debug("mqttUser : ");
-  debugln(config_data.mqttUser);
-  debug("mqttPass : ");
-  debugln(config_data.mqttPass);
-  debug("mqttTopic : ");
-  debugln(config_data.mqttTopic);
+  Log.verbose("mqttIP : ");
+  Log.verboseln(config_data.mqttIP);
+  Log.verbose("mqttPort : ");
+  Log.verboseln(config_data.mqttPort);
+  Log.verbose("mqttUser : ");
+  Log.verboseln(config_data.mqttUser);
+  Log.verbose("mqttPass : ");
+  Log.verboseln(config_data.mqttPass);
+  Log.verbose("mqttTopic : ");
+  Log.verboseln(config_data.mqttTopic);
 
-  debug("interval : ");
-  debugln(config_data.interval);
-  debug("json : ");
-  debugln(config_data.domo);
-  debug("mqtt : ");
-  debugln(config_data.mqtt);
-  debug("watt : ");
-  debugln(config_data.watt);
-  debug("telnet : ");
-  debugln(config_data.telnet);
+  Log.verbose("interval : ");
+  Log.verboseln(config_data.interval);
+  Log.verbose("json : ");
+  Log.verboseln(config_data.domo);
+  Log.verbose("mqtt : ");
+  Log.verboseln(config_data.mqtt);
+  Log.verbose("watt : ");
+  Log.verboseln(config_data.watt);
+  Log.verbose("telnet : ");
+  Log.verboseln(config_data.telnet);
 }

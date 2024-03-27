@@ -50,7 +50,7 @@
 void doInitLogVars() {
   char value[12];
   // init all vars on current (first) reading
-  debug("Initialising log vars ... ");
+  Log.verbose("Initialising log vars ... ");
   strcpy(log_data.hourE1, electricityUsedTariff1);
   strcpy(log_data.dayE1, electricityUsedTariff1);
   strcpy(log_data.weekE1, electricityUsedTariff1);
@@ -90,11 +90,11 @@ void doInitLogVars() {
   strcpy(log_data.yearTR, value);
 
   needToInitLogVars = false;
-  debugln("done.");
+  Log.verboseln("done.");
 }
 
 void doInitLogVarsGas() {
-  debugln("Initialising log GAS vars ... ");
+  Log.verboseln("Initialising log GAS vars ... ");
 
   strcpy(log_data.hourG, gasReceived5min);
   strcpy(log_data.dayG, gasReceived5min);
@@ -102,7 +102,7 @@ void doInitLogVarsGas() {
   strcpy(log_data.monthG, gasReceived5min);
   strcpy(log_data.yearG, gasReceived5min);
   needToInitLogVarsGas = false;
-  debugln("done.");
+  Log.verboseln("done.");
 }
 
 void doMinutelyLog() {
@@ -111,8 +111,8 @@ void doMinutelyLog() {
   char buffer[60];
   char value[13];
   dtostrf((atof(gasReceived5min) - atof(minG)), 6, 2, value);
-  sprintf(buffer, "['%s:%s:%s',%s],\n", (String)hour(), (String)minute(),
-          (String)second(), value);
+  sprintf(buffer, "['%s:%s:%s',%s],\n", (char*)hour(), (char*)minute(),
+          (char*)second(), value);
   appendFile("/MinG.log", buffer);
   strcpy(minG, gasReceived5min);
   FST.end();
@@ -128,44 +128,44 @@ void doHourlyLog() {
   // if (hourFlag) return;
   FST.begin();
 
-  debugff("Hourly log started at %s ... ", timestampkaal());
+  Log.verbose("Hourly log started at %s ... ", timestampkaal());
   char buffer[60];
   char value[13];
 
   dtostrf((atof(electricityUsedTariff1) - atof(log_data.hourE1)), 6, 2, value);
-  sprintf(buffer, "['%s',%s],\n", (String)hour(), value);
+  sprintf(buffer, "['%s',%s],\n", (char*)hour(), value);
   appendFile("/HourE1.log", buffer);
   strcpy(log_data.hourE1, electricityUsedTariff1);
 
   dtostrf((atof(electricityUsedTariff2) - atof(log_data.hourE2)), 6, 2, value);
-  sprintf(buffer, "['%s',%s],\n", (String)hour(), value);
+  sprintf(buffer, "['%s',%s],\n", (char*)hour(), value);
   appendFile("/HourE2.log", buffer);
   strcpy(log_data.hourE2, electricityUsedTariff2);
 
   dtostrf((atof(electricityReturnedTariff1) - atof(log_data.hourR1)), 6, 2,
           value);
-  sprintf(buffer, "['%s',%s],\n", (String)hour(), value);
+  sprintf(buffer, "['%s',%s],\n", (char*)hour(), value);
   appendFile("/HourR1.log", buffer);
   strcpy(log_data.hourR1, electricityReturnedTariff1);
 
   dtostrf((atof(electricityReturnedTariff2) - atof(log_data.hourR2)), 6, 2,
           value);
-  sprintf(buffer, "['%s',%s],\n", (String)hour(), value);
+  sprintf(buffer, "['%s',%s],\n", (char*)hour(), value);
   appendFile("/HourR2.log", buffer);
   strcpy(log_data.hourR2, electricityReturnedTariff2);
 
   dtostrf((atof(gasReceived5min) - atof(log_data.hourG)), 6, 2, value);
-  sprintf(buffer, "['%s',%s],\n", (String)hour(), value);
+  sprintf(buffer, "['%s',%s],\n", (char*)hour(), value);
   appendFile("/HourG.log", buffer);
   strcpy(log_data.hourG, gasReceived5min);
 
   dtostrf((atof(log_data.hourE1) + atof(log_data.hourE2)), 6, 2, value);
-  sprintf(buffer, "['%s',%s],\n", (String)hour(), value);
+  sprintf(buffer, "['%s',%s],\n", (char*)hour(), value);
   appendFile("/HourTE.log", buffer);
   strcpy(log_data.hourTE, value);
 
   dtostrf((atof(log_data.hourR1) + atof(log_data.hourR2)), 6, 2, value);
-  sprintf(buffer, "['%s',%s],\n", (String)hour(), value);
+  sprintf(buffer, "['%s',%s],\n", (char*)hour(), value);
   appendFile("/HourTR.log", buffer);
   strcpy(log_data.hourTR, value);
 
@@ -178,12 +178,12 @@ void doHourlyLog() {
 
   FST.end();
   hourFlag = true;
-  debugff("completed at %s.", timestampkaal());
-  debugln();
+  Log.verbose("completed at %s.", timestampkaal());
+  Log.verboseln("");
   checkMinute = minute();
   if (MountFS()) {
     char payload[50];
-    sprintf(payload, "Remounted FS at %s", timestampkaal());
+    sprintf(payload, "Remounted FS at %s", string2char(timestampkaal()));
     if (MQTT_debug)
       send_mqtt_message("p1wifi/logging", payload);
   }
@@ -200,7 +200,7 @@ void doDailyLog() {
    * set flag
    */
   monitoring = false;
-  debug("Dayly log started ... ");
+  Log.verbose("Dayly log started ... ");
 
   String str = "";
   char buffer[60];
@@ -214,7 +214,7 @@ void doDailyLog() {
   str += day();
 
   dtostrf((atof(electricityUsedTariff1) - atof(log_data.dayE1)), 6, 2, value);
-  sprintf(buffer, "['%s',%s],\n", str, value);
+  sprintf(buffer, "['%s',%s],\n", string2char(str), value);
   //  appendFile("DayE1.log", buffer);
   appendFile("/WeekE1.log", buffer);
   appendFile("/MonthE1.log", buffer);
@@ -222,7 +222,7 @@ void doDailyLog() {
   strcpy(log_data.dayE1, electricityUsedTariff1);
 
   dtostrf((atof(electricityUsedTariff2) - atof(log_data.dayE2)), 6, 2, value);
-  sprintf(buffer, "['%s',%s],\n", str, value);
+  sprintf(buffer, "['%s',%s],\n", string2char(str), value);
   //  appendFile("DayE2.log", buffer);
   appendFile("/WeekE2.log", buffer);
   appendFile("/MonthE2.log", buffer);
@@ -231,7 +231,7 @@ void doDailyLog() {
 
   dtostrf((atof(electricityReturnedTariff1) - atof(log_data.dayR1)), 6, 2,
           value);
-  sprintf(buffer, "['%s',%s],\n", str, value);
+  sprintf(buffer, "['%s',%s],\n", string2char(str), value);
   //  appendFile("/DayR1.log", buffer);
   appendFile("/WeekR1.log", buffer);
   appendFile("/MonthR1.log", buffer);
@@ -240,7 +240,7 @@ void doDailyLog() {
 
   dtostrf((atof(electricityReturnedTariff2) - atof(log_data.dayR2)), 6, 2,
           value);
-  sprintf(buffer, "['%s',%s],\n", str, value);
+  sprintf(buffer, "['%s',%s],\n", string2char(str), value);
   //  appendFile("DayR2.log", buffer);
   appendFile("/WeekR2.log", buffer);
   appendFile("/MonthR2.log", buffer);
@@ -248,20 +248,20 @@ void doDailyLog() {
   strcpy(log_data.dayR2, electricityReturnedTariff2);
 
   dtostrf((atof(gasReceived5min) - atof(log_data.dayG)), 6, 2, value);
-  sprintf(buffer, "['%s',%s],\n", str, value);
+  sprintf(buffer, "['%s',%s],\n", string2char(str), value);
   //  appendFile("DayG.log", buffer);
   appendFile("/WeekG.log", buffer);
   appendFile("/MonthG.log", buffer);
   appendFile("/YearG.log", buffer);
   sprintf_P(buffer, PSTR("(%d,%d,%d), %s],\n"), year(), month() - 1, day(),
             value);
-  // sprintf(buffer, "(%s , %s , %s), %s],\n", year(), 0, day(), value); //
+  // sprintf(buffer, "(%s , %s , %s), %s],\n", (char*)year(), (char*)0, (char*)day(), value); //
   // Google graph format uses month 0 for Jan!!
   appendFile("/YearGc.log", buffer);
   strcpy(log_data.dayG, gasReceived5min);
 
   dtostrf((atof(log_data.dayE1) + atof(log_data.dayE2)), 6, 2, value);
-  sprintf(buffer, "['%s',%s],\n", str, value);
+  sprintf(buffer, "['%s',%s],\n", string2char(str), value);
   //  appendFile("DayTE.log", buffer);
   appendFile("/WeekTE.log", buffer);
   appendFile("/MonthTE.log", buffer);
@@ -269,7 +269,7 @@ void doDailyLog() {
   strcpy(log_data.dayTE, value);
 
   dtostrf((atof(log_data.dayR1) + atof(log_data.dayR2)), 6, 2, value);
-  sprintf(buffer, "['%s',%s],\n", str, value);
+  sprintf(buffer, "['%s',%s],\n", string2char(str), value);
   //  appendFile("DayTR.log", buffer);
   appendFile("/WeekTR.log", buffer);
   appendFile("/MonthTR.log", buffer);
@@ -285,7 +285,7 @@ void doDailyLog() {
   deleteFile("/HourG.log");
 
   dayFlag = true;
-  debugln("completed.");
+  Log.verboseln("completed.");
   monitoring = true;
 }
 
@@ -295,7 +295,7 @@ void doWeeklyLog() {
    *   week cur
    *   set flag
    */
-  debug("Weekly log started. It was a Sunday evening ... ");
+  Log.verbose("Weekly log started. It was a Sunday evening ... ");
   String str = "";
   char buffer[55];
   char value[12];
@@ -310,14 +310,14 @@ void doWeeklyLog() {
   deleteFile("/WeekE1-1.log");
   renameFile("/WeekE1.log", "/WeekE1-1.log");
   dtostrf((atof(electricityUsedTariff1) - atof(log_data.weekE1)), 6, 2, value);
-  sprintf(buffer, "['%s', %s],\n", str, value);
+  sprintf(buffer, "['%s', %s],\n", string2char(str), value);
   appendFile("/WeeksE1.log", buffer);
   strcpy(log_data.weekE1, electricityUsedTariff1);
 
   deleteFile("/WeekE2-1.log");
   renameFile("/WeekE2.log", "/WeekE2-1.log");
   dtostrf((atof(electricityUsedTariff2) - atof(log_data.weekE2)), 6, 2, value);
-  sprintf(buffer, "['%s', %s],\n", str, value);
+  sprintf(buffer, "['%s', %s],\n", string2char(str), value);
   appendFile("/WeeksE2.log", buffer);
   strcpy(log_data.weekE2, electricityUsedTariff2);
 
@@ -325,7 +325,7 @@ void doWeeklyLog() {
   renameFile("/WeekR1.log", "/WeekR1-1.log");
   dtostrf((atof(electricityReturnedTariff1) - atof(log_data.weekR1)), 6, 2,
           value);
-  sprintf(buffer, "['%s', %s],\n", str, value);
+  sprintf(buffer, "['%s', %s],\n", string2char(str), value);
   appendFile("/WeeksR1.log", buffer);
   strcpy(log_data.weekR1, electricityReturnedTariff1);
 
@@ -333,7 +333,7 @@ void doWeeklyLog() {
   renameFile("/WeekR2.log", "/WeekR2-1.log");
   dtostrf((atof(electricityReturnedTariff2) - atof(log_data.weekR2)), 6, 2,
           value);
-  sprintf(buffer, "['%s', %s],\n", str, value);
+  sprintf(buffer, "['%s', %s],\n", string2char(str), value);
   appendFile("/WeeksR2.log", buffer);
   strcpy(log_data.weekR2, electricityReturnedTariff2);
 
@@ -342,7 +342,7 @@ void doWeeklyLog() {
   dtostrf((atof(electricityUsedTariff1) - atof(log_data.weekE1)) +
               (atof(electricityUsedTariff2) - atof(log_data.weekE2)),
           6, 2, value);
-  sprintf(buffer, "['%s', %s],\n", str, value);
+  sprintf(buffer, "['%s', %s],\n", string2char(str), value);
   appendFile("/WeeksTE.log", buffer);
   strcpy(log_data.weekTE, value);
 
@@ -351,19 +351,19 @@ void doWeeklyLog() {
   dtostrf((atof(electricityReturnedTariff1) - atof(log_data.weekR1)) +
               (atof(electricityReturnedTariff2) - atof(log_data.weekR2)),
           6, 2, value);
-  sprintf(buffer, "['%s', %s],\n", str, value);
+  sprintf(buffer, "['%s', %s],\n", string2char(str), value);
   appendFile("/WeeksTR.log", buffer);
   strcpy(log_data.weekTR, value);
 
   deleteFile("/WeekG-1.log");
   renameFile("/WeekG.log", "/WeekG-1.log");
   dtostrf((atof(gasReceived5min) - atof(log_data.dayG)), 6, 2, value);
-  sprintf(buffer, "['%s', %s],\n", str, value);
+  sprintf(buffer, "['%s', %s],\n", string2char(str), value);
   appendFile("/WeeksG.log", buffer);
   strcpy(log_data.weekG, value);
 
   weekFlag = true;
-  debugln("completed.");
+  Log.verboseln("completed.");
 }
 
 void doMonthlyLog() {
@@ -373,7 +373,7 @@ void doMonthlyLog() {
    * set flag
    */
 
-  debug("Monthlyly log started ... ");
+  Log.verbose("Monthlyly log started ... ");
   String str = "";
   char buffer[55];
   char value[12];
@@ -388,14 +388,14 @@ void doMonthlyLog() {
   deleteFile("/MonthE1-1.log");
   renameFile("/MonthE1.log", "/MonthE1-1.log");
   dtostrf((atof(electricityUsedTariff1) - atof(log_data.monthE1)), 6, 2, value);
-  sprintf(buffer, "['%s', %s],\n", str, value);
+  sprintf(buffer, "['%s', %s],\n", string2char(str), value);
   appendFile("/MonthsE1.log", buffer);
   strcpy(log_data.monthE1, electricityUsedTariff1);
 
   deleteFile("/MonthE2-1.log");
   renameFile("/MonthE2.log", "/MonthE2-1.log");
   dtostrf((atof(electricityUsedTariff2) - atof(log_data.monthE2)), 6, 2, value);
-  sprintf(buffer, "['%s', %s],\n", str, value);
+  sprintf(buffer, "['%s', %s],\n", string2char(str), value);
   appendFile("/MonthsE2.log", buffer);
   strcpy(log_data.monthE2, electricityUsedTariff2);
 
@@ -403,7 +403,7 @@ void doMonthlyLog() {
   renameFile("/MonthR1.log", "/MonthR1-1.log");
   dtostrf((atof(electricityReturnedTariff1) - atof(log_data.monthR1)), 6, 2,
           value);
-  sprintf(buffer, "['%s', %s],\n", str, value);
+  sprintf(buffer, "['%s', %s],\n", string2char(str), value);
   appendFile("/MonthsR1.log", buffer);
   strcpy(log_data.monthR1, electricityReturnedTariff1);
 
@@ -411,7 +411,7 @@ void doMonthlyLog() {
   renameFile("/MonthR2.log", "/MonthR2-1.log");
   dtostrf((atof(electricityReturnedTariff2) - atof(log_data.monthR2)), 6, 2,
           value);
-  sprintf(buffer, "['%s', %s],\n", str, value);
+  sprintf(buffer, "['%s', %s],\n", string2char(str), value);
   appendFile("/MonthsR2.log", buffer);
   strcpy(log_data.monthR2, electricityReturnedTariff2);
 
@@ -420,7 +420,7 @@ void doMonthlyLog() {
   dtostrf((atof(electricityUsedTariff1) - atof(log_data.monthE1)) +
               (atof(electricityUsedTariff2) - atof(log_data.monthE2)),
           6, 2, value);
-  sprintf(buffer, "['%s', %s],\n", str, value);
+  sprintf(buffer, "['%s', %s],\n", string2char(str), value);
   appendFile("/MonthsTE.log", buffer);
   strcpy(log_data.monthTE, value);
 
@@ -429,19 +429,19 @@ void doMonthlyLog() {
   dtostrf((atof(electricityReturnedTariff1) - atof(log_data.monthR1)) +
               (atof(electricityReturnedTariff2) - atof(log_data.monthR2)),
           6, 2, value);
-  sprintf(buffer, "['%s', %s],\n", str, value);
+  sprintf(buffer, "['%s', %s],\n", string2char(str), value);
   appendFile("/MonthsTR.log", buffer);
   strcpy(log_data.monthTR, value);
 
   deleteFile("/MonthG-1.log");
   renameFile("/MonthG.log", "/MonthG-1.log");
   dtostrf((atof(gasReceived5min) - atof(log_data.dayG)), 6, 2, value);
-  sprintf(buffer, "['%s', %s],\n", str, value);
+  sprintf(buffer, "['%s', %s],\n", string2char(str), value);
   appendFile("/MonthsG.log", buffer);
   strcpy(log_data.monthG, value);
 
   monthFlag = true;
-  debugln("completed.");
+  Log.verboseln("completed.");
 }
 
 void doYearlyLog() {
@@ -505,7 +505,7 @@ void DirListing() {
     str += ((String)file.size());
     str += ("<br>");
 
-    // time_t cr = file.getCreationTime();
+    // time_t cr = file.getCreationTime();  
     // time_t lw = file.getLastWrite();
     file.close();
     // struct tm * tmstruct = localtime(&cr);

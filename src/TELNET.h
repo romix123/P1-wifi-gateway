@@ -33,15 +33,15 @@ void setupTelnet() {
 
 void telnetloop() {
   int i;
-  debugln("telnetloop()");
+  Log.verboseln("telnetloop()");
   if (telnet.hasClient()) {
-    debugln("telnet.hasClient()");
+    Log.verboseln("telnet.hasClient()");
     // find free/disconnected spot
     for (i = 0; i < MAX_SRV_CLIENTS; i++)
       if (!telnetClients[i]) { // equivalent to !serverClients[i].connected()
         telnetClients[i] = telnet.accept();
-        debug("New client: index ");
-        debugln(i);
+        Log.verbose("New client: index ");
+        Log.verbose("%d\n", i);
         telnetConnected = true;
         break;
       } else
@@ -53,7 +53,7 @@ void telnetloop() {
       // when out of scope, a WiFiClient will
       // - flush() - all data will be sent
       // - stop() - automatically too
-      debugff("server is busy with %d active connections\n", MAX_SRV_CLIENTS);
+      Log.verbose("server is busy with %d active connections\n", MAX_SRV_CLIENTS);
       // something is wrong. We should not reach MAX_SRV_CLIENTS
       // reboot to clean up things.
       ESP.restart();
@@ -63,16 +63,16 @@ void telnetloop() {
     while (telnetClients[i].available() &&
            telnetClients[i].availableForWrite() > 0) {
       char buf[50];
-      size_t tcp_got = telnetClients[i].read(buf, 100);
+      telnetClients[i].read(buf, 100);
       if (strncmp(buf, "debug", 5) == 0) {
         telnetDebugClient = i; // we have found a debug client
-        debugln("debug port request");
+        Log.verboseln("debug port request");
         telnetDebugConnected = true;
         telnetClients[i].flush();
       }
       if (strncmp(buf, "quit", 4) ==
           0) { // we have found a debug client dropping debug connection
-        debugln("debug port request dropped");
+        Log.verboseln("debug port request dropped");
         telnetDebugConnected = false;
         telnetClients[i].flush();
         telnetClients[i].stop();
@@ -94,7 +94,7 @@ bool telnetStillRunning() {
 }
 
 void TelnetReporter() {
-  debugln("TelnetReporter()");
+  Log.verboseln("TelnetReporter()");
   activetelnets = 0;
   int maxToTcp = 0;
   int i;
@@ -107,52 +107,33 @@ void TelnetReporter() {
         } else {
           maxToTcp = std::min(maxToTcp, afw);
         }
-        debug("[]client ");
-        debug(i);
-        debug(" maxtcp ");
-        debugln(maxToTcp);
+        Log.verbose("[]client ");
+        Log.verbose("%d", i);
+        Log.verbose(" maxtcp ");
+        Log.verbose("%d", maxToTcp);
         activetelnets++;
       } else {
         // warn but ignore congested clients
-        debugln("one client is congested");
+        Log.verboseln("one client is congested");
         telnetClients[i].flush();
         telnetClients[i].stop();
       }
     }
-  int len = datagram.length();
+  unsigned int len = datagram.length();
   for (i = 0; i < MAX_SRV_CLIENTS; i++) {
-    debug(">>>>> Client ");
-    debug(String(i));
+    Log.verbose(">>>>> Client ");
+    Log.verbose("%d", i);
     if (telnetClients[i].availableForWrite() >= 1) {
-      debugln(" is available for writing");
+      Log.verboseln(" is available for writing");
       size_t tcp_sent = telnetClients[i].write(datagram.c_str(), len);
       if (tcp_sent != len) {
         statusMsg = String("len mismatch for : " + i);
       }
-      debug("Raw Data Published to Telnet connection: ");
-      debugln(i);
+      Log.verbose("Raw Data Published to Telnet connection: ");
+      Log.verbose("%d\n", i);
       LastTReport = timestampkaal();
     } else
-      debugln(" is not available for writing");
+      Log.verboseln(" is not available for writing");
   }
   yield();
-}
-
-void telnetD(String x) {
-  char buf[128];
-  int len = x.length();
-  x.toCharArray(buf, len);
-  if (telnetClients[telnetDebugClient].availableForWrite() >= 1) {
-    telnetClients[telnetDebugClient].write(buf, len);
-  }
-}
-
-void telnetDLn(String x) {
-  char buf[128];
-  x += "\n\r";
-  int len = x.length();
-  x.toCharArray(buf, len);
-  if (telnetClients[telnetDebugClient].availableForWrite() >= 1) {
-    telnetClients[telnetDebugClient].write(buf, len);
-  }
 }

@@ -78,7 +78,7 @@ void handleGraphMenu() {
 
 void DumpDataFiles() {
   listDir("/");
-  debugln();
+  Log.verboseln("");
 }
 
 void selectGraph() {
@@ -91,14 +91,14 @@ void selectGraph() {
   strncpy(period, server.arg("period").c_str(), server.arg("period").length());
   period[server.arg("period").length()] = '\0';
 
-  debug("Selected graph: ");
-  debugln(switcher);
-  debug("Selected period: ");
-  debugln(period);
+  Log.verbose("Selected graph: ");
+  Log.verboseln(switcher);
+  Log.verbose("Selected period: ");
+  Log.verboseln(period);
 
   if (server.method() == HTTP_POST) {
     //  int switcher = atoi(server.arg("datatype").c_str());
-    debugln(switcher);
+    Log.verboseln(switcher);
     switch (atoi(switcher)) {
     case 1: // delivered T1/T2
       //     theGraph("E1.log", "E2.log", "Elektriciteit gebruik T1",
@@ -147,8 +147,6 @@ void theGraph(const char *type1, const char *type2, String title1,
   char buffer[64];
   char path1[20];
   char path2[20];
-  char totaal1[12];
-  char totaal2[12];
   String pageTitle = "";
 
   if (period == "day") {
@@ -209,16 +207,16 @@ void theGraph(const char *type1, const char *type2, String title1,
     //each period uses 7 * 12 bytes
 
   target1 = (int*)&log_data + offset * 84 + measure1 * 12; //
-  debug("Target 1: ");
-  debugln(offset * 84 + measure1 * 12);
+  Log.verbose("Target 1: ");
+  Log.verboseln(offset * 84 + measure1 * 12);
    for (int i = 0; i < 12; i++) {
     startval1[i] = *(target1);
     target1++;
    }
-   debug("value :");
-   debugln(startval1);
+   Log.verbose("value :");
+   Log.verboseln(startval1);
   //target2 = (int*)&log_data + offset * 84 + measure2 * 12; //
-  /*
+
    int *p;
     // take address of displayDefault and assign to the pointer
     p = (int*)&displayDefault;
@@ -236,10 +234,10 @@ void theGraph(const char *type1, const char *type2, String title1,
     p = (int*)&log_data;
 
   */
-  // debug("file1 to read: ");
-  // debugln(path1);
-  // debug("file2 to read: ");
-  // debugln(path2);
+  // Log.verbose("file1 to read: ");
+  // Log.verboseln(path1);
+  // Log.verbose("file2 to read: ");
+  // Log.verboseln(path2);
 
   // https://stackoverflow.com/questions/44159990/how-to-add-a-total-to-a-chart-in-google-charts
 
@@ -257,7 +255,7 @@ void theGraph(const char *type1, const char *type2, String title1,
   }
 
   server.sendContent(str);
-  // debugln(str);
+  // Log.verboseln(str);
 
   // str += F("function getSum(data, column){var total = 0;for (i = 0; i <
   // data.getNumberOfRows(); i++) total = total + data.getValue(i, column);
@@ -267,18 +265,18 @@ void theGraph(const char *type1, const char *type2, String title1,
           "google.visualization.arrayToDataTable([");
   str += label; // F("[\"uur\", \"m^3\"], ");
   server.sendContent(str);
-  // debugln(str);
+  // Log.verboseln(str);
 
   if (!file1) {
-    debugln("Failed to open file for reading");
+    Log.verboseln("Failed to open file for reading");
     server.sendContent("['0', 0],");
-    //    debug("['0', 0], ");
+    //    Log.verbose("['0', 0], ");
   } else {
     while (file1.available()) {
       int l = file1.readBytesUntil('\n', buffer, sizeof(buffer));
       buffer[l] = 0;
       server.sendContent(buffer);
-      //     debugln(buffer);
+      //     Log.verboseln(buffer);
     }
     file1.close();
   }
@@ -297,7 +295,7 @@ void theGraph(const char *type1, const char *type2, String title1,
         "google.visualization.ColumnChart(document.getElementById('Chart1'));");
   str += F("chart.draw(data, options); }");
   server.sendContent(str);
-  // debugln(str);
+  // Log.verboseln(str);
   delay(200);
 
   str = "";
@@ -307,18 +305,18 @@ void theGraph(const char *type1, const char *type2, String title1,
             "google.visualization.arrayToDataTable([");
     str += label; // F("[\"uur\", \"m^3\"], ");
     server.sendContent(str);
-    //  debugln(str);
+    //  Log.verboseln(str);
 
     if (!file2) {
-      debugln("Failed to open file for reading");
+      Log.verboseln("Failed to open file for reading");
       server.sendContent("['0', 0],");
-      debug("['0', 0], ");
+      Log.verbose("['0', 0], ");
     } else {
       while (file2.available()) {
         int l = file2.readBytesUntil('\n', buffer, sizeof(buffer));
         buffer[l] = 0;
         server.sendContent(buffer);
-        debug(str);
+        Log.verbose("%s", str);
       }
       file2.close();
       delay(200);
@@ -337,7 +335,7 @@ void theGraph(const char *type1, const char *type2, String title1,
                "Chart2'));");
     str += F("chart.draw(data, options); }");
     server.sendContent(str);
-    //  debugln(str);
+    //  Log.verboseln(str);
   } // only if we have a second file to display
 
   str = F("</script>");
@@ -365,7 +363,7 @@ void theGraph(const char *type1, const char *type2, String title1,
            "bhome'>Menu</button></form>");
   addFootBare(str);
   server.sendContent(str);
-  //  debugln(str);
+  //  Log.verboseln(str);
   server.sendContent(F(""));
   monitoring = true;
 }
@@ -390,10 +388,10 @@ void calendarGas() {
   str += F("dataTable.addRows([");
 
   server.sendContent(str);
-  // debugln(str);
+  // Log.verboseln(str);
 
   if (!file) {
-    debugln("Failed to open file for reading");
+    Log.verboseln("Failed to open file for reading");
     server.sendContent("[new Date(2023,0,1), 0],");
   } else {
     while (file.available()) {
@@ -418,7 +416,7 @@ void calendarGas() {
 
   addFootBare(str);
   server.sendContent(str);
-  // debugln(str);
+  // Log.verboseln(str);
   server.sendContent(F(""));
 
   monitoring = true;

@@ -44,20 +44,12 @@ void alignToTelegram() {
   }
 }
 
-void blink(int t) {
-  for (int i = 0; i <= t; i++) {
-    LEDon           // Signaal naar laag op ESP-M3
-        delay(200); // wacht 200 millisec
-    LEDoff;         // LEDoff, signaal naar hoog op de ESP-M3
-  }
-}
-
 void RTS_on() {           // switch on Data Request
   digitalWrite(OE, LOW);  // enable buffer
   digitalWrite(DR, HIGH); // turn on Data Request
   OEstate = true;
-  debug("Data request on at ");
-  debugln(millis());
+  Log.verbose("Data request on at ");
+  Log.verbose("%d\n", millis());
 }
 
 void RTS_off() {          // switch off Data Request
@@ -65,10 +57,10 @@ void RTS_off() {          // switch off Data Request
   digitalWrite(OE, HIGH); // put buffer in Tristate mode
   OEstate = false;
   nextUpdateTime = millis() + interval;
-  debug("Data request off at: ");
-  debug(millis());
-  debug(" nextUpdateTime: ");
-  debugln(nextUpdateTime);
+  Log.verbose("Data request off at: ");
+  Log.verbose("%d", millis());
+  Log.verbose(" nextUpdateTime: ");
+  Log.verbose("%d\n", nextUpdateTime);
 }
 
 bool isNumber(char *res, int len) {
@@ -95,7 +87,7 @@ void settime() {
   setTime(NUM(6, 10) + NUM(7, 1), NUM(8, 10) + NUM(9, 1),
           NUM(10, 10) + NUM(11, 1), NUM(4, 10) + NUM(5, 1),
           NUM(2, 10) + NUM(3, 1), NUM(0, 10) + NUM(1, 1));
-  debug(timestamp());
+  Log.verbose("%d", timestamp());
   LastReportinSecs = now();
   timeIsSet = true;
 }
@@ -110,7 +102,7 @@ String timestampkaal() {
 
 void timeIsSet_cb() {
   if (!timeIsSet) {
-    debugln("Time is set, starting timer service.");
+    Log.verboseln("Time is set, starting timer service.");
     timeIsSet = true;
     timerAlarm.startService();
   }
@@ -119,26 +111,24 @@ void timeIsSet_cb() {
 void createToken() {
   char HexList[] = "1234567890ABCDEF";
 
-  debug("Token: ");
   for (int i = 0; i < 16; i++) {
     setupToken[i] = HexList[random(0, 16)];
-    debug(setupToken[i]);
   }
-  debugln();
   setupToken[16] = '\0';
+  Log.verboseln("Token: %s", setupToken);
 }
 
 void listDir(const char *dirname) {
-  debugff("Listing directory: %s\n", dirname);
+  Log.verbose("Listing directory: %s\n", dirname);
 
   Dir root = FST.openDir(dirname);
 
   while (root.next()) {
     File file = root.openFile("r");
-    debug("  FILE: ");
-    debug(root.fileName());
-    debug("  SIZE: ");
-    debug(file.size());
+    Log.verbose("  FILE: ");
+    Log.verbose("%s", root.fileName());
+    Log.verbose("  SIZE: ");
+    Log.verbose("%d", file.size());
     time_t cr = file.getCreationTime();
     time_t lw = file.getLastWrite();
     file.close();
@@ -156,34 +146,34 @@ void listDir(const char *dirname) {
 }
 
 void readFile(const char *path) {
-  debugff("Reading file: %s\n", path);
-  debugln();
+  Log.verbose("Reading file: %s\n", path);
+  Log.verboseln("");
   File file = FST.open(path, "r");
   if (!file) {
-    debugln("Failed to open file for reading");
+    Log.verboseln("Failed to open file for reading");
     return;
   }
 
-  debugln("Read from file: ");
+  Log.verboseln("Read from file: ");
   while (file.available()) {
-    debug(String((char)file.read()));
+    Log.verbose("%s", String((char)file.read()));
   }
-  debugln();
+  Log.verboseln("");
   file.close();
 }
 
 void writeFile(const char *path, const char *message) {
-  debugff("Writing file: %s\n", path);
+  Log.verbose("Writing file: %s\n", path);
 
   File file = FST.open(path, "w");
   if (!file) {
-    debugln("Failed to open file for writing");
+    Log.verboseln("Failed to open file for writing");
     return;
   }
   if (file.print(message)) {
-    debugln("File written");
+    Log.verboseln("File written");
   } else {
-    debugln("Write failed");
+    Log.verboseln("Write failed");
   }
   delay(2000); // Make sure the CREATE and LASTWRITE times are different
   file.close();
@@ -191,26 +181,26 @@ void writeFile(const char *path, const char *message) {
 
 void appendFile(const char *path, const char *message) {
 
-  debugfff("Appending to file: %s time: %s\n", path, (String)millis());
+  Log.verboseln("Appending to file: %s time: %d", path, millis());
   char payload[50];
 
   File file = FST.open(path, "a");
   if (!file) {
-    debugln("Failed to open file for appending");
+    Log.verboseln("Failed to open file for appending");
     sprintf(payload, "can't open file %s", path);
     send_mqtt_message("p1wifi/logging", payload);
     return;
   }
   if (file.print(message)) {
-    debug("Message appended: ");
-    debugln(message);
+    Log.verbose("Message appended: ");
+    Log.verboseln(message);
     sprintf(payload, "Append to %s with %s succeeded: %s", path, message,
-            timestampkaal());
+            string2char(timestampkaal()));
     send_mqtt_message("p1wifi/logging", payload);
   } else {
-    debugln("Append failed");
+    Log.verboseln("Append failed");
     sprintf(payload, "Append to %s with %s failed: %s", path, message,
-            timestampkaal());
+            string2char(timestampkaal()));
     send_mqtt_message("p1wifi/logging", payload);
   }
   file.flush();
@@ -219,21 +209,21 @@ void appendFile(const char *path, const char *message) {
 }
 
 void renameFile(const char *path1, const char *path2) {
-  debugff("Renaming file %s ", path1);
-  debugff("to %s\n", path2);
+  Log.verbose("Renaming file %s ", path1);
+  Log.verbose("to %s\n", path2);
   if (FST.rename(path1, path2)) {
-    debugln("File renamed");
+    Log.verboseln("File renamed");
   } else {
-    debugln("Rename failed");
+    Log.verboseln("Rename failed");
   }
 }
 
 void deleteFile(const char *path) {
-  debugff("Deleting file: %s\n", path);
+  Log.verbose("Deleting file: %s\n", path);
   if (FST.remove(path)) {
-    debugln("File deleted");
+    Log.verboseln("File deleted");
   } else {
-    debugln("Delete failed");
+    Log.verboseln("Delete failed");
   }
 }
 
@@ -263,7 +253,7 @@ void deleteFile(const char *path) {
 //
 //  while ((n + 1) < size){ // && filel.available()) {
 //    ch = file->read();
-//    debug(ch);
+//    Log.verbose(ch);
 //      // Delete CR.
 //      if (ch == '\r') {
 //      continue;
@@ -281,28 +271,28 @@ int numLines(const char *path) {
   int numberOfLines = 0;
   char ch;
 
-  debugln("counting lines in file");
+  Log.verboseln("counting lines in file");
   File file = FST.open(path, "r");
   if (!file) {
-    debugln("Failed to open file for reading");
+    Log.verboseln("Failed to open file for reading");
     return 0;
   }
 
-  debugln("counting lines …");
+  Log.verboseln("counting lines …");
   while (file.available()) {
     ch = file.read();
     if (ch == '\n')
       numberOfLines++;
   }
-  debugln(numberOfLines);
+  Log.verbose("%d\n", numberOfLines);
   file.close();
   return numberOfLines;
 }
 
 boolean MountFS() {
-  debugln("Mount LittleFS");
+  Log.verboseln("Mount LittleFS");
   if (!FST.begin()) {
-    debugln("FST mount failed");
+    Log.verboseln("FST mount failed");
     return false;
   }
   return true;
@@ -331,7 +321,7 @@ static void handleNotFound() {
 }
 
 void zapFiles() {
-  debug("Cleaning out logfiles ... ");
+  Log.verbose("Cleaning out logfiles ... ");
 
   deleteFile("/HourE1.log");
   deleteFile("/HourE2.log");
@@ -381,28 +371,29 @@ void zapFiles() {
   deleteFile("/YearTR.log");
   deleteFile("/YearG.log");
   deleteFile("/YearGc.log");
-  debugln("done.");
+  Log.verboseln("done.");
 }
 
 void zapConfig() {
-  debug("Cleaning out logData files ... ");
+  Log.verbose("Cleaning out logData files ... ");
   deleteFile("/logData.txt");
   deleteFile("/logData-1.txt");
-  debugln("done.");
+  Log.verboseln("done.");
 }
 
 void formatFS() {
   char payload[50];
-  sprintf(payload, "Formatting filesystem at %s", timestampkaal());
+  sprintf(payload, "Formatting filesystem at %s", string2char(timestampkaal()));
   if (MQTT_debug)
     send_mqtt_message("p1wifi/logging", payload);
 
   FST.format();
 
   if (!FST.begin()) {
-    debugln("FST mount failed AGAIN");
+    Log.verboseln("FST mount failed AGAIN");
   } else {
-    sprintf(payload, "Filesystem formatted at %s", timestampkaal());
+    sprintf(payload, "Filesystem formatted at %s",
+            string2char(timestampkaal()));
     if (MQTT_debug)
       send_mqtt_message("p1wifi/logging", payload);
   }
@@ -592,8 +583,8 @@ void doWatchDogs() {
     ESP.reset(); // watchdog, in case we still have a memery leak
   if (millis() - LastSample > 300000) {
     Serial.flush();
-    sprintf(payload,
-            "No data in 300 sec, restarting monitoring: ", timestampkaal());
+    sprintf(payload, "No data in 300 sec, restarting monitoring: %s",
+            string2char(timestampkaal()));
     if (MQTT_debug)
       send_mqtt_message("p1wifi/logging", payload);
     hourFlag = false;
@@ -611,23 +602,10 @@ void doWatchDogs() {
   // monitoring
 }
 
-// the CRC routine
-uint32_t calculateCRC32(const uint8_t *data, size_t length) {
-  uint32_t crc = 0xffffffff;
-  while (length--) {
-    uint8_t c = *data++;
-    for (uint32_t i = 0x80; i > 0; i >>= 1) {
-      bool bit = crc & 0x80000000;
-      if (c & i) {
-        bit = !bit;
-      }
-
-      crc <<= 1;
-      if (bit) {
-        crc ^= 0x04c11db7;
-      }
-    }
+char *string2char(String str) {
+  if (str.length() != 0) {
+    char *p = const_cast<char *>(str.c_str());
+    return p;
   }
-
-  return crc;
+  return (char *)"";
 }
