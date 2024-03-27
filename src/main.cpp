@@ -156,7 +156,7 @@ void readTelegram();
 
 bool zapfiles = false;
 
-String version = "1.2 – NL";
+String version = "1.2ba – NL";
 #define NEDERLANDS
 #define HOSTNAME "p1meter"
 #define FSystem 1 // 0= LittleFS 1 = SPIFFS

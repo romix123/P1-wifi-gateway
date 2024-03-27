@@ -491,31 +491,18 @@ String totalXY(const char *typeC, String period) {
   return "fault";
 }
 
-void identifyMeter() {
- if (!meternameSet){
-  if (meterId.indexOf("ISK5\\2M550E-1011") != -1)
-    meterName = "ISKRA AM550e-1011";
-    else
-  if (meterId.indexOf("KFM5KAIFA-METER") != -1)
-    meterName = "Kaifa  (MA105 of MA304)";
-    else
-  if (meterId.indexOf("XMX5LGBBFG10") != -1)
-    meterName = "Landis + Gyr E350";
-    else
-  if (meterId.indexOf("XMX5LG") != -1)
-    meterName = "Landis + Gyr";
-    else
-  if (meterId.indexOf("Ene5\\T210-D") != -1)
-    meterName = "Sagemcom T210-D";
-    else
-  if (meterId.indexOf("FLU5") !=-1) {
+void identifyMeter(){
+  if (datagram.indexOf("ISK5\\2M550E-1011") != -1) meterName = "ISKRA AM550e-1011";
+  if (datagram.indexOf("KFM5KAIFA-METER") != -1) meterName = "Kaifa  (MA105 of MA304)";
+  if (datagram.indexOf("XMX5LGBBFG10") != -1) meterName = "Landis + Gyr E350";
+  if (datagram.indexOf("XMX5LG") != -1) meterName = "Landis + Gyr";
+  if (datagram.indexOf("Ene5\\T210-D") != -1) meterName = "Sagemcom T210-D";
+  if (datagram.indexOf("FLU5\\") !=-1) {
     meterName = "Siconia";
     countryCode = 32; // Belgium
-  } else
-  meterName = String(meterId);
-    meternameSet = true;
-  debugln(meterName);
   }
+  debugln(meterName);
+  if (meterName != "") meternameSet = true;
 }
 
 void initTimers() {
