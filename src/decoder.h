@@ -351,7 +351,7 @@ String readFirstParenthesisVal(int start, int end){
         Log.verbose(" onbekende OBIS: ");
         statusMsg = "Onbekende OBIS: ";
         while (i < len) {
-          Log.verbose("%s" ,(char)telegram[i]);
+          Log.verbose("%c" ,(char)telegram[i]);
           statusMsg += (char)telegram[i];
           i++;
         }

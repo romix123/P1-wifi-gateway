@@ -133,39 +133,39 @@ void doHourlyLog() {
   char value[13];
 
   dtostrf((atof(electricityUsedTariff1) - atof(log_data.hourE1)), 6, 2, value);
-  sprintf(buffer, "['%s',%s],\n", (char*)hour(), value);
+  sprintf(buffer, "['%d',%s],\n", hour(), value);
   appendFile("/HourE1.log", buffer);
   strcpy(log_data.hourE1, electricityUsedTariff1);
 
   dtostrf((atof(electricityUsedTariff2) - atof(log_data.hourE2)), 6, 2, value);
-  sprintf(buffer, "['%s',%s],\n", (char*)hour(), value);
+  sprintf(buffer, "['%d',%s],\n", hour(), value);
   appendFile("/HourE2.log", buffer);
   strcpy(log_data.hourE2, electricityUsedTariff2);
 
   dtostrf((atof(electricityReturnedTariff1) - atof(log_data.hourR1)), 6, 2,
           value);
-  sprintf(buffer, "['%s',%s],\n", (char*)hour(), value);
+  sprintf(buffer, "['%d',%s],\n", hour(), value);
   appendFile("/HourR1.log", buffer);
   strcpy(log_data.hourR1, electricityReturnedTariff1);
 
   dtostrf((atof(electricityReturnedTariff2) - atof(log_data.hourR2)), 6, 2,
           value);
-  sprintf(buffer, "['%s',%s],\n", (char*)hour(), value);
+  sprintf(buffer, "['%d',%s],\n", hour(), value);
   appendFile("/HourR2.log", buffer);
   strcpy(log_data.hourR2, electricityReturnedTariff2);
 
   dtostrf((atof(gasReceived5min) - atof(log_data.hourG)), 6, 2, value);
-  sprintf(buffer, "['%s',%s],\n", (char*)hour(), value);
+  sprintf(buffer, "['%d',%s],\n", hour(), value);
   appendFile("/HourG.log", buffer);
   strcpy(log_data.hourG, gasReceived5min);
 
   dtostrf((atof(log_data.hourE1) + atof(log_data.hourE2)), 6, 2, value);
-  sprintf(buffer, "['%s',%s],\n", (char*)hour(), value);
+  sprintf(buffer, "['%d',%s],\n", hour(), value);
   appendFile("/HourTE.log", buffer);
   strcpy(log_data.hourTE, value);
 
   dtostrf((atof(log_data.hourR1) + atof(log_data.hourR2)), 6, 2, value);
-  sprintf(buffer, "['%s',%s],\n", (char*)hour(), value);
+  sprintf(buffer, "['%d',%s],\n", hour(), value);
   appendFile("/HourTR.log", buffer);
   strcpy(log_data.hourTR, value);
 

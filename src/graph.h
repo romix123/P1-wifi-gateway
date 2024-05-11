@@ -227,7 +227,7 @@ void theGraph(const char *type1, const char *type2, String title1,
       // p points to an address of an element in the array; *p gets you the
   value ofthat address
       // print it and next point the pointer to the address of the next element
-      Serial.println(*(p++));
+      Log.verboseln(*(p++));
     }
 
     int *p;
