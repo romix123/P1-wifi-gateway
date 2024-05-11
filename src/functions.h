@@ -33,14 +33,14 @@ void alignToTelegram() {
 
   int inByte = 0; // incoming serial byte
   char buf[10];
-  if (Serial.available() > 0) {
-    while (Serial.available()) {
-      inByte = Serial.read();
+  if (DataSerial.available() > 0) {
+    while (DataSerial.available()) {
+      inByte = DataSerial.read();
       if (inByte == '!')
         break;
     }
-    Serial.readBytesUntil('\n', buf, 9);
-    Serial.flush();
+    DataSerial.readBytesUntil('\n', buf, 9);
+    DataSerial.flush();
   }
 }
 
@@ -582,7 +582,7 @@ void doWatchDogs() {
   if (ESP.getFreeHeap() < 2000)
     ESP.reset(); // watchdog, in case we still have a memery leak
   if (millis() - LastSample > 300000) {
-    Serial.flush();
+    DataSerial.flush();
     sprintf(payload, "No data in 300 sec, restarting monitoring: %s",
             string2char(timestampkaal()));
     if (MQTT_debug)
