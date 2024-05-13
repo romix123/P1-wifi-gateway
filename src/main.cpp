@@ -79,6 +79,7 @@ energieleverancier wordt betaald, maar toch). Alle kleine
  *  auteur: Ronald Leenes
  *
 
+  1.3: clean-up
     1.2: serious overhaul of decoder routine.
 
     1.1.e: fixed passwd length related issues (adminpass, SSID, MQTT), worked on
@@ -151,44 +152,51 @@ power outages, power drops
 
 #include "Arduino.h"
 #include "prototypes.h"
+#include <string>
 void readTelegram();
 
 bool zapfiles = false;
 
-String version = "1.2ba – NL";
+String version = "1.3 – NL";
 #define NEDERLANDS
 #define HOSTNAME "p1meter"
 #define FSystem 0 // 0= LittleFS 1 = SPIFFS
 
 #define GRAPH 1
 #define V3
-#define DEBUG 0 // 2//1//0 1 is on serial only, 2 is telnet,
+#define DEBUG 2 // 2//1//0 1 is on serial only, 2 is telnet,
 #define WIFIPOWERSAFE 0
 
 #define ESMR5 1
-//#define SLEEP_ENABLED
 
-const uint32_t wakeTime = 90000;  // stay awake wakeTime millisecs
-const uint32_t sleepTime = 15000; // sleep sleepTime millisecs
+#define OE 16 // IO16 OE on the 74AHCT1G125
+#define DR 4  // IO4 is Data Request
 
 #if DEBUG == 1
 const char *host = "P1test";
 #define BLED LED_BUILTIN
 #define PRINTER LOG_PRINTER_SERIAL
+#define DataSerial Serial
 #elif DEBUG == 2
 const char *host = "P1test";
 #define BLED LED_BUILTIN
 #define PRINTER LOG_PRINTER_TELNET
+// #define PRINTER LOG_PRINTER_SERIAL
+#include "DSMR5Mock.h"
+DSMR5Mock dSMRMock(DR);
+#define DataSerial dSMRMock
 #elif DEBUG == 3
 const char *host = "P1home";
 #define BLED LED_BUILTIN
 #define DISABLE_LOGGING
 #define PRINTER LOG_PRINTER_NULL
+#define DataSerial Serial
 #else
 const char *host = "P1wifi";
 #define BLED LED_BUILTIN
 #define DISABLE_LOGGING
 #define PRINTER LOG_PRINTER_NULL
+#define DataSerial Serial
 #endif
 
 #define errorHalt(msg)                                                         \
@@ -200,9 +208,6 @@ const char *host = "P1wifi";
 #define NUM(off, mult)                                                         \
   ((P1timestamp[(off)] - '0') *                                                \
    (mult)) // macro for getting time out of timestamp, see decoder
-
-#define OE 16 // IO16 OE on the 74AHCT1G125
-#define DR 4  // IO4 is Data Request
 
 #include "lang.h"
 #include "vars.h"
@@ -284,7 +289,7 @@ void setup() {
   pinMode(DR, OUTPUT);    // IO4 Data Request
   digitalWrite(DR, LOW);  // DR low (only goes high when we want to receive data)
   pinMode(BLED, OUTPUT);
-  
+
   // Configure Serial
   Serial.begin(115200);
 
@@ -299,7 +304,7 @@ void setup() {
   Log.verboseln("Done with Cap charging … ");
   Log.verboseln("Let's go …");
   logPrinterCreator->testPrinter();
-  
+
   // Wifi stuff
   wifiConnectHandler = WiFi.onStationModeGotIP(onWifiConnect);
   wifiDisconnectHandler = WiFi.onStationModeDisconnected(onWifiDisconnect);
@@ -308,7 +313,7 @@ void setup() {
   WiFi.mode(WIFI_OFF);
   WiFi.forceSleepBegin();
   delay(1);
-  
+
   FlashSize = ESP.getFlashChipRealSize();
 
   // Try to read WiFi settings from RTC memory
@@ -327,7 +332,7 @@ void setup() {
   // delay(10); yield() wasn't reliable delay(sleepTime); //Hang out at 15mA for
   // (sleeptime) seconds WiFi.forceSleepWake(); // Wifi on
   blink(2);
-  
+
   // Start connection WiFi
   // Switch Radio back On
   WiFi.forceSleepWake();
@@ -484,8 +489,6 @@ void setup() {
         millis();
 
     monitoring = true; // start monitoring data
-    time_to_sleep =
-        millis() + wakeTime; // we go to sleep wakeTime seconds from now
     datagram.reserve(1500);
     statusMsg.reserve(200);
   }                // WL connected
@@ -493,10 +496,10 @@ void setup() {
 }
 
 void readTelegram() {
-  if (Serial.available()) {
+  if (DataSerial.available()) {
     memset(telegram, 0, sizeof(telegram));
-    while (Serial.available()) {
-      int len = Serial.readBytesUntil('\n', telegram, MAXLINELENGTH);
+    while (DataSerial.available()) {
+      int len = DataSerial.readBytesUntil('\n', telegram, MAXLINELENGTH);
       telegram[len] = '\n';
       telegram[len + 1] = 0;
       ToggleLED
@@ -523,7 +526,7 @@ void readTelegram() {
       case CHECKSUM:
         break;
       case DONE:
-        Serial.flush();
+        DataSerial.flush();
         RTS_off();
         break;
       case FAILURE:
@@ -538,7 +541,7 @@ void readTelegram() {
         nextUpdateTime = millis() + interval; // set trigger for next round
         datagram = "";                        // empty datagram and
         telegram[0] = 0; // telegram (probably uncessesary beacuse
-                         // Serial.ReadBytesUntil will clear telegram buffer)
+                         // DataSerial.ReadBytesUntil will clear telegram buffer)
         break;
       case FAULT:
         Log.verboseln("FAULT");
@@ -556,7 +559,7 @@ void readTelegram() {
 void loop() {
   if ((millis() > nextUpdateTime)) { // && monitoring){
     if (!OEstate) {                  // OE is disabled  == false
-      Serial.flush();
+      DataSerial.flush();
       state = WAITING;
       RTS_on();
     }
@@ -564,17 +567,6 @@ void loop() {
   if (OEstate)
     readTelegram();
 
-#ifdef SLEEP_ENABLED
-  if ((millis() > time_to_sleep) && !atsleep &&
-      wifiSta) { // not currently sleeping and sleeptime
-    modemSleep();
-  }
-  if (wifiSta && (millis() > time_to_wake) &&
-      (WiFi.status() !=
-       WL_CONNECTED)) { // time to wake, if we're not already awake
-    modemWake();
-  }
-#endif
 
   if (datagramValid && (state == DONE) && (WiFi.status() == WL_CONNECTED)) {
     if (Mqtt) {

@@ -28,39 +28,39 @@ void setRFPower() {
   WiFi.setOutputPower(RFpower);
 }
 
-void modemSleep() {
-  Log.infoln("modemSleep: %d", millis() / 1000);
-  //  stop_services();
-  WiFi.shutdown(WiFistate);
-  ESP.rtcUserMemoryWrite(RTC_config_data_SLOT_WIFI_STATE,
-                         reinterpret_cast<uint32_t *>(&WiFistate),
-                         sizeof(WiFistate));
-  time_to_wake = millis() + sleepTime; // set alarm for next wakeup
-  atsleep = true;
-  // blink(1);
-  lastSleeptime = millis();
-  // wifiSta = false;
-}
-
-void modemWake() {
-  Log.infoln("modemWake: %d", millis() / 1000);
-  ESP.rtcUserMemoryRead(RTC_config_data_SLOT_WIFI_STATE,
-                        reinterpret_cast<uint32_t *>(&WiFistate),
-                        sizeof(WiFistate));
-  if (!WiFi.resumeFromShutdown(WiFistate) ||
-      (WiFi.waitForConnectResult(10000) != WL_CONNECTED)) {
-    Log.warningln("Cannot resume WiFi connection, connecting via begin...");
-    WiFi.persistent(false);
-    wifiReconnect();
-  } else {
-    Log.verboseln("RTC wakeup.");
-  }
-  wifiSta = true;
-  webstate = NONE;
-  atsleep = false;
-  start_services();
-  calcSleeptime(); // when do we go to sleep again?
-}
+// void modemSleep() {
+//   Log.infoln("modemSleep: %d", millis() / 1000);
+//   //  stop_services();
+//   WiFi.shutdown(WiFistate);
+//   ESP.rtcUserMemoryWrite(RTC_config_data_SLOT_WIFI_STATE,
+//                          reinterpret_cast<uint32_t *>(&WiFistate),
+//                          sizeof(WiFistate));
+//   time_to_wake = millis() + sleepTime; // set alarm for next wakeup
+//   atsleep = true;
+//   // blink(1);
+//   lastSleeptime = millis();
+//   // wifiSta = false;
+// }
+//
+// void modemWake() {
+//   Log.infoln("modemWake: %d", millis() / 1000);
+//   ESP.rtcUserMemoryRead(RTC_config_data_SLOT_WIFI_STATE,
+//                         reinterpret_cast<uint32_t *>(&WiFistate),
+//                         sizeof(WiFistate));
+//   if (!WiFi.resumeFromShutdown(WiFistate) ||
+//       (WiFi.waitForConnectResult(10000) != WL_CONNECTED)) {
+//     Log.warningln("Cannot resume WiFi connection, connecting via begin...");
+//     WiFi.persistent(false);
+//     wifiReconnect();
+//   } else {
+//     Log.verboseln("RTC wakeup.");
+//   }
+//   wifiSta = true;
+//   webstate = NONE;
+//   atsleep = false;
+//   start_services();
+//   calcSleeptime(); // when do we go to sleep again?
+// }
 
 void wifiReconnect() {
   Log.verbose("Trying to connect to your wifi network: ");
@@ -204,27 +204,27 @@ void onWifiDisconnect(const WiFiEventStationModeDisconnected &event) {
     WiFi.begin(config_data.ssid, config_data.password);
 }
 
-void calcSleeptime() {
-  switch (webstate) {
-  case NONE:
-    time_to_sleep = millis() + wakeTime;
-    break;
-  case MAIN:
-    time_to_sleep = millis() + 5000;
-    break;
-  case WCONFIG:
-    time_to_sleep = millis() + wakeTime + 10000;
-    break;
-  case DATA:
-    time_to_sleep = millis() + 1000;
-    break;
-  case UPDATE:
-    time_to_sleep =
-        millis() + 99000; // allow sufficient time to upload firmware
-    break;
-  default:
-    time_to_sleep = millis() + wakeTime;
-    break;
-  }
-  Log.verboseln("Scheduled shutdown at: %d", time_to_sleep);
-}
+// void calcSleeptime() {
+//   switch (webstate) {
+//   case NONE:
+//     time_to_sleep = millis() + wakeTime;
+//     break;
+//   case MAIN:
+//     time_to_sleep = millis() + 5000;
+//     break;
+//   case WCONFIG:
+//     time_to_sleep = millis() + wakeTime + 10000;
+//     break;
+//   case DATA:
+//     time_to_sleep = millis() + 1000;
+//     break;
+//   case UPDATE:
+//     time_to_sleep =
+//         millis() + 99000; // allow sufficient time to upload firmware
+//     break;
+//   default:
+//     time_to_sleep = millis() + wakeTime;
+//     break;
+//   }
+//   Log.verboseln("Scheduled shutdown at: %d", time_to_sleep);
+// }
