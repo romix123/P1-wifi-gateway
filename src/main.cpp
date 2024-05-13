@@ -79,6 +79,7 @@ energieleverancier wordt betaald, maar toch). Alle kleine
  *  auteur: Ronald Leenes
  *
 
+  1.3: clean-up
     1.2: serious overhaul of decoder routine.
 
     1.1.e: fixed passwd length related issues (adminpass, SSID, MQTT), worked on
@@ -155,7 +156,7 @@ void readTelegram();
 
 bool zapfiles = false;
 
-String version = "1.2ba – NL";
+String version = "1.3 – NL";
 #define NEDERLANDS
 #define HOSTNAME "p1meter"
 #define FSystem 0 // 0= LittleFS 1 = SPIFFS
@@ -166,10 +167,6 @@ String version = "1.2ba – NL";
 #define WIFIPOWERSAFE 0
 
 #define ESMR5 1
-//#define SLEEP_ENABLED
-
-const uint32_t wakeTime = 90000;  // stay awake wakeTime millisecs
-const uint32_t sleepTime = 15000; // sleep sleepTime millisecs
 
 #if DEBUG == 1
 const char *host = "P1test";
@@ -284,7 +281,7 @@ void setup() {
   pinMode(DR, OUTPUT);    // IO4 Data Request
   digitalWrite(DR, LOW);  // DR low (only goes high when we want to receive data)
   pinMode(BLED, OUTPUT);
-  
+
   // Configure Serial
   Serial.begin(115200);
 
@@ -299,7 +296,7 @@ void setup() {
   Log.verboseln("Done with Cap charging … ");
   Log.verboseln("Let's go …");
   logPrinterCreator->testPrinter();
-  
+
   // Wifi stuff
   wifiConnectHandler = WiFi.onStationModeGotIP(onWifiConnect);
   wifiDisconnectHandler = WiFi.onStationModeDisconnected(onWifiDisconnect);
@@ -308,7 +305,7 @@ void setup() {
   WiFi.mode(WIFI_OFF);
   WiFi.forceSleepBegin();
   delay(1);
-  
+
   FlashSize = ESP.getFlashChipRealSize();
 
   // Try to read WiFi settings from RTC memory
@@ -327,7 +324,7 @@ void setup() {
   // delay(10); yield() wasn't reliable delay(sleepTime); //Hang out at 15mA for
   // (sleeptime) seconds WiFi.forceSleepWake(); // Wifi on
   blink(2);
-  
+
   // Start connection WiFi
   // Switch Radio back On
   WiFi.forceSleepWake();
@@ -484,8 +481,6 @@ void setup() {
         millis();
 
     monitoring = true; // start monitoring data
-    time_to_sleep =
-        millis() + wakeTime; // we go to sleep wakeTime seconds from now
     datagram.reserve(1500);
     statusMsg.reserve(200);
   }                // WL connected
@@ -564,17 +559,6 @@ void loop() {
   if (OEstate)
     readTelegram();
 
-#ifdef SLEEP_ENABLED
-  if ((millis() > time_to_sleep) && !atsleep &&
-      wifiSta) { // not currently sleeping and sleeptime
-    modemSleep();
-  }
-  if (wifiSta && (millis() > time_to_wake) &&
-      (WiFi.status() !=
-       WL_CONNECTED)) { // time to wake, if we're not already awake
-    modemWake();
-  }
-#endif
 
   if (datagramValid && (state == DONE) && (WiFi.status() == WL_CONNECTED)) {
     if (Mqtt) {

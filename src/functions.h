@@ -492,7 +492,6 @@ void identifyMeter(){
     meterName = "Siconia";
     countryCode = 32; // Belgium
   }
-  debugln(meterName);
   if (meterName != "") meternameSet = true;
 }
 
