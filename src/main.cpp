@@ -152,6 +152,7 @@ power outages, power drops
 
 #include "Arduino.h"
 #include "prototypes.h"
+#include <string>
 void readTelegram();
 
 bool zapfiles = false;
@@ -163,29 +164,39 @@ String version = "1.3 – NL";
 
 #define GRAPH 1
 #define V3
-#define DEBUG 0 // 2//1//0 1 is on serial only, 2 is telnet,
+#define DEBUG 2 // 2//1//0 1 is on serial only, 2 is telnet,
 #define WIFIPOWERSAFE 0
 
 #define ESMR5 1
+
+#define OE 16 // IO16 OE on the 74AHCT1G125
+#define DR 4  // IO4 is Data Request
 
 #if DEBUG == 1
 const char *host = "P1test";
 #define BLED LED_BUILTIN
 #define PRINTER LOG_PRINTER_SERIAL
+#define DataSerial Serial
 #elif DEBUG == 2
 const char *host = "P1test";
 #define BLED LED_BUILTIN
 #define PRINTER LOG_PRINTER_TELNET
+// #define PRINTER LOG_PRINTER_SERIAL
+#include "DSMR5Mock.h"
+DSMR5Mock dSMRMock(DR);
+#define DataSerial dSMRMock
 #elif DEBUG == 3
 const char *host = "P1home";
 #define BLED LED_BUILTIN
 #define DISABLE_LOGGING
 #define PRINTER LOG_PRINTER_NULL
+#define DataSerial Serial
 #else
 const char *host = "P1wifi";
 #define BLED LED_BUILTIN
 #define DISABLE_LOGGING
 #define PRINTER LOG_PRINTER_NULL
+#define DataSerial Serial
 #endif
 
 #define errorHalt(msg)                                                         \
@@ -197,9 +208,6 @@ const char *host = "P1wifi";
 #define NUM(off, mult)                                                         \
   ((P1timestamp[(off)] - '0') *                                                \
    (mult)) // macro for getting time out of timestamp, see decoder
-
-#define OE 16 // IO16 OE on the 74AHCT1G125
-#define DR 4  // IO4 is Data Request
 
 #include "lang.h"
 #include "vars.h"
@@ -488,10 +496,10 @@ void setup() {
 }
 
 void readTelegram() {
-  if (Serial.available()) {
+  if (DataSerial.available()) {
     memset(telegram, 0, sizeof(telegram));
-    while (Serial.available()) {
-      int len = Serial.readBytesUntil('\n', telegram, MAXLINELENGTH);
+    while (DataSerial.available()) {
+      int len = DataSerial.readBytesUntil('\n', telegram, MAXLINELENGTH);
       telegram[len] = '\n';
       telegram[len + 1] = 0;
       ToggleLED
@@ -518,7 +526,7 @@ void readTelegram() {
       case CHECKSUM:
         break;
       case DONE:
-        Serial.flush();
+        DataSerial.flush();
         RTS_off();
         break;
       case FAILURE:
@@ -533,7 +541,7 @@ void readTelegram() {
         nextUpdateTime = millis() + interval; // set trigger for next round
         datagram = "";                        // empty datagram and
         telegram[0] = 0; // telegram (probably uncessesary beacuse
-                         // Serial.ReadBytesUntil will clear telegram buffer)
+                         // DataSerial.ReadBytesUntil will clear telegram buffer)
         break;
       case FAULT:
         Log.verboseln("FAULT");
@@ -551,7 +559,7 @@ void readTelegram() {
 void loop() {
   if ((millis() > nextUpdateTime)) { // && monitoring){
     if (!OEstate) {                  // OE is disabled  == false
-      Serial.flush();
+      DataSerial.flush();
       state = WAITING;
       RTS_on();
     }

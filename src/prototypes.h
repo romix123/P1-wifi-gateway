@@ -1,9 +1,6 @@
 #include <Arduino.h>
 #include <ESP8266WiFi.h>
 
-// CRC16.h
-unsigned int CRC16(unsigned int crc, unsigned char *buf, int len);
-
 // p1debug.h
 void readVoltage();
 void PrintConfigData();
