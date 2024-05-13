@@ -504,11 +504,11 @@ void readTelegram() {
       telegram[len + 1] = 0;
       ToggleLED
 
-          Log.verbose("STATE: ");
+      Log.verbose("STATE: ");
       Log.verbose("%d", state);
       Log.verbose(" >> ");
       for (int i = 0; i < len; i++)
-        Log.verbose("%s", telegram[i]);
+        Log.verbose("%c", telegram[i]);
 
       decodeLine(len + 1);
 
