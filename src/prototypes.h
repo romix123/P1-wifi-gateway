@@ -112,14 +112,8 @@ void handleP1();
 void handleRawData();
 
 // wifi_functions.h
-int getQuality();
-void setRFPower();
-void modemSleep();
-void modemWake();
-void wifiReconnect();
+void initWifiHandlers();
 void start_webservices();
 void start_services();
-void stop_services();
-void onWifiConnect(const WiFiEventStationModeGotIP &event);
-void onWifiDisconnect(const WiFiEventStationModeDisconnected &event);
-void calcSleeptime();
+void onStationModeGotIP(const WiFiEventStationModeGotIP &event);
+void onWiFiModeChange(const WiFiEventModeChange &event);

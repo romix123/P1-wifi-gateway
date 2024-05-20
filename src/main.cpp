@@ -164,8 +164,9 @@ String version = "1.3 – NL";
 
 #define GRAPH 1
 #define V3
-#define DEBUG 2 // 2//1//0 1 is on serial only, 2 is telnet,
-#define WIFIPOWERSAFE 0
+#ifndef DEBUG
+#define DEBUG 0 // 2//1//0 1 is on serial only, 2 is telnet,
+#endif
 
 #define ESMR5 1
 
@@ -212,7 +213,6 @@ const char *host = "P1wifi";
 #include "lang.h"
 #include "vars.h"
 #include "led.h"
-#include "CRC32.h"
 
 #include <ArduinoLog.h>
 #include <TZ.h>
@@ -238,13 +238,6 @@ const char *host = "P1wifi";
 File file;
 #endif
 
-// van ESP8266WiFi/examples/WiFiShutdown/WiFiShutdown.ino
-#ifndef RTC_config_data_SLOT_WIFI_STATE
-#define RTC_config_data_SLOT_WIFI_STATE 33u
-#endif
-#include <include/WiFiState.h> // WiFiState structure details
-WiFiState WiFistate;
-
 // van captive portal
 /*  ============================================================================================================
 
@@ -260,8 +253,8 @@ WiFiState WiFistate;
 #include <ESP8266WebServer.h>
 ESP8266WebServer server(80);
 
-WiFiEventHandler wifiConnectHandler;
-WiFiEventHandler wifiDisconnectHandler;
+WiFiEventHandler stationModeGotIPHandler;
+WiFiEventHandler wiFiModeChangeHandler;
 
 #include <ESP8266mDNS.h>
 #include <WiFiClient.h>
@@ -280,7 +273,12 @@ WiFiClient telnetClients[MAX_SRV_CLIENTS];
 
 ADC_MODE(ADC_VCC); // allows you to monitor the internal VCC level;
 
+#include "WifiManager.h"
+WiFiManager *wifiManager;
+
 #include "logger.h"
+LogPrinterCreator *logPrinterCreator;
+Print *logPrinter;
 
 void setup() {
   // Configure PINS
@@ -294,10 +292,9 @@ void setup() {
   Serial.begin(115200);
 
   // Configure logger
-  LogPrinterCreator *logPrinterCreator = new LogPrinterCreator();
-  Print *logPrinter = logPrinterCreator->createLogPrinter();
+  logPrinterCreator = new LogPrinterCreator();
+  logPrinter = logPrinterCreator->createLogPrinter();
   Log.begin(LOG_LEVEL_VERBOSE, logPrinter, false);
-  // delete logPrinterCreator;
 
   Log.infoln("Booting");
   Log.verboseln("Serial.begin(115200);");
@@ -306,37 +303,16 @@ void setup() {
   logPrinterCreator->testPrinter();
 
   // Wifi stuff
-  wifiConnectHandler = WiFi.onStationModeGotIP(onWifiConnect);
-  wifiDisconnectHandler = WiFi.onStationModeDisconnected(onWifiDisconnect);
+  Log.verboseln("Configuring WiFi");
+  initWifiHandlers();
 
-  Log.verboseln("wifi uit");
-  WiFi.mode(WIFI_OFF);
-  WiFi.forceSleepBegin();
-  delay(1);
+  wifiManager = new WiFiManager();
+  wifiManager->setup();
 
+  Log.verboseln("Get FlashSize");
   FlashSize = ESP.getFlashChipRealSize();
 
-  // Try to read WiFi settings from RTC memory
-  if (ESP.rtcUserMemoryRead(0, (uint32_t *)&rtcData, sizeof(rtcData))) {
-    // Calculate the CRC of what we just read from RTC memory, but skip the
-    // first 4 bytes as that's the checksum itself.
-    uint32_t crc =
-        calculateCRC32(((uint8_t *)&rtcData) + 4, sizeof(rtcData) - 4);
-    if (crc == rtcData.crc32) {
-      rtcValid = true;
-    }
-  }
-
-  // WiFi.forceSleepBegin(sleepTime * 1000000L); //In uS. Must be same length as
-  // your delay delay(10); // it doesn't always go to sleep unless you
-  // delay(10); yield() wasn't reliable delay(sleepTime); //Hang out at 15mA for
-  // (sleeptime) seconds WiFi.forceSleepWake(); // Wifi on
   blink(2);
-
-  // Start connection WiFi
-  // Switch Radio back On
-  WiFi.forceSleepWake();
-  delay(1);
 
   EEPROM.begin(sizeof(struct settings));
   EEPROM.get(0, config_data);
@@ -385,70 +361,9 @@ void setup() {
   interval = atoi(config_data.interval) * 1000;
   Log.verboseln("interval: %d", interval);
 
-  Log.verboseln("Trying to connect to your wifi network:");
-  WiFi.mode(WIFI_STA);
-  WiFi.begin(config_data.ssid, config_data.password);
-  //-----------Now we replace the normally used "WiFi.begin();" with a precedure
-  // using connection data stored by us
-  if (rtcValid) {
-    // The RTC data was good, make a quick connection
-    WiFi.begin(config_data.ssid, config_data.password, rtcData.channel,
-               rtcData.ap_mac, true);
-    Log.verboseln("RTC wifi quick start.");
-  } else {
-    // The RTC data was not valid, so make a regular connection
-    WiFi.begin(config_data.ssid, config_data.password);
-    Log.verboseln("Regular wifi start.");
-  }
-
-  byte tries = 0;
-  while (WiFi.status() != WL_CONNECTED) {
-    ToggleLED delay(300);
-    Log.verbose(".");
-    if (tries++ > 30) {
-      Log.verboseln("");
-      Log.verboseln("Setting up Captive Portal by the name 'P1_setup'");
-      LEDon WiFi.mode(WIFI_AP);
-      softAp = WiFi.softAP("P1_Setup", "");
-      APtimer = millis();
-      breaking = true;
-      break;
-    }
-  }
-  Log.verboseln("");
-  Log.verboseln("Set up wifi, either in STA or AP mode");
-  if (softAp) {
-    Log.verboseln("running in AP mode, all handles will be initiated");
-    start_webservices();
-  }
+  wifiManager->connect(config_data.ssid, config_data.password, "P1_Setup");
 
   if (WiFi.status() == WL_CONNECTED) {
-    //-----
-    // Write current connection info back to RTC
-    rtcData.channel = WiFi.channel();
-    memcpy(rtcData.ap_mac, WiFi.BSSID(),
-           6); // Copy 6 bytes of BSSID (AP's MAC address)
-    rtcData.crc32 =
-        calculateCRC32(((uint8_t *)&rtcData) + 4, sizeof(rtcData) - 4);
-    ESP.rtcUserMemoryWrite(0, (uint32_t *)&rtcData, sizeof(rtcData));
-
-    WiFi.setAutoReconnect(true);
-    WiFi.persistent(true);
-    Log.verboseln("HTTP server running.");
-    Log.verboseln("IP address: %p", WiFi.localIP());
-#if WIFIPOWERSAFE == 1
-    setRFPower();
-#endif
-    wifiSta = true;
-    Log.verboseln("wifi running in Sta (normal) mode");
-    LEDoff
-#ifdef SLEEP_ENABLED
-    modemSleep();
-    modemWake();
-#else
-    start_services();
-#endif
-
     // handle Files
     Log.verboseln("Mounting file system ... ");
     if (!FST.begin()) {
@@ -567,7 +482,6 @@ void loop() {
   if (OEstate)
     readTelegram();
 
-
   if (datagramValid && (state == DONE) && (WiFi.status() == WL_CONNECTED)) {
     if (Mqtt) {
       doMQTT();
@@ -585,46 +499,16 @@ void loop() {
     state = WAITING;
   }
 
-  if (softAp || (WiFi.status() == WL_CONNECTED)) {
+  if ((WiFi.getMode() == WIFI_AP) || (WiFi.status() == WL_CONNECTED)) {
     server.handleClient(); // handle web requests
     MDNS.update();
     //      if (Telnet) telnetloop();// telnet.loop();
   }
 
   if (millis() > FiveSecBeat) {
-    if (Telnet && wifiSta)
+    if (Telnet && (WiFi.status() == WL_CONNECTED))
       telnetloop();
     FiveSecBeat = millis() + 5000;
-    switch (WiFi.status()) {
-    case WL_NO_SSID_AVAIL:
-      wifiStatus = "SSID onbereikbaar: ";
-      break;
-    case WL_CONNECTED:
-      wifiStatus = "SSID connected: ";
-      break;
-    case WL_CONNECT_FAILED:
-      wifiStatus = "Connection failed: ";
-      break;
-    case WL_NO_SHIELD:
-      wifiStatus = "No WiFi shield is present: ";
-      break;
-    case WL_IDLE_STATUS:
-      wifiStatus = "WiFi connecting...: ";
-      break;
-    case WL_SCAN_COMPLETED:
-      wifiStatus = "Scan networks is completed: ";
-      break;
-    case WL_CONNECTION_LOST:
-      wifiStatus = "Connection lost: ";
-      break;
-    case WL_WRONG_PASSWORD:
-      wifiStatus = "Wrong WiFi password: ";
-      break;
-    case WL_DISCONNECTED:
-      wifiStatus = "WiFi disconnected: ";
-      break;
-    }
-    wifiStatus += timestampkaal();
   }
 
   if (millis() > EverSoOften) {

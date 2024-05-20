@@ -58,7 +58,6 @@ bool DomoticzJson(char *idx, int nValue, char *sValue) {
         Log.verboseln("return httpCode == HTTP_CODE_OK");
         // String payload = http.getString();
         retVal = true;
-        entitledToSleep = true;
         LastJReport = timestampkaal();
       }
     } else {

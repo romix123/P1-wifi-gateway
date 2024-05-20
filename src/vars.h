@@ -177,24 +177,11 @@ int interval;
 unsigned long nextUpdateTime = 0;
 unsigned long LastReportinMillis = 0;
 unsigned long LastSample = 0;
-unsigned long APtimer =
-    0; // time we went into AP mode. Restart module if in AP for 10 mins as we
-       // might have gotten in AP due to router wifi issue
 time_t LastReportinSecs = 0;
-float RFpower =
-    0; // 20.5; // (For OdBm of output power, lowest. Supply current~70mA)
-       // 20.5dBm (For 20.5dBm of output, highest. Supply current~85mA)
 
 long last10 = 0;
-unsigned long time_to_wake = 0;  // calculated wakeup time
-unsigned long time_to_sleep = 0; // calculated sleep time
-unsigned long lastSleeptime = 0;
-boolean entitledToSleep =    false; // aangezien slaapinterval en meetinterval niet synchroon lopen,
-           // moeten we na ontwaken eerst een telegram inlezen en afleveren
-           // alvorens ModemSleep mag worden aangeroepen.
 bool monitoring = false; // are we permitted to collect P1 data? Not if in setup
                          // or firmware update
-bool atsleep = true;
 
 // datagram stuff
 #define MAXLINELENGTH                                                          \
@@ -244,32 +231,8 @@ int state = DISABLED;
 #define RUNNING 2
 int devicestate = CONFIG;
 
-// Wifi stuff
-bool rtcValid = false;
-#define NONE 0
-#define MAIN 1
-#define DATA 2
-#define WCONFIG 3
-#define UPDATE 4
-int webstate = NONE;
-String wifiStatus = "";
-
-bool wifiSta = false;
-bool breaking = false;
-bool softAp = false;
-bool Json = false;
-// We make a structure to store connection information
-// The ESP8266 RTC memory is arranged into blocks of 4 bytes. The access methods
-// read and write 4 bytes at a time, so the RTC data structure should be padded
-// to a 4-byte multiple.
-struct {
-  uint32_t crc32;    // 4 bytes
-  uint8_t channel;   // 1 byte,   5 in total
-  uint8_t ap_mac[6]; // 6 bytes, 11 in total
-  uint8_t padding;   // 1 byte,  12 in total
-} rtcData;
-
 // JSON
+bool Json = false;
 String LastJReport = ""; // timestamp of last telegram reported via JSON
 
 // Telnet
