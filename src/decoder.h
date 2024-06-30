@@ -60,8 +60,8 @@
      dataEnd = true;         // we're at the end of the data stream, so mark (for raw data output) We don't know if the data is valid, we will test this below.
    //  gas22Flag=false;        // assume we have also collected the Gas value
      currentCRC=CRC16(currentCRC,(unsigned char*)telegram+endChar, 1);
-     char messageCRC[4];
-     strncpy(messageCRC, telegram + endChar + 1, 4);
+     char *telegramCRCStart = telegram + endChar + 1;
+     std::string messageCRC(telegramCRCStart, telegramCRCStart + 4);
      if (datagram.length() < 2048){
        for(int cnt=0; cnt<len;cnt++) datagram += telegram[cnt];
        datagram += "\r";
@@ -72,10 +72,10 @@
          return;
        }
 
-     validCRCFound = (strtoul(messageCRC, NULL, 16) == currentCRC);
+     validCRCFound = (std::stoul(messageCRC, NULL, 16) == currentCRC);
 
        if(validCRCFound) {
-         Log.verboseln("\nVALID CRC FOUND!");
+         Log.infoln("\nVALID CRC FOUND!");
          state = DONE;
          datagramValid = true;
          dataFailureCount = 0;
@@ -83,7 +83,7 @@
  //      gotPowerReading = true; // we at least got electricty readings. Not all setups have a gas meter attached, so gotGasReading is handled when we actually get gasIds coming in
          return;
        }    else {
-         Log.verboseln("\n===INVALID CRC FOUND!===");
+         Log.errorln("\n===INVALID CRC FOUND!===");
          dataFailureCount++;
          state = FAILURE;
          return;
