@@ -81,17 +81,6 @@ int FindCharInArray(char array[], char c, int len) {
   return -1;
 }
 
-void settime() {
-  //(hr,min,sec,day,mnth,yr);
-  // YYMMDDhhmmssX
-  setTime(NUM(6, 10) + NUM(7, 1), NUM(8, 10) + NUM(9, 1),
-          NUM(10, 10) + NUM(11, 1), NUM(4, 10) + NUM(5, 1),
-          NUM(2, 10) + NUM(3, 1), NUM(0, 10) + NUM(1, 1));
-  Log.verbose("%d", timestamp());
-  LastReportinSecs = now();
-  timeIsSet = true;
-}
-
 String timestamp() {
   return (String) "time: " + hour() + ":" + minute() + ":" + second();
 }
@@ -406,76 +395,76 @@ String totalXY(const char *typeC, String period) {
   type += typeC[1];
   if (period == "day") {
     if (type == "E1")
-      return (String)(atof(electricityUsedTariff1) - atof(log_data.dayE1));
+      return (String)(dsmrData.energy_delivered_tariff1.val() - atof(log_data.dayE1));
     if (type == "E2")
-      return (String)(atof(electricityUsedTariff2) - atof(log_data.dayE2));
+      return (String)(dsmrData.energy_delivered_tariff2.val() - atof(log_data.dayE2));
     if (type == "R1")
-      return (String)(atof(electricityReturnedTariff1) - atof(log_data.dayR1));
+      return (String)(dsmrData.energy_returned_tariff1.val() - atof(log_data.dayR1));
     if (type == "R2")
-      return (String)(atof(electricityReturnedTariff2) - atof(log_data.dayR2));
+      return (String)(dsmrData.energy_returned_tariff2.val() - atof(log_data.dayR2));
     if (type == "TE") {
-      dtostrf((atof(electricityUsedTariff1) - atof(log_data.dayE1)) +
-                  (atof(electricityUsedTariff2) - atof(log_data.dayE2)),
+      dtostrf((dsmrData.energy_delivered_tariff1.val() - atof(log_data.dayE1)) +
+                  (dsmrData.energy_delivered_tariff2.val() - atof(log_data.dayE2)),
               6, 2, value);
       return (String)value;
     }
     if (type == "TR") {
-      dtostrf((atof(electricityReturnedTariff1) - atof(log_data.dayR1)) +
-                  (atof(electricityReturnedTariff2) - atof(log_data.dayR2)),
+      dtostrf((dsmrData.energy_returned_tariff1.val() - atof(log_data.dayR1)) +
+                  (dsmrData.energy_returned_tariff2.val() - atof(log_data.dayR2)),
               6, 2, value);
       return (String)value;
     }
     if (type == "G0")
-      return (String)(atof(gasReceived5min) - atof(log_data.dayG));
+      return (String)(dsmrData.gas_delivered.toFloat() - atof(log_data.dayG));
 
   } else if (period == "week") {
     if (type == "E1")
-      return (String)(atof(electricityUsedTariff1) - atof(log_data.weekE1));
+      return (String)(dsmrData.energy_delivered_tariff1.val() - atof(log_data.weekE1));
     if (type == "E2")
-      return (String)(atof(electricityUsedTariff2) - atof(log_data.weekE2));
+      return (String)(dsmrData.energy_delivered_tariff2.val() - atof(log_data.weekE2));
     if (type == "R1")
-      return (String)(atof(electricityReturnedTariff1) - atof(log_data.weekR1));
+      return (String)(dsmrData.energy_returned_tariff1.val() - atof(log_data.weekR1));
     if (type == "R2")
-      return (String)(atof(electricityReturnedTariff2) - atof(log_data.weekR2));
+      return (String)(dsmrData.energy_returned_tariff2.val() - atof(log_data.weekR2));
     if (type == "TE") {
-      dtostrf((atof(electricityUsedTariff1) - atof(log_data.weekE1)) +
-                  (atof(electricityUsedTariff2) - atof(log_data.weekE2)),
+      dtostrf((dsmrData.energy_delivered_tariff1.val() - atof(log_data.weekE1)) +
+                  (dsmrData.energy_delivered_tariff2.val() - atof(log_data.weekE2)),
               6, 2, value);
       return (String)value;
     }
     if (type == "TR") {
-      dtostrf((atof(electricityReturnedTariff1) - atof(log_data.weekR1)) +
-                  (atof(electricityReturnedTariff2) - atof(log_data.weekR2)),
+      dtostrf((dsmrData.energy_returned_tariff1.val() - atof(log_data.weekR1)) +
+                  (dsmrData.energy_returned_tariff2.val() - atof(log_data.weekR2)),
               6, 2, value);
       return (String)value;
     }
     if (type == "G0")
-      return (String)(atof(gasReceived5min) - atof(log_data.weekG));
+      return (String)(dsmrData.gas_delivered.toFloat() - atof(log_data.weekG));
   } else if (period == "month") {
     if (type == "E1")
-      return (String)(atof(electricityUsedTariff1) - atof(log_data.monthE1));
+      return (String)(dsmrData.energy_delivered_tariff1.val() - atof(log_data.monthE1));
     if (type == "E2")
-      return (String)(atof(electricityUsedTariff2) - atof(log_data.monthE2));
+      return (String)(dsmrData.energy_delivered_tariff2.val() - atof(log_data.monthE2));
     if (type == "R1")
-      return (String)(atof(electricityReturnedTariff1) -
+      return (String)(dsmrData.energy_returned_tariff1.val() -
                       atof(log_data.monthR1));
     if (type == "R2")
-      return (String)(atof(electricityReturnedTariff2) -
+      return (String)(dsmrData.energy_returned_tariff2.val() -
                       atof(log_data.monthR2));
     if (type == "TE") {
-      dtostrf((atof(electricityUsedTariff1) - atof(log_data.monthE1)) +
-                  (atof(electricityUsedTariff2) - atof(log_data.monthE2)),
+      dtostrf((dsmrData.energy_delivered_tariff1.val() - atof(log_data.monthE1)) +
+                  (dsmrData.energy_delivered_tariff2.val() - atof(log_data.monthE2)),
               6, 2, value);
       return (String)value;
     }
     if (type == "TR") {
-      dtostrf((atof(electricityReturnedTariff1) - atof(log_data.monthR1)) +
-                  (atof(electricityReturnedTariff2) - atof(log_data.monthR2)),
+      dtostrf((dsmrData.energy_returned_tariff1.val() - atof(log_data.monthR1)) +
+                  (dsmrData.energy_returned_tariff2.val() - atof(log_data.monthR2)),
               6, 2, value);
       return (String)value;
     }
     if (type == "G0")
-      return (String)(atof(gasReceived5min) - atof(log_data.monthG));
+      return (String)(dsmrData.gas_delivered.toFloat() - atof(log_data.monthG));
   } else if (period == "year") {
     return "Year not implemented yet";
   }

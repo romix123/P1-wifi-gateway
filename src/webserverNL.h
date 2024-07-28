@@ -128,9 +128,9 @@ void handleSetup() {
 
 void handleP1() {
   Log.verbose("handleP1: actualElectricityPowerRet: ");
-  Log.verboseln(actualElectricityPowerRet);
+  Log.verboseln("%F", dsmrData.power_returned.val());
   Log.verbose("handleP1: actualElectricityPowerDeli: ");
-  Log.verboseln(actualElectricityPowerDeli);
+  Log.verboseln("%F", dsmrData.power_delivered.val());
   Log.verboseln("handleP1");
   String str = "";
   String eenheid, eenheid2, eenheid3;
@@ -152,110 +152,110 @@ void handleP1() {
 
   str += "<p><div class='row'><div class='column'><b>Verbruik laag tarief: "
          "totaal</b><input type='text' class='form-control c6' value='";
-  str += electricityUsedTariff1;
+  str += String(dsmrData.energy_delivered_tariff1);
   str += eenheid;
   str += "<div class='column' style='text-align:right'><b>vandaag</b><input "
          "type='text' class='form-control c7' value='";
-  str += atof(electricityUsedTariff1) - atof(log_data.dayE1);
+  str += dsmrData.energy_delivered_tariff1.val() - atof(log_data.dayE1);
   str += eenheid;
   str += "</div></p>";
 
   str += "<p><div class='row'><div class='column'><b>Verbruik hoog tarief: "
          "totaal</b><input type='text' class='form-control c6' value='";
-  str += electricityUsedTariff2;
+  str += String(dsmrData.energy_delivered_tariff2);
   str += eenheid;
   str += "<div class='column' style='text-align:right'><b>vandaag</b><input "
          "type='text' class='form-control c7' value='";
-  str += atof(electricityUsedTariff2) - atof(log_data.dayE2);
+  str += dsmrData.energy_delivered_tariff2.val() - atof(log_data.dayE2);
   str += eenheid;
   str += "</div></p>";
 
   str += "<p><div class='row'><div class='column'><b>Retour laag tarief: "
          "totaal</b><input type='text' class='form-control c6' value='";
-  str += electricityReturnedTariff1;
+  str += String(dsmrData.energy_returned_tariff1);
   str += eenheid;
   str += "<div class='column' style='text-align:right'><b>vandaag</b><input "
          "type='text' class='form-control c7' value='";
-  str += atof(electricityReturnedTariff1) - atof(log_data.dayR1);
+  str += dsmrData.energy_returned_tariff1.val() - atof(log_data.dayR1);
   str += eenheid;
   str += "</div></p>";
 
   str += "<p><div class='row'><div class='column'><b>Retour hoog tarief: "
          "totaal</b><input type='text' class='form-control c6' value='";
-  str += electricityReturnedTariff2;
+  str += String(dsmrData.energy_returned_tariff2);
   str += eenheid;
   str += "<div class='column' style='text-align:right'><b>vandaag</b><input "
          "type='text' class='form-control c7' value='";
-  str += atof(electricityReturnedTariff2) - atof(log_data.dayR2);
+  str += dsmrData.energy_returned_tariff2.val() - atof(log_data.dayR2);
   str += eenheid;
   str += "</div></p>";
 
   Log.verbose("buildpage: actualElectricityPowerRet: ");
-  Log.verboseln(actualElectricityPowerRet);
+  Log.verboseln("%F", dsmrData.power_returned.val());
   Log.verbose("handleP1: actualElectricityPowerDeli: ");
-  Log.verboseln(actualElectricityPowerDeli);
+  Log.verboseln("%F", dsmrData.power_delivered.val());
 
   str += "<p><div class='row'><b>Actueel verbruik</b><input type='text' "
          "class='form-control c6' value='";
-  str += actualElectricityPowerDeli;
+  str += String(dsmrData.power_delivered.val());
   str += eenheid2;
 
   str += "<p><div class='row'><b>Actueel retour</b><input type='text' "
          "class='form-control c6' value='";
-  str += actualElectricityPowerRet;
+  str += String(dsmrData.power_returned.val());;
   str += eenheid2;
 
-  if (P1prot == 5) {
+  if (dsmrData.P1prot() == 5) {
     str += "<p><div class='row'><div class='column3'><b>Voltage: L1</b><input "
            "type='text' class='form-control c6' value='";
-    str += instantaneousVoltageL1;
+    str += String(dsmrData.voltage_l1.val());
     str += " V'></div>";
     str += "<div class='column3' style='text-align:right'><b>L2</b><input "
            "type='text' class='form-control c7' value='";
-    str += instantaneousVoltageL2;
+    str += String(dsmrData.voltage_l2.val());
     str += " V'></div>";
     str += "<div class='column3' style='text-align:right'><b>L3</b><input "
            "type='text' class='form-control c7' value='";
-    str += instantaneousVoltageL3;
+    str += String(dsmrData.voltage_l3.val());
     str += " V'></div></div></p>";
 
     str += "<p><div class='row'><div class='column3'><b>Verbruik: L1</b><input "
            "type='text' class='form-control c6' value='";
-    str += activePowerL1P;
+    str += String(dsmrData.power_delivered_l1.val());
     str += " kW'></div>";
     str += "<div class='column3' style='text-align:right'><b>L2</b><input "
            "type='text' class='form-control c7' value='";
-    str += activePowerL2P;
+    str += String(dsmrData.power_delivered_l2.val());
     str += " kW'></div>";
     str += "<div class='column3' style='text-align:right'><b>L3</b><input "
            "type='text' class='form-control c7' value='";
-    str += activePowerL3P;
+    str += String(dsmrData.power_delivered_l3.val());
     str += " kW'></div></div></p>";
 
     str += "<p><div class='row'><div class='column3'><b>Retour: L1</b><input "
            "type='text' class='form-control c6' value='";
-    str += activePowerL1NP;
+    str += String(dsmrData.power_returned_l1.val());
     str += " kW'></div>";
     str += "<div class='column3' style='text-align:right'><b>L2</b><input "
            "type='text' class='form-control c7' value='";
-    str += activePowerL2NP;
+    str += String(dsmrData.power_returned_l2.val());
     str += " kW'></div>";
     str += "<div class='column3' style='text-align:right'><b>L3</b><input "
            "type='text' class='form-control c7' value='";
-    str += activePowerL3NP;
+    str += String(dsmrData.power_returned_l3.val());
     str += " kW'></div></div></p>";
   }
   str += "<p><div class='row'><div class='column3'><b>Amperage: L1</b><input "
          "type='text' class='form-control c6' value='";
-  str += instantaneousCurrentL1;
+  str += String(dsmrData.current_l1.val());
   str += " A'></div>";
   str += "<div class='column3' style='text-align:right'><b>L2</b><input "
          "type='text' class='form-control c7' value='";
-  str += instantaneousCurrentL2;
+  str += String(dsmrData.current_l2.val());
   str += " A'></div>";
   str += "<div class='column3' style='text-align:right'><b>L3</b><input "
          "type='text' class='form-control c7' value='";
-  str += instantaneousCurrentL3;
+  str += String(dsmrData.current_l3.val());
   str += " A'></div></div></p>";
   /*
 
@@ -270,11 +270,11 @@ void handleP1() {
     */
   str += "<p><div class='row'><div class='column'><b>Gasverbruik: "
          "totaal</b><input type='text' class='form-control c6' value='";
-  str += gasReceived5min;
+  str += dsmrData.gas_delivered;
   str += F(" m3'></div>");
   str += "<div class='column' style='text-align:right'><b>vandaag</b><input "
          "type='text' class='form-control c7' value='";
-  str += atof(gasReceived5min) - atof(log_data.dayG);
+  str += dsmrData.gas_delivered.toFloat() - atof(log_data.dayG);
   str += " m3'></div></div></p>";
   str += F("</fieldset></form>");
   str += F("<form action='/' method='POST'><button class='button "
