@@ -70,29 +70,26 @@ bool DomoticzJson(char *idx, int nValue, char *sValue) {
 }
 
 void UpdateGas() {
-  // Log.verbose(gasReceived5min);
-  // Log.verbose(gasDomoticz);
-  // Log.verboseln(prevGAS);                                    //sends over the gas
-  // setting to server(s)
-  // if (strncmp(gasReceived5min, prevGAS, sizeof(gasReceived5min)) != 0) {  //
+  // sends over the gas setting to server(s)
   // if we have a new value, report
-  if (strncmp(gasDomoticz, prevGAS, sizeof(gasDomoticz)) !=
-      0) { // if we have a new value, report
-
+  if (!dsmrData.gas_delivered.equals(prevGAS)) {
     DomoticzJson(config_data.domoticzGasIdx, 0,
-                 gasDomoticz); // gasReceived5min);
+                 (char *)dsmrData.gas_delivered.c_str());
     Log.verbose(">> UpdateGas(): ");
-    Log.verboseln(gasDomoticz);
-    strcpy(prevGAS, gasDomoticz); // retain current value for future reference
+    Log.verboseln(dsmrData.gas_delivered.c_str());
+    // retain current value for future reference
+    prevGAS = dsmrData.gas_delivered;
   }
 }
 
 void UpdateElectricity() {
   char sValue[300];
-  sprintf(sValue, "%s;%s;%s;%s;%s;%s", electricityUsedTariff1,
-          electricityUsedTariff2, electricityReturnedTariff1,
-          electricityReturnedTariff2, actualElectricityPowerDeli,
-          actualElectricityPowerRet);
+  snprintf(sValue, 300, "%.3f;%.3f;%.3f;%.3f;%.3f;%.3f",
+          dsmrData.energy_delivered_tariff1.val(),
+          dsmrData.energy_delivered_tariff2.val(),
+          dsmrData.energy_returned_tariff1.val(),
+          dsmrData.energy_returned_tariff2.val(),
+          dsmrData.power_delivered.val(), dsmrData.power_returned.val());
   Log.verbose(">> UpdateElectricity(): ");
   Log.verboseln(sValue);
   DomoticzJson(config_data.domoticzEnergyIdx, 0, sValue);

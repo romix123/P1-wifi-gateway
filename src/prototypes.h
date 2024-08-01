@@ -18,7 +18,6 @@ void RTS_on();
 void RTS_off();
 bool isNumber(char *res, int len);
 int FindCharInArray(char array[], char c, int len);
-void settime();
 String timestamp();
 String timestampkaal();
 void timeIsSet_cb();

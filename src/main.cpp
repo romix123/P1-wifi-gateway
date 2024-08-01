@@ -206,10 +206,6 @@ const char *host = "P1wifi";
     return;                                                                    \
   }
 
-#define NUM(off, mult)                                                         \
-  ((P1timestamp[(off)] - '0') *                                                \
-   (mult)) // macro for getting time out of timestamp, see decoder
-
 #include "lang.h"
 #include "vars.h"
 #include "led.h"

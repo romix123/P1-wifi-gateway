@@ -51,29 +51,29 @@ void doInitLogVars() {
   char value[12];
   // init all vars on current (first) reading
   Log.verbose("Initialising log vars ... ");
-  strcpy(log_data.hourE1, electricityUsedTariff1);
-  strcpy(log_data.dayE1, electricityUsedTariff1);
-  strcpy(log_data.weekE1, electricityUsedTariff1);
-  strcpy(log_data.monthE1, electricityUsedTariff1);
-  strcpy(log_data.yearE1, electricityUsedTariff1);
+  strcpy(log_data.hourE1, String(dsmrData.energy_delivered_tariff1.val()).c_str());
+  strcpy(log_data.dayE1, String(dsmrData.energy_delivered_tariff1.val()).c_str());
+  strcpy(log_data.weekE1, String(dsmrData.energy_delivered_tariff1.val()).c_str());
+  strcpy(log_data.monthE1, String(dsmrData.energy_delivered_tariff1.val()).c_str());
+  strcpy(log_data.yearE1, String(dsmrData.energy_delivered_tariff1.val()).c_str());
 
-  strcpy(log_data.hourE2, electricityUsedTariff2);
-  strcpy(log_data.dayE2, electricityUsedTariff2);
-  strcpy(log_data.weekE2, electricityUsedTariff2);
-  strcpy(log_data.monthE2, electricityUsedTariff2);
-  strcpy(log_data.yearE2, electricityUsedTariff2);
+  strcpy(log_data.hourE2, String(dsmrData.energy_delivered_tariff2.val()).c_str());
+  strcpy(log_data.dayE2, String(dsmrData.energy_delivered_tariff2.val()).c_str());
+  strcpy(log_data.weekE2, String(dsmrData.energy_delivered_tariff2.val()).c_str());
+  strcpy(log_data.monthE2, String(dsmrData.energy_delivered_tariff2.val()).c_str());
+  strcpy(log_data.yearE2, String(dsmrData.energy_delivered_tariff2.val()).c_str());
 
-  strcpy(log_data.hourR1, electricityReturnedTariff1);
-  strcpy(log_data.dayR1, electricityReturnedTariff1);
-  strcpy(log_data.weekR1, electricityReturnedTariff1);
-  strcpy(log_data.monthR1, electricityReturnedTariff1);
-  strcpy(log_data.yearR1, electricityReturnedTariff1);
+  strcpy(log_data.hourR1, String(dsmrData.energy_returned_tariff1.val()).c_str());
+  strcpy(log_data.dayR1, String(dsmrData.energy_returned_tariff1.val()).c_str());
+  strcpy(log_data.weekR1, String(dsmrData.energy_returned_tariff1.val()).c_str());
+  strcpy(log_data.monthR1, String(dsmrData.energy_returned_tariff1.val()).c_str());
+  strcpy(log_data.yearR1, String(dsmrData.energy_returned_tariff1.val()).c_str());
 
-  strcpy(log_data.hourR2, electricityReturnedTariff2);
-  strcpy(log_data.dayR2, electricityReturnedTariff2);
-  strcpy(log_data.weekR2, electricityReturnedTariff2);
-  strcpy(log_data.monthR2, electricityReturnedTariff2);
-  strcpy(log_data.yearR2, electricityReturnedTariff2);
+  strcpy(log_data.hourR2, String(dsmrData.energy_returned_tariff2.val()).c_str());
+  strcpy(log_data.dayR2, String(dsmrData.energy_returned_tariff2.val()).c_str());
+  strcpy(log_data.weekR2, String(dsmrData.energy_returned_tariff2.val()).c_str());
+  strcpy(log_data.monthR2, String(dsmrData.energy_returned_tariff2.val()).c_str());
+  strcpy(log_data.yearR2, String(dsmrData.energy_returned_tariff2.val()).c_str());
 
   dtostrf((atof(log_data.hourE1) + atof(log_data.hourE2)), 6, 2, value);
   strcpy(log_data.hourTE, value);
@@ -96,11 +96,11 @@ void doInitLogVars() {
 void doInitLogVarsGas() {
   Log.verboseln("Initialising log GAS vars ... ");
 
-  strcpy(log_data.hourG, gasReceived5min);
-  strcpy(log_data.dayG, gasReceived5min);
-  strcpy(log_data.weekG, gasReceived5min);
-  strcpy(log_data.monthG, gasReceived5min);
-  strcpy(log_data.yearG, gasReceived5min);
+  strcpy(log_data.hourG, dsmrData.gas_delivered.c_str());
+  strcpy(log_data.dayG, dsmrData.gas_delivered.c_str());
+  strcpy(log_data.weekG, dsmrData.gas_delivered.c_str());
+  strcpy(log_data.monthG, dsmrData.gas_delivered.c_str());
+  strcpy(log_data.yearG, dsmrData.gas_delivered.c_str());
   needToInitLogVarsGas = false;
   Log.verboseln("done.");
 }
@@ -110,11 +110,11 @@ void doMinutelyLog() {
   FST.begin();
   char buffer[60];
   char value[13];
-  dtostrf((atof(gasReceived5min) - atof(minG)), 6, 2, value);
+  dtostrf((dsmrData.gas_delivered.toFloat() - atof(minG)), 6, 2, value);
   sprintf(buffer, "['%s:%s:%s',%s],\n", (char*)hour(), (char*)minute(),
           (char*)second(), value);
   appendFile("/MinG.log", buffer);
-  strcpy(minG, gasReceived5min);
+  strcpy(minG, dsmrData.gas_delivered.c_str());
   FST.end();
   MountFS();
 }
@@ -132,32 +132,32 @@ void doHourlyLog() {
   char buffer[60];
   char value[13];
 
-  dtostrf((atof(electricityUsedTariff1) - atof(log_data.hourE1)), 6, 2, value);
+  dtostrf((dsmrData.energy_delivered_tariff1.val() - atof(log_data.hourE1)), 6, 2, value);
   sprintf(buffer, "['%d',%s],\n", hour(), value);
   appendFile("/HourE1.log", buffer);
-  strcpy(log_data.hourE1, electricityUsedTariff1);
+  strcpy(log_data.hourE1, String(dsmrData.energy_delivered_tariff1.val()).c_str());
 
-  dtostrf((atof(electricityUsedTariff2) - atof(log_data.hourE2)), 6, 2, value);
+  dtostrf((dsmrData.energy_delivered_tariff2.val() - atof(log_data.hourE2)), 6, 2, value);
   sprintf(buffer, "['%d',%s],\n", hour(), value);
   appendFile("/HourE2.log", buffer);
-  strcpy(log_data.hourE2, electricityUsedTariff2);
+  strcpy(log_data.hourE2, String(dsmrData.energy_delivered_tariff2.val()).c_str());
 
-  dtostrf((atof(electricityReturnedTariff1) - atof(log_data.hourR1)), 6, 2,
+  dtostrf((dsmrData.energy_returned_tariff1.val() - atof(log_data.hourR1)), 6, 2,
           value);
   sprintf(buffer, "['%d',%s],\n", hour(), value);
   appendFile("/HourR1.log", buffer);
-  strcpy(log_data.hourR1, electricityReturnedTariff1);
+  strcpy(log_data.hourR1, String(dsmrData.energy_returned_tariff1.val()).c_str());
 
-  dtostrf((atof(electricityReturnedTariff2) - atof(log_data.hourR2)), 6, 2,
+  dtostrf((dsmrData.energy_returned_tariff2.val() - atof(log_data.hourR2)), 6, 2,
           value);
   sprintf(buffer, "['%d',%s],\n", hour(), value);
   appendFile("/HourR2.log", buffer);
-  strcpy(log_data.hourR2, electricityReturnedTariff2);
+  strcpy(log_data.hourR2, String(dsmrData.energy_returned_tariff2.val()).c_str());
 
-  dtostrf((atof(gasReceived5min) - atof(log_data.hourG)), 6, 2, value);
+  dtostrf((dsmrData.gas_delivered.toFloat() - atof(log_data.hourG)), 6, 2, value);
   sprintf(buffer, "['%d',%s],\n", hour(), value);
   appendFile("/HourG.log", buffer);
-  strcpy(log_data.hourG, gasReceived5min);
+  strcpy(log_data.hourG, dsmrData.gas_delivered.c_str());
 
   dtostrf((atof(log_data.hourE1) + atof(log_data.hourE2)), 6, 2, value);
   sprintf(buffer, "['%d',%s],\n", hour(), value);
@@ -212,42 +212,41 @@ void doDailyLog() {
   if ((day()) < 10)
     str += "0";
   str += day();
-
-  dtostrf((atof(electricityUsedTariff1) - atof(log_data.dayE1)), 6, 2, value);
+  dtostrf((dsmrData.energy_delivered_tariff1.val() - atof(log_data.dayE1)), 6, 2, value);
   sprintf(buffer, "['%s',%s],\n", string2char(str), value);
   //  appendFile("DayE1.log", buffer);
   appendFile("/WeekE1.log", buffer);
   appendFile("/MonthE1.log", buffer);
   appendFile("/YearE1.log", buffer);
-  strcpy(log_data.dayE1, electricityUsedTariff1);
+  strcpy(log_data.dayE1, String(dsmrData.energy_delivered_tariff1.val()).c_str());
 
-  dtostrf((atof(electricityUsedTariff2) - atof(log_data.dayE2)), 6, 2, value);
+  dtostrf((dsmrData.energy_delivered_tariff2.val() - atof(log_data.dayE2)), 6, 2, value);
   sprintf(buffer, "['%s',%s],\n", string2char(str), value);
   //  appendFile("DayE2.log", buffer);
   appendFile("/WeekE2.log", buffer);
   appendFile("/MonthE2.log", buffer);
   appendFile("/YearE2.log", buffer);
-  strcpy(log_data.dayE2, electricityUsedTariff2);
+  strcpy(log_data.dayE2, String(dsmrData.energy_delivered_tariff2.val()).c_str());
 
-  dtostrf((atof(electricityReturnedTariff1) - atof(log_data.dayR1)), 6, 2,
+  dtostrf((dsmrData.energy_returned_tariff1.val() - atof(log_data.dayR1)), 6, 2,
           value);
   sprintf(buffer, "['%s',%s],\n", string2char(str), value);
   //  appendFile("/DayR1.log", buffer);
   appendFile("/WeekR1.log", buffer);
   appendFile("/MonthR1.log", buffer);
   appendFile("/YearR1.log", buffer);
-  strcpy(log_data.dayR1, electricityReturnedTariff1);
+  strcpy(log_data.dayR1, String(dsmrData.energy_returned_tariff1.val()).c_str());
 
-  dtostrf((atof(electricityReturnedTariff2) - atof(log_data.dayR2)), 6, 2,
+  dtostrf((dsmrData.energy_returned_tariff2.val() - atof(log_data.dayR2)), 6, 2,
           value);
   sprintf(buffer, "['%s',%s],\n", string2char(str), value);
   //  appendFile("DayR2.log", buffer);
   appendFile("/WeekR2.log", buffer);
   appendFile("/MonthR2.log", buffer);
   appendFile("/YearR2.log", buffer);
-  strcpy(log_data.dayR2, electricityReturnedTariff2);
+  strcpy(log_data.dayR2, String(dsmrData.energy_returned_tariff2.val()).c_str());
 
-  dtostrf((atof(gasReceived5min) - atof(log_data.dayG)), 6, 2, value);
+  dtostrf((dsmrData.gas_delivered.toFloat() - atof(log_data.dayG)), 6, 2, value);
   sprintf(buffer, "['%s',%s],\n", string2char(str), value);
   //  appendFile("DayG.log", buffer);
   appendFile("/WeekG.log", buffer);
@@ -258,7 +257,7 @@ void doDailyLog() {
   // sprintf(buffer, "(%s , %s , %s), %s],\n", (char*)year(), (char*)0, (char*)day(), value); //
   // Google graph format uses month 0 for Jan!!
   appendFile("/YearGc.log", buffer);
-  strcpy(log_data.dayG, gasReceived5min);
+  strcpy(log_data.dayG, dsmrData.gas_delivered.c_str());
 
   dtostrf((atof(log_data.dayE1) + atof(log_data.dayE2)), 6, 2, value);
   sprintf(buffer, "['%s',%s],\n", string2char(str), value);
@@ -309,38 +308,38 @@ void doWeeklyLog() {
 
   deleteFile("/WeekE1-1.log");
   renameFile("/WeekE1.log", "/WeekE1-1.log");
-  dtostrf((atof(electricityUsedTariff1) - atof(log_data.weekE1)), 6, 2, value);
+  dtostrf((dsmrData.energy_delivered_tariff1.val() - atof(log_data.weekE1)), 6, 2, value);
   sprintf(buffer, "['%s', %s],\n", string2char(str), value);
   appendFile("/WeeksE1.log", buffer);
-  strcpy(log_data.weekE1, electricityUsedTariff1);
+  strcpy(log_data.weekE1, String(dsmrData.energy_delivered_tariff1.val()).c_str());
 
   deleteFile("/WeekE2-1.log");
   renameFile("/WeekE2.log", "/WeekE2-1.log");
-  dtostrf((atof(electricityUsedTariff2) - atof(log_data.weekE2)), 6, 2, value);
+  dtostrf((dsmrData.energy_delivered_tariff2.val() - atof(log_data.weekE2)), 6, 2, value);
   sprintf(buffer, "['%s', %s],\n", string2char(str), value);
   appendFile("/WeeksE2.log", buffer);
-  strcpy(log_data.weekE2, electricityUsedTariff2);
+  strcpy(log_data.weekE2, String(dsmrData.energy_delivered_tariff2.val()).c_str());
 
   deleteFile("/WeekR1-1.log");
   renameFile("/WeekR1.log", "/WeekR1-1.log");
-  dtostrf((atof(electricityReturnedTariff1) - atof(log_data.weekR1)), 6, 2,
+  dtostrf((dsmrData.energy_returned_tariff1.val() - atof(log_data.weekR1)), 6, 2,
           value);
   sprintf(buffer, "['%s', %s],\n", string2char(str), value);
   appendFile("/WeeksR1.log", buffer);
-  strcpy(log_data.weekR1, electricityReturnedTariff1);
+  strcpy(log_data.weekR1, String(dsmrData.energy_returned_tariff1.val()).c_str());
 
   deleteFile("/WeekR2-1.log");
   renameFile("/WeekR2.log", "/WeekR2-1.log");
-  dtostrf((atof(electricityReturnedTariff2) - atof(log_data.weekR2)), 6, 2,
+  dtostrf((dsmrData.energy_returned_tariff2.val() - atof(log_data.weekR2)), 6, 2,
           value);
   sprintf(buffer, "['%s', %s],\n", string2char(str), value);
   appendFile("/WeeksR2.log", buffer);
-  strcpy(log_data.weekR2, electricityReturnedTariff2);
+  strcpy(log_data.weekR2, String(dsmrData.energy_returned_tariff2.val()).c_str());
 
   deleteFile("/WeekTE-1.log");
   renameFile("/WeekTE.log", "/WeekTE-1.log");
-  dtostrf((atof(electricityUsedTariff1) - atof(log_data.weekE1)) +
-              (atof(electricityUsedTariff2) - atof(log_data.weekE2)),
+  dtostrf((dsmrData.energy_delivered_tariff1.val() - atof(log_data.weekE1)) +
+              (dsmrData.energy_delivered_tariff2.val() - atof(log_data.weekE2)),
           6, 2, value);
   sprintf(buffer, "['%s', %s],\n", string2char(str), value);
   appendFile("/WeeksTE.log", buffer);
@@ -348,8 +347,8 @@ void doWeeklyLog() {
 
   deleteFile("/WeekTR-1.log");
   renameFile("/WeekTR.log", "/WeekTR-1.log");
-  dtostrf((atof(electricityReturnedTariff1) - atof(log_data.weekR1)) +
-              (atof(electricityReturnedTariff2) - atof(log_data.weekR2)),
+  dtostrf((dsmrData.energy_returned_tariff1.val() - atof(log_data.weekR1)) +
+              (dsmrData.energy_returned_tariff2.val() - atof(log_data.weekR2)),
           6, 2, value);
   sprintf(buffer, "['%s', %s],\n", string2char(str), value);
   appendFile("/WeeksTR.log", buffer);
@@ -357,7 +356,7 @@ void doWeeklyLog() {
 
   deleteFile("/WeekG-1.log");
   renameFile("/WeekG.log", "/WeekG-1.log");
-  dtostrf((atof(gasReceived5min) - atof(log_data.dayG)), 6, 2, value);
+  dtostrf((dsmrData.gas_delivered.toFloat() - atof(log_data.dayG)), 6, 2, value);
   sprintf(buffer, "['%s', %s],\n", string2char(str), value);
   appendFile("/WeeksG.log", buffer);
   strcpy(log_data.weekG, value);
@@ -387,38 +386,38 @@ void doMonthlyLog() {
 
   deleteFile("/MonthE1-1.log");
   renameFile("/MonthE1.log", "/MonthE1-1.log");
-  dtostrf((atof(electricityUsedTariff1) - atof(log_data.monthE1)), 6, 2, value);
+  dtostrf((dsmrData.energy_delivered_tariff1.val() - atof(log_data.monthE1)), 6, 2, value);
   sprintf(buffer, "['%s', %s],\n", string2char(str), value);
   appendFile("/MonthsE1.log", buffer);
-  strcpy(log_data.monthE1, electricityUsedTariff1);
+  strcpy(log_data.monthE1, String(dsmrData.energy_delivered_tariff1.val()).c_str());
 
   deleteFile("/MonthE2-1.log");
   renameFile("/MonthE2.log", "/MonthE2-1.log");
-  dtostrf((atof(electricityUsedTariff2) - atof(log_data.monthE2)), 6, 2, value);
+  dtostrf((dsmrData.energy_delivered_tariff2.val() - atof(log_data.monthE2)), 6, 2, value);
   sprintf(buffer, "['%s', %s],\n", string2char(str), value);
   appendFile("/MonthsE2.log", buffer);
-  strcpy(log_data.monthE2, electricityUsedTariff2);
+  strcpy(log_data.monthE2, String(dsmrData.energy_delivered_tariff2.val()).c_str());
 
   deleteFile("/MonthR1-1.log");
   renameFile("/MonthR1.log", "/MonthR1-1.log");
-  dtostrf((atof(electricityReturnedTariff1) - atof(log_data.monthR1)), 6, 2,
+  dtostrf((dsmrData.energy_returned_tariff1.val() - atof(log_data.monthR1)), 6, 2,
           value);
   sprintf(buffer, "['%s', %s],\n", string2char(str), value);
   appendFile("/MonthsR1.log", buffer);
-  strcpy(log_data.monthR1, electricityReturnedTariff1);
+  strcpy(log_data.monthR1, String(dsmrData.energy_returned_tariff1.val()).c_str());
 
   deleteFile("/MonthR2-1.log");
   renameFile("/MonthR2.log", "/MonthR2-1.log");
-  dtostrf((atof(electricityReturnedTariff2) - atof(log_data.monthR2)), 6, 2,
+  dtostrf((dsmrData.energy_returned_tariff2.val() - atof(log_data.monthR2)), 6, 2,
           value);
   sprintf(buffer, "['%s', %s],\n", string2char(str), value);
   appendFile("/MonthsR2.log", buffer);
-  strcpy(log_data.monthR2, electricityReturnedTariff2);
+  strcpy(log_data.monthR2, String(dsmrData.energy_returned_tariff2.val()).c_str());
 
   deleteFile("/MonthTE-1.log");
   renameFile("/MonthTE.log", "/MonthTE-1.log");
-  dtostrf((atof(electricityUsedTariff1) - atof(log_data.monthE1)) +
-              (atof(electricityUsedTariff2) - atof(log_data.monthE2)),
+  dtostrf((dsmrData.energy_delivered_tariff1.val() - atof(log_data.monthE1)) +
+              (dsmrData.energy_delivered_tariff2.val() - atof(log_data.monthE2)),
           6, 2, value);
   sprintf(buffer, "['%s', %s],\n", string2char(str), value);
   appendFile("/MonthsTE.log", buffer);
@@ -426,8 +425,8 @@ void doMonthlyLog() {
 
   deleteFile("/MonthTR-1.log");
   renameFile("/MonthTR.log", "/MonthTR-1.log");
-  dtostrf((atof(electricityReturnedTariff1) - atof(log_data.monthR1)) +
-              (atof(electricityReturnedTariff2) - atof(log_data.monthR2)),
+  dtostrf((dsmrData.energy_returned_tariff1.val() - atof(log_data.monthR1)) +
+              (dsmrData.energy_returned_tariff2.val() - atof(log_data.monthR2)),
           6, 2, value);
   sprintf(buffer, "['%s', %s],\n", string2char(str), value);
   appendFile("/MonthsTR.log", buffer);
@@ -435,7 +434,7 @@ void doMonthlyLog() {
 
   deleteFile("/MonthG-1.log");
   renameFile("/MonthG.log", "/MonthG-1.log");
-  dtostrf((atof(gasReceived5min) - atof(log_data.dayG)), 6, 2, value);
+  dtostrf((dsmrData.gas_delivered.toFloat() - atof(log_data.dayG)), 6, 2, value);
   sprintf(buffer, "['%s', %s],\n", string2char(str), value);
   appendFile("/MonthsG.log", buffer);
   strcpy(log_data.monthG, value);
@@ -459,10 +458,10 @@ void resetEnergyDaycount() {
   strcpy(log_data.dayR1, cumulativeActiveExport);
   strcpy(log_data.dayR2, cumulativeReactiveExport);
 #else
-  strcpy(log_data.dayE1, electricityUsedTariff1);
-  strcpy(log_data.dayE2, electricityUsedTariff2);
-  strcpy(log_data.dayR1, electricityReturnedTariff1);
-  strcpy(log_data.dayR2, electricityReturnedTariff2);
+  strcpy(log_data.dayE1, String(dsmrData.energy_delivered_tariff1.val()).c_str());
+  strcpy(log_data.dayE2, String(dsmrData.energy_delivered_tariff2.val()).c_str());
+  strcpy(log_data.dayR1, String(dsmrData.energy_returned_tariff1.val()).c_str());
+  strcpy(log_data.dayR2, String(dsmrData.energy_returned_tariff2.val()).c_str());
 #endif
   coldbootE = false;
 }
@@ -474,15 +473,15 @@ void resetEnergyMonthcount() {
   strcpy(log_data.monthR1, cumulativeActiveExport);
   strcpy(log_data.monthR2, cumulativeReactiveExport);
 #else
-  strcpy(log_data.monthE1, electricityUsedTariff1);
-  strcpy(log_data.monthE2, electricityUsedTariff2);
-  strcpy(log_data.monthR1, electricityReturnedTariff1);
-  strcpy(log_data.monthR2, electricityReturnedTariff2);
+  strcpy(log_data.monthE1, String(dsmrData.energy_delivered_tariff1.val()).c_str());
+  strcpy(log_data.monthE2, String(dsmrData.energy_delivered_tariff2.val()).c_str());
+  strcpy(log_data.monthR1, String(dsmrData.energy_returned_tariff1.val()).c_str());
+  strcpy(log_data.monthR2, String(dsmrData.energy_returned_tariff2.val()).c_str());
 #endif
 }
 
 void resetGasCount() {
-  strcpy(log_data.dayG, gasReceived5min);
+  strcpy(log_data.dayG, dsmrData.gas_delivered.c_str());
   coldbootG = false;
 }
 

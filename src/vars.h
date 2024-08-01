@@ -1,3 +1,5 @@
+#include <WString.h>
+
 /*
  * vars.h
  */
@@ -28,76 +30,89 @@ bool bootSetup = false; // flag for adminpassword bypass
 bool AdminAuthenticated = false;
 char setupToken[18];
 
+// Value that is parsed as a three-decimal float, but stored as an
+// integer (by multiplying by 1000). Supports val() (or implicit cast to
+// float) to get the original value, and int_val() to get the more
+// efficient integer value. The unit() and int_unit() methods on
+// FixedField return the corresponding units for these values.
+struct FixedValue {
+  FixedValue() {
+    _value = 0;
+  }
+  FixedValue(String value) {
+    _value = value.toFloat() * 1000;
+  }
+  operator float() { return val(); }
+  float val() { return _value / 1000.0; }
+  uint32_t int_val() { return _value; }
+
+  uint32_t _value{0};
+};
+
 // Vars to store meter readings
 // we capture all data in char arrays or Strings for longer hard to delineate
 // data
-String P1header;
-char P1version[8];
-int P1prot; // 4 or 5 based on P1version 1-3:0.2.8
-char P1timestamp[30] = "\0";
-char equipmentId[100] = "\0";
-char equipmentId2[100] = "\0";
-char electricityUsedTariff1[12];
-char electricityUsedTariff2[12];
-char electricityReturnedTariff1[12];
-char electricityReturnedTariff2[12];
-char tariffIndicatorElectricity[8];
-char numberPowerFailuresAny[6];
-char numberLongPowerFailuresAny[6];
-String longPowerFailuresLog;
-char numberVoltageSagsL1[7];
-char numberVoltageSagsL2[7];
-char numberVoltageSagsL3[7];
-char numberVoltageSwellsL1[7];
-char numberVoltageSwellsL2[7];
-char numberVoltageSwellsL3[7];
-String textMessage;
-char instantaneousVoltageL1[7];
-char instantaneousVoltageL2[7];
-char instantaneousVoltageL3[7];
-char instantaneousCurrentL1[9];
-char instantaneousCurrentL2[9];
-char instantaneousCurrentL3[9];
-char activePowerL1P[10];
-char activePowerL2P[10];
-char activePowerL3P[10];
-char activePowerL1NP[10];
-char activePowerL2NP[10];
-char activePowerL3NP[10];
-char actualElectricityPowerDeli[14];
-char actualElectricityPowerRet[14];
+struct DSMRData {
+  // String identification;
+  String p1_version;                   // P1version
+  String timestamp;                    // P1timestamp
+  String equipment_id;                 // equipmentId
+  FixedValue energy_delivered_tariff1; // electricityUsedTariff1
+  FixedValue energy_delivered_tariff2; // electricityUsedTariff2
+  FixedValue energy_returned_tariff1;  // electricityReturnedTariff1
+  FixedValue energy_returned_tariff2;  // electricityReturnedTariff2
+  String electricity_tariff;           // tariffIndicatorElectricity
+  FixedValue power_delivered;          // actualElectricityPowerDeli
+  FixedValue power_returned;           // actualElectricityPowerRet
+  // FixedValue electricity_threshold;
+  // uint8_t electricity_switch_position;
+  uint32_t electricity_failures;      // numberPowerFailuresAny
+  uint32_t electricity_long_failures; // numberLongPowerFailuresAny
+  String electricity_failure_log;     // longPowerFailuresLog
+  uint32_t electricity_sags_l1;       // numberVoltageSagsL1
+  uint32_t electricity_sags_l2;       // numberVoltageSagsL2
+  uint32_t electricity_sags_l3;       // numberVoltageSagsL3
+  uint32_t electricity_swells_l1;     // numberVoltageSwellsL1
+  uint32_t electricity_swells_l2;     // numberVoltageSwellsL2
+  uint32_t electricity_swells_l3;     // numberVoltageSwellsL3
+  // String message_short;
+  // String message_long;
+  FixedValue voltage_l1;         // instantaneousVoltageL1
+  FixedValue voltage_l2;         // instantaneousVoltageL2
+  FixedValue voltage_l3;         // instantaneousVoltageL3
+  FixedValue current_l1;         // instantaneousCurrentL1
+  FixedValue current_l2;         // instantaneousCurrentL2
+  FixedValue current_l3;         // instantaneousCurrentL3
+  FixedValue power_delivered_l1; // activePowerL1P
+  FixedValue power_delivered_l2; // activePowerL2P
+  FixedValue power_delivered_l3; // activePowerL3P
+  FixedValue power_returned_l1;  // activePowerL1NP
+  FixedValue power_returned_l2;  // activePowerL2NP
+  FixedValue power_returned_l3;  // activePowerL3NP
 
-// // Swedish specific
-// char cumulativeActiveImport[12];    // 1.8.0
-// char cumulativeActiveExport[12];    // 2.8.0
-// char cumulativeReactiveImport[12];  // 3.8.0
-// char cumulativeReactiveExport[12];  // 4.8.0
-// char momentaryActiveImport[12];     // 1.7.0
-// char momentaryActiveExport[12];     // 2.7.0
-// char momentaryReactiveImport[12];   // 3.7.0
-// char momentaryReactiveExport[12];   // 4.7.0
-// char momentaryReactiveImportL1[12]; // 23.7.0
-// char momentaryReactiveImportL2[12]; // 43.7.0
-// char momentaryReactiveImportL3[12]; // 63.7.0
-// char momentaryReactiveExportL1[12]; // 24.7.0
-// char momentaryReactiveExportL2[12]; // 44.7.0
-// char momentaryReactiveExportL3[12]; // 64.7.0
+  // uint16_t gas_device_type;
+  String gas_equipment_id; // equipmentId2
+  // uint8_t gas_valve_position;
+  String gas_delivered; // gasReceived5min
 
-// char reactivePowerL1P[9]; // Sweden uses these 6
-// char reactivePowerL2P[9];
-// char reactivePowerL3P[9];
-// char reactivePowerL1NP[9];
-// char reactivePowerL2NP[9];
-// char reactivePowerL3NP[9];
+  // uint16_t thermal_device_type;
+  // String thermal_equipment_id;
+  // uint8_t thermal_valve_position;
+  // String thermal_delivered;
 
-// end Swedish
-char deviceType[5];
-char gasId[100] = "\0";
-;
-char gasReceived5min[12];
-char gasDomoticz[12]; // Domoticz wil gas niet in decimalen?
+  // uint16_t water_device_type;
+  // String water_equipment_id;
+  // uint8_t water_valve_position;
+  // String water_delivered;
+  // uint16_t sub_device_type;
+  // String sub_equipment_id;
+  // uint8_t sub_valve_position;
+  // String sub_delivered;
 
-char prevGAS[12]; // not an P1 protocol var, but holds gas value
+  uint8_t P1prot() { return p1_version[0] == '4' ? 4 : 5; }
+} dsmrData;
+
+String prevGAS; // not an P1 protocol var, but holds gas value
 
 // logging vars
 byte logFlags;
